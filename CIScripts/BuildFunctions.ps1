@@ -147,7 +147,7 @@ function Invoke-AgentBuild {
     if ($LASTEXITCODE -ne 0) {
         throw "Building API failed"
     }
-    scons contrail-vrouter-agent.msi -j 2
+    scons contrail-vrouter-agent.msi -j 4
     if ($LASTEXITCODE -ne 0) {
         throw "Building Agent failed"
     }
