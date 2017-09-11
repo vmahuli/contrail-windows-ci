@@ -142,36 +142,25 @@ function Invoke-AgentBuild {
     Copy-Item -Recurse "$ThirdPartyCache\agent\*" third_party/
 
     
-    Write-Host "Building Agent, MSI and API"
+    Write-Host "Building Agent, MSI, API and tests"
     scons controller/src/vnsw/contrail_vrouter_api:sdist
     if ($LASTEXITCODE -ne 0) {
         throw "Building API failed"
     }
-    scons contrail-vrouter-agent.msi -j 4
-    if ($LASTEXITCODE -ne 0) {
-        throw "Building Agent failed"
-    }
-
-    Write-Host "Building tests"
-
-    $Tests = @()
-
-    # KSync tests almost work
-    # $Tests = @("agent:test_ksync", "src/ksync:ksync_test")
 
     # TODO: Add other tests here once they are functional.
+    $Tests = @("agent:test_ksync", "agent:test_vnswif", "src/ksync:ksync_test")
 
+    $TestsString = ""
     if ($Tests.count -gt 0) {
         $TestsString = $Tests -join " "
+    }
+    $BuildCommand = "scons contrail-vrouter-agent.msi -j 4"
+    $AgentAndTestsBuildCommand = "{0} {1}" -f "$BuildCommand", "$TestsString"
+    Invoke-Expression $AgentAndTestsBuildCommand
 
-        $BuildCommand = "scons"
-        $TestsBuildCommand = "{0} {1}" -f "$BuildCommand", "$TestsString"
-        Invoke-Expression $TestsBuildCommand
-        if ($LASTEXITCODE -ne 0) {
-            throw "Building tests failed"
-        }
-    } else {
-        Write-Host "    No tests to build."
+    if ($LASTEXITCODE -ne 0) {
+        throw "Building Agent and tests failed"
     }
 }
 
