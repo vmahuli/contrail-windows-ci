@@ -39,13 +39,18 @@ function Copy-Repos {
 function Invoke-ContrailCommonActions {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $VSSetupEnvScriptPath)
-    
+
     Write-Host "Sourcing VS environment variables"
     Invoke-BatchFile "$VSSetupEnvScriptPath"
-    
+
     Write-Host "Copying common third-party dependencies"
     New-Item -ItemType Directory .\third_party
-    Copy-Item -Recurse "$ThirdPartyCache\common\*" third_party\
+    Get-ChildItem "$ThirdPartyCache\common" -Directory |
+        Where-Object{$_.Name -notlike "boost*"} |
+        Copy-Item -Destination third_party\ -Recurse -Force
+
+    Write-Host "Symlinking boost"
+    New-Item -Path "third_party\boost_1_62_0" -ItemType SymbolicLink -Value "$ThirdPartyCache\boost_1_62_0"
 
     Copy-Item tools\build\SConstruct .\
 }
