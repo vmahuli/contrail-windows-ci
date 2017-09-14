@@ -1,8 +1,13 @@
 function Test-VRouterAgentIntegration {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session1,
+           [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session2,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     . $PSScriptRoot\CommonTestCode.ps1
+    . $PSScriptRoot\..\Job.ps1
+
+    # TODO: Time tracking should be handled consistently for the whole test suite.
+    $AgentIntegrationTestsTimeTracker = [Job]::new("Test-VRouterAgentIntegration")
 
     $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS = 60
     $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS = 5
@@ -255,6 +260,108 @@ function Test-VRouterAgentIntegration {
         $txPackets = [int]$txPacketsMatch.groups[1].Value
         if ($txPackets -eq 0) {
             throw "Registered TX packets equal to zero. EXPECTED: Registered TX packets greater than zero"
+
+    function Create-ContainerInRemoteSession {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [string] $NetworkName,
+               [Parameter(Mandatory = $true)] [string] $ContainerName)
+        Write-Host "Creating container: name = $ContainerName; network = $NetworkName."
+        $Output = Invoke-Command -Session $Session -ScriptBlock {
+            $DockerOutput = (& docker run -id --name $Using:ContainerName --network $Using:NetworkName microsoft/nanoserver powershell 2>&1) | Out-String
+            $LASTEXITCODE
+            $DockerOutput
+        }
+        $ExitCode = $Output[0]
+        $Message = $Output[1]
+        if ($ExitCode -ne 0) {
+            Write-Host "    Exit code: $ExitCode"
+            Write-Host "    Docker output: $Message"
+        }
+        return $ExitCode
+    }
+
+    function Assert-PingSucceeded {
+        Param ([Parameter(Mandatory = $true)] [Object[]] $Output)
+        $ErrorMessage = "Ping failed. EXPECTED: Ping succeeded."
+        Foreach ($Line in $Output) {
+            if ($Line -match ", Received = (?<NumOfReceivedPackets>[\d]+),[.]*") {
+                if ($matches.NumOfReceivedPackets -gt 0) {
+                    return
+                } else {
+                    throw $ErrorMessage
+                }
+            }
+        }
+        throw $ErrorMessage
+    }
+
+    function Test-Ping {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session1,
+               [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session2,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+               [Parameter(Mandatory = $true)] [string] $Container1Name,
+               [Parameter(Mandatory = $true)] [string] $Container2Name)
+        Write-Host "======> Given Docker Driver and Extension are running"
+
+        # 1st compute node
+        Clear-TestConfiguration -Session $Session1 -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session1 -TestConfiguration $TestConfiguration
+        Assert-ExtensionIsRunning -Session $Session1 -TestConfiguration $TestConfiguration
+
+        # 2nd compute node (if there actually is more than 1 compute node)
+        if ($Session1 -ne $Session2) {
+            Clear-TestConfiguration -Session $Session2 -TestConfiguration $TestConfiguration
+            Initialize-TestConfiguration -Session $Session2 -TestConfiguration $TestConfiguration
+            Assert-ExtensionIsRunning -Session $Session2 -TestConfiguration $TestConfiguration
+        }
+
+        Write-Host "======> Given Agent is running"
+
+        # 1st compute node
+        New-AgentConfigFile -Session $Session1 -TestConfiguration $TestConfiguration
+        Enable-VRouterAgent -Session $Session1 -ConfigFilePath $TestConfiguration.AgentConfigFilePath
+        Assert-AgentIsRunning -Session $Session1
+
+        # 2nd compute node (if there actually is more than 1 compute node)
+        if ($Session1 -ne $Session2) {
+           New-AgentConfigFile -Session $Session2 -TestConfiguration $TestConfiguration
+           Enable-VRouterAgent -Session $Session2 -ConfigFilePath $TestConfiguration.AgentConfigFilePath
+           Assert-AgentIsRunning -Session $Session2
+        }
+
+        Start-Sleep -Seconds 15
+
+        Write-Host "======> Given 2 containers belonging to the same network are running"
+        $NetworkName = $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.NetworkName
+
+        $CreateContainer1Success = Create-ContainerInRemoteSession -Session $Session1 -NetworkName $NetworkName -ContainerName $Container1Name
+        $CreateContainer2Success = Create-ContainerInRemoteSession -Session $Session2 -NetworkName $NetworkName -ContainerName $Container2Name
+
+        if ($CreateContainer1Success -ne 0 -or $CreateContainer2Success -ne 0) {
+            throw "Container creation failed. EXPECTED: succeeded."
+        }
+        $Container2IP = Invoke-Command -Session $Session2 -ScriptBlock {
+            & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
+        }
+
+        Write-Host "======> When one container pings the other"
+        Write-Host "$Container1Name is going to ping $Container2Name (IP: $Container2IP)."
+        $PingOutput = Invoke-Command -Session $Session1 -ScriptBlock {
+            & docker exec $Using:Container1Name ping $Using:Container2IP -n 10 -w 500
+        }
+
+        Write-Host "======> Then ping is answered"
+        Assert-PingSucceeded -Output $PingOutput
+
+        Write-Host "Removing containers: $Container1Name and $Container2Name."
+        Invoke-Command -Session $Session1 -ScriptBlock {
+            & docker stop $Using:Container1Name | Out-Null
+            & docker rm $Using:Container1Name | Out-Null
+        }
+
+        Invoke-Command -Session $Session2 -ScriptBlock {
+            & docker stop $Using:Container2Name | Out-Null
+            & docker rm $Using:Container2Name | Out-Null
         }
     }
 
@@ -398,12 +505,54 @@ function Test-VRouterAgentIntegration {
         Write-Host "===> PASSED: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
     }
 
-    Test-InitialPkt0Injection -Session $Session -TestConfiguration $TestConfiguration
-    Test-Pkt0RemainsInjectedAfterAgentStops -Session $Session -TestConfiguration $TestConfiguration
-    Test-OnePkt0ExistsAfterAgentIsRestarted -Session $Session -TestConfiguration $TestConfiguration
-    Test-Pkt0ReceivesTrafficAfterAgentIsStarted -Session $Session -TestConfiguration $TestConfiguration
-    Test-GatewayArpIsResolvedInAgent -Session $Session -TestConfiguration $TestConfiguration
+    function Test-SingleComputeNodePing {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+        Write-Host "===> Running: Test-SingleComputeNodePing"
+        Test-Ping -Session1 $Session -Session2 $Session -TestConfiguration $TestConfiguration -Container1Name "jolly_lumberjack" -Container2Name "juniper_tree"
+        Write-Host "===> PASSED: Test-SingleComputeNodePing"
+    }
+
+    function Test-MultiComputeNodesPing {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session1,
+               [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session2,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+        Write-Host "===> Running: Test-MultiComputeNodesPing"
+        Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "vigorous_flip" -Container2Name "serious_flap"
+        Write-Host "===> PASSED: Test-MultiComputeNodesPing"
+    }
+
+    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-SingleComputeNodePing", {
+        Test-SingleComputeNodePing -Session $Session1 -TestConfiguration $TestConfiguration
+    })
+
+    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-MultiComputeNodesPing", {
+        Test-MultiComputeNodesPing -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
+    })
+
+    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-InitialPkt0Injection", {
+        Test-InitialPkt0Injection -Session $Session1 -TestConfiguration $TestConfiguration
+    })
+
+    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-Pkt0RemainsInjectedAfterAgentStops", {
+        Test-Pkt0RemainsInjectedAfterAgentStops -Session $Session1 -TestConfiguration $TestConfiguration
+    })
+
+    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-OnePkt0ExistsAfterAgentIsRestarted", {
+        Test-OnePkt0ExistsAfterAgentIsRestarted -Session $Session1 -TestConfiguration $TestConfiguration
+    })
+
+    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-Pkt0ReceivesTrafficAfterAgentIsStarted", {
+        Test-Pkt0ReceivesTrafficAfterAgentIsStarted -Session $Session -TestConfiguration $TestConfiguration
+    }
+
+    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-GatewayArpIsResolvedInAgent", {
+        Test-GatewayArpIsResolvedInAgent -Session $Session -TestConfiguration $TestConfiguration
+    }
 
     # Test cleanup
-    Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+    Clear-TestConfiguration -Session $Session1 -TestConfiguration $TestConfiguration
+    Clear-TestConfiguration -Session $Session2 -TestConfiguration $TestConfiguration
+
+    $AgentIntegrationTestsTimeTracker.Done()
 }
