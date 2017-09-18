@@ -15,44 +15,49 @@ class Repo {
 function Copy-Repos {
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of repos to clone")] [Repo[]] $Repos)
     
-    Write-Host "Cloning repositories"
-    $CustomBranches = @($Repos.Where({ $_.Branch -ne $_.DefaultBranch }) | Select-Object -ExpandProperty Branch -Unique)
-    $Repos.ForEach({
-        # If there is only one unique custom branch provided, at first try to use it for all repos.
-        # Otherwise, use branch specific for this repo.
-        $CustomMultiBranch = $(if ($CustomBranches.Count -eq 1) { $CustomBranches[0] } else { $_.Branch })
+    $Job.Step("Cloning repositories", {
+        $CustomBranches = @($Repos.Where({ $_.Branch -ne $_.DefaultBranch }) | Select-Object -ExpandProperty Branch -Unique)
+        $Repos.ForEach({
+            # If there is only one unique custom branch provided, at first try to use it for all repos.
+            # Otherwise, use branch specific for this repo.
+            $CustomMultiBranch = $(if ($CustomBranches.Count -eq 1) { $CustomBranches[0] } else { $_.Branch })
 
-        Write-Host $("Cloning " +  $_.Url + " from branch: " + $CustomMultiBranch)
-        git clone -b $CustomMultiBranch $_.Url $_.Dir
-
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
-            git clone -b $_.Branch $_.Url $_.Dir
+            Write-Host $("Cloning " +  $_.Url + " from branch: " + $CustomMultiBranch)
+            git clone -b $CustomMultiBranch $_.Url $_.Dir
 
             if ($LASTEXITCODE -ne 0) {
-                throw "Cloning from " + $_.Url + " failed"
+                Write-Host $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
+                git clone -b $_.Branch $_.Url $_.Dir
+
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Cloning from " + $_.Url + " failed"
+                }
             }
-        }
+        })
     })
 }
 
 function Invoke-ContrailCommonActions {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $VSSetupEnvScriptPath)
+    $Job.Step("Sourcing VS environment variables", {
+        Invoke-BatchFile "$VSSetupEnvScriptPath"
+    })
+    
+    $Job.Step("Copying common third-party dependencies", {
+        New-Item -ItemType Directory .\third_party
+        Get-ChildItem "$ThirdPartyCache\common" -Directory |
+            Where-Object{$_.Name -notlike "boost*"} |
+            Copy-Item -Destination third_party\ -Recurse -Force
+    })
 
-    Write-Host "Sourcing VS environment variables"
-    Invoke-BatchFile "$VSSetupEnvScriptPath"
+    $Job.Step("Symlinking boost", {
+        New-Item -Path "third_party\boost_1_62_0" -ItemType SymbolicLink -Value "$ThirdPartyCache\boost_1_62_0"
+    })
 
-    Write-Host "Copying common third-party dependencies"
-    New-Item -ItemType Directory .\third_party
-    Get-ChildItem "$ThirdPartyCache\common" -Directory |
-        Where-Object{$_.Name -notlike "boost*"} |
-        Copy-Item -Destination third_party\ -Recurse -Force
-
-    Write-Host "Symlinking boost"
-    New-Item -Path "third_party\boost_1_62_0" -ItemType SymbolicLink -Value "$ThirdPartyCache\boost_1_62_0"
-
-    Copy-Item tools\build\SConstruct .\
+    $Job.Step("Copying SConstruct from tools\build", {
+        Copy-Item tools\build\SConstruct .
+    })
 }
 
 function Set-MSISignature {
@@ -60,12 +65,13 @@ function Set-MSISignature {
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
            [Parameter(Mandatory = $true)] [string] $MSIPath)
-    
-    $cerp = Get-Content $CertPasswordFilePath
-    & $SigntoolPath sign /f $CertPath /p $cerp $MSIPath
-    if ($LASTEXITCODE -ne 0) {
-        throw "Signing $MSIPath failed"
-    }
+    $Job.Step("Signing MSI", {
+        $cerp = Get-Content $CertPasswordFilePath
+        & $SigntoolPath sign /f $CertPath /p $cerp $MSIPath
+        if ($LASTEXITCODE -ne 0) {
+            throw "Signing $MSIPath failed"
+        }
+    })
 }
 
 function Invoke-DockerDriverBuild {
@@ -74,43 +80,50 @@ function Invoke-DockerDriverBuild {
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath)
     
+    $Job.PushStep("Docker driver build")
     $Env:GOPATH=pwd
+    $srcPath = "$Env:GOPATH/src/$DriverSrcPath"
     
     New-Item -ItemType Directory ./bin
     Push-Location bin
 
-    Write-Host "Installing test runner"
-    go get -u -v github.com/onsi/ginkgo/ginkgo
-
-    Write-Host "Building driver"
-    go build -v $DriverSrcPath
-
-    $srcPath = "$Env:GOPATH/src/$DriverSrcPath"
-    Write-Host $srcPath
-
-    Write-Host "Precompiling tests"
-    $modules = @("driver", "controller", "hns", "hnsManager")
-    $modules.ForEach({
-        .\ginkgo.exe build $srcPath/$_
-        Move-Item $srcPath/$_/$_.test ./
+    $Job.Step("Installing test runner", {
+        go get -u -v github.com/onsi/ginkgo/ginkgo
     })
 
-    Write-Host "Copying Agent API python script"
-    Copy-Item $srcPath/scripts/agent_api.py ./
+    $Job.Step("Building driver", {
+        go build -v $DriverSrcPath
+    })
 
-    Write-Host "Intalling MSI builder"
-    go get -u -v github.com/mh-cbon/go-msi
+    $Job.Step("Precompiling tests", {
+        $modules = @("driver", "controller", "hns", "hnsManager")
+        $modules.ForEach({
+            .\ginkgo.exe build $srcPath/$_
+            Move-Item $srcPath/$_/$_.test ./
+        })
+    })
 
-    Write-Host "Building MSI"
-    Push-Location $srcPath
-    & "$Env:GOPATH/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 --src template --out $pwd/gomsi
-    Pop-Location
+    $Job.Step("Copying Agent API python script", {
+        Copy-Item $srcPath/scripts/agent_api.py ./
+    })
 
-    Move-Item $srcPath/docker-driver.msi ./
+    $Job.Step("Intalling MSI builder", {
+        go get -u -v github.com/mh-cbon/go-msi
+    })
+
+    $Job.Step("Building MSI", {
+        Push-Location $srcPath
+        & "$Env:GOPATH/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 --src template --out $pwd/gomsi
+        Pop-Location
+
+        Move-Item $srcPath/docker-driver.msi ./
+    })
     
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath "docker-driver.msi"
 
     Pop-Location
+
+    $Job.PopStep()
 }
 
 function Invoke-ExtensionBuild {
@@ -118,17 +131,21 @@ function Invoke-ExtensionBuild {
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath)
-    
-    Write-Host "Copying Extension dependencies"
-    Copy-Item -Recurse "$ThirdPartyCache\extension\*" third_party\
-    Copy-Item -Recurse third_party\cmocka vrouter\test\
+
+    $Job.PushStep("Extension build")
+
+    $Job.Step("Copying Extension dependencies", {
+        Copy-Item -Recurse "$ThirdPartyCache\extension\*" third_party\
+        Copy-Item -Recurse third_party\cmocka vrouter\test\
+    })
 
     
-    Write-Host "Building Extension and Utils"
-    scons vrouter
-    if ($LASTEXITCODE -ne 0) {
-        throw "Building vRouter solution failed"
-    }
+    $Job.Step("Building Extension and Utils", {
+        scons vrouter
+        if ($LASTEXITCODE -ne 0) {
+            throw "Building vRouter solution failed"
+        }
+    })
 
     $vRouterMSI = "build\debug\vrouter\extension\vRouter.msi"
     $utilsMSI = "build\debug\vrouter\utils\utils.msi"
@@ -138,34 +155,45 @@ function Invoke-ExtensionBuild {
     
     Write-Host "Signing vRouterMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $vRouterMSI
+
+    $Job.PopStep()
 }
 
 function Invoke-AgentBuild {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache)
-    
-    Write-Host "Copying Agent dependencies"
-    Copy-Item -Recurse "$ThirdPartyCache\agent\*" third_party/
 
-    
-    Write-Host "Building Agent, MSI, API and tests"
-    scons controller/src/vnsw/contrail_vrouter_api:sdist
-    if ($LASTEXITCODE -ne 0) {
-        throw "Building API failed"
-    }
+    $Job.PushStep("Agent build")
 
-    # TODO: Add other tests here once they are functional.
-    $Tests = @("agent:test_ksync", "agent:test_vnswif", "src/ksync:ksync_test")
+    $Job.Step("Copying Agent dependencies", {
+        Copy-Item -Recurse "$ThirdPartyCache\agent\*" third_party/
+    })
 
-    $TestsString = ""
-    if ($Tests.count -gt 0) {
-        $TestsString = $Tests -join " "
-    }
-    $BuildCommand = "scons contrail-vrouter-agent.msi -j 4"
-    $AgentAndTestsBuildCommand = "{0} {1}" -f "$BuildCommand", "$TestsString"
-    Invoke-Expression $AgentAndTestsBuildCommand
+    $Job.Step("Building API", {
+        scons controller/src/vnsw/contrail_vrouter_api:sdist
+        if ($LASTEXITCODE -ne 0) {
+            throw "Building API failed"
+        }
+    })
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "Building Agent and tests failed"
-    }
+    $Job.Step("Building contrail-vrouter-agent.exe, .msi and tests", {
+        $Tests = @()
+
+        # TODO: Add other tests here once they are functional.
+        $Tests = @("agent:test_ksync", "agent:test_vnswif", "src/ksync:ksync_test")
+
+        $TestsString = ""
+        if ($Tests.count -gt 0) {
+            $TestsString = $Tests -join " "
+        }
+        $BuildCommand = "scons contrail-vrouter-agent.msi -j 4"
+        $AgentAndTestsBuildCommand = "{0} {1}" -f "$BuildCommand", "$TestsString"
+        Invoke-Expression $AgentAndTestsBuildCommand
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "Building Agent and tests failed"
+        }
+    })
+
+    $Job.PopStep()
 }
 
