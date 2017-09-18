@@ -7,6 +7,13 @@ function Test-VRouterAgentIntegration {
     $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS = 60
     $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS = 5
 
+    $TEST_NETWORK_GATEWAY = "10.7.3.1"
+
+    $AGENT_INSPECTOR_PROTO = "http"
+    $AGENT_INSPECTOR_PORT = 8085
+    $AGENT_ITF_REQ_PATH = "Snh_ItfReq"
+    $AGENT_ARP_REQ_PATH = "Snh_NhListReq?type=arp"
+
     #
     # Private functions of Test-VRouterAgentIntegration
     #
@@ -27,6 +34,8 @@ function Test-VRouterAgentIntegration {
         # Prepare parameters for script block
         $ControllerIP = $TestConfiguration.DockerDriverConfiguration.ControllerIP
         $VHostIfName = $HNSTransparentAdapter.ifName
+        $VHostIfIndex = $HNSTransparentAdapter.ifIndex
+        $VHostGatewayIP = $TEST_NETWORK_GATEWAY
         $PhysIfName = $PhysicalAdapter.ifName
 
         $SourceConfigFilePath = $TestConfiguration.AgentSampleConfigFilePath
@@ -35,10 +44,14 @@ function Test-VRouterAgentIntegration {
         Invoke-Command -Session $Session -ScriptBlock {
             $ControllerIP = $Using:ControllerIP
             $VHostIfName = $Using:VHostIfName
+            $VHostIfIndex = $Using:VHostIfIndex
             $PhysIfName = $Using:PhysIfName
 
             $SourceConfigFilePath = $Using:SourceConfigFilePath
             $DestConfigFilePath = $Using:DestConfigFilePath
+
+            $VHostIP = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).IPAddress
+            $VHostGatewayIP = $Using:VHostGatewayIP
 
             $ConfigFileContent = [System.IO.File]::ReadAllText($SourceConfigFilePath)
 
@@ -54,9 +67,67 @@ function Test-VRouterAgentIntegration {
             $ConfigFileContent = $ConfigFileContent `
                                     -Replace "# physical_interface=vnet0", "physical_interface=$PhysIfName"
 
+            # Insert vhost IP address
+            $ConfigFileContent = $ConfigFileContent -Replace "# ip=10.1.1.1/24", "ip=$VHostIP/24"
+
+            # Insert vhost gateway IP address
+            $ConfigFileContent = $ConfigFileContent -Replace "# gateway=10.1.1.254", "gateway=$VHostGatewayIP"
+
             # Save file with prepared config
             [System.IO.File]::WriteAllText($DestConfigFilePath, $ConfigFileContent)
         }
+    }
+
+    function Get-TestbedIpAddressFromDns {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+        $testbedHostname = $Session.ComputerName
+        $dnsEntries = Resolve-DnsName -Name $testbedHostname -Type A -ErrorVariable dnsError
+        if ($dnsError) {
+            Throw "Resolving testbed's IP address failed"
+        }
+
+        $dnsEntry = $dnsEntries | Where-Object IPAddress -Match "^10.7.0"
+        if ($dnsEntry.Count -ne 1) {
+            Throw "Expected testbed ${testbedHostname} to have only one IP address"
+        }
+
+        return $dnsEntry[0].IPAddress
+    }
+
+    function Out-AgentInspectorUri {
+        Param ([Parameter(Mandatory = $true)] [string] $IpAddress)
+
+        return "${AGENT_INSPECTOR_PROTO}://${IpAddress}:${AGENT_INSPECTOR_PORT}"
+    }
+
+    function Out-AgentInterfaceRequestUri {
+        Param ([Parameter(Mandatory = $true)] [string] $IpAddress)
+
+        return "$(Out-AgentInspectorUri $IpAddress)/${AGENT_ITF_REQ_PATH}"
+    }
+
+    function Out-AgentArpRequestUri {
+        Param ([Parameter(Mandatory = $true)] [string] $IpAddress)
+
+        return "$(Out-AgentInspectorUri $IpAddress)/${AGENT_ARP_REQ_PATH}"
+    }
+
+    function Get-PktInterfaceIndexFromAgent {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+        $testbedIpAddress = Get-TestbedIpAddressFromDns -Session $Session
+        $uri = Out-AgentInterfaceRequestUri -IpAddress $testbedIpAddress
+
+        # Invoke-RestMethod and Select-XML throw exceptions on error
+        $output = Invoke-RestMethod $uri
+        $indexNode = $output | Select-XML -XPath "//ItfSandeshData//index[..//type//text() = 'pkt']//text()"
+        if (!$indexNode) {
+            Throw "No pkt interface in Agent. EXPECTED: pkt interface in Agent"
+        }
+        $indexValue = [int]$indexNode.Node.Value;
+
+        return $indexValue;
     }
 
     function Assert-ExtensionIsRunning {
@@ -137,6 +208,53 @@ function Test-VRouterAgentIntegration {
         }
         if ($match.Count > 1) {
             throw "more than 1 pkt0 interfaces were injected. EXPECTED: only one pkt0 interface in vRouter"
+        }
+    }
+
+    function Assert-IsGatewayArpResolvedInAgent {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+        $testbedIpAddress = Get-TestbedIpAddressFromDns -Session $Session
+        $uri = Out-AgentArpRequestUri -IpAddress $testbedIpAddress
+
+        $xpath = "//NhSandeshData//valid[..//sip//text() = '${TEST_NETWORK_GATEWAY}']//text()"
+        $output = Invoke-RestMethod $uri
+        $gateway = $output | Select-Xml -XPath $xpath
+        if (!$gateway) {
+            throw "Agent does not expect ARP from gateway, please check Agent config"
+        }
+        $resolveStatus = $gateway.Node.Value
+        if ($resolveStatus -ne "true") {
+            throw "ARP to gateway was not resolved. EXPECTED: ARP to gateway resolved by the Agent"
+        }
+    }
+
+    function Assert-Pkt0HasTraffic {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+        Assert-IsPkt0Injected -Session $Session
+
+        $pktIfIndex = Get-PktInterfaceIndexFromAgent -Session $Session
+        $vifOutput = Invoke-Command -Session $Session -ScriptBlock {
+            vif.exe --get $Using:pktIfIndex
+        }
+
+        $rxPacketsMatch = [regex]::Match($vifOutput, "RX packets:(\d+)")
+        if (!$rxPacketsMatch.Success) {
+            throw "RX packets metric not visible in vif output. EXPECTED: RX packets visible"
+        }
+        $rxPackets = [int]$rxPacketsMatch.groups[1].Value
+        if ($rxPackets -eq 0) {
+            throw "Registered RX packets equal to zero. EXPECTED: Registered RX packets greater than zero"
+        }
+
+        $txPacketsMatch = [regex]::Match($vifOutput, "TX packets:(\d+)")
+        if (!$txPacketsMatch.Success) {
+            throw "TX packets metric not visible in vif output. EXPECTED: TX packets visible"
+        }
+        $txPackets = [int]$txPacketsMatch.groups[1].Value
+        if ($txPackets -eq 0) {
+            throw "Registered TX packets equal to zero. EXPECTED: Registered TX packets greater than zero"
         }
     }
 
@@ -234,9 +352,57 @@ function Test-VRouterAgentIntegration {
         Assert-IsOnlyOnePkt0Injected -Session $Session
     }
 
+    function Test-Pkt0ReceivesTrafficAfterAgentIsStarted {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+
+        Write-Host "===> Running: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
+
+        Write-Host "======> Given Extension is running"
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
+
+        Write-Host "======> When Agent is started"
+        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
+        Assert-AgentIsRunning -Session $Session
+        Start-Sleep -Seconds 15  # Wait for KSync
+
+        Write-Host "======> Then Pkt0 has traffic"
+        Assert-Pkt0HasTraffic -Session $Session
+
+        Write-Host "===> PASSED: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
+    }
+
+    function Test-GatewayArpIsResolvedInAgent {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+
+        Write-Host "===> Running: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
+
+        Write-Host "======> Given Extension is running"
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
+
+        Write-Host "======> When Agent is started"
+        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
+        Assert-AgentIsRunning -Session $Session
+        Start-Sleep -Seconds 15  # Wait for KSync
+
+        Write-Host "======> Then Gateway ARP was resolved through Pkt0"
+        Assert-IsGatewayArpResolvedInAgent -Session $Session
+
+        Write-Host "===> PASSED: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
+    }
+
     Test-InitialPkt0Injection -Session $Session -TestConfiguration $TestConfiguration
     Test-Pkt0RemainsInjectedAfterAgentStops -Session $Session -TestConfiguration $TestConfiguration
     Test-OnePkt0ExistsAfterAgentIsRestarted -Session $Session -TestConfiguration $TestConfiguration
+    Test-Pkt0ReceivesTrafficAfterAgentIsStarted -Session $Session -TestConfiguration $TestConfiguration
+    Test-GatewayArpIsResolvedInAgent -Session $Session -TestConfiguration $TestConfiguration
 
     # Test cleanup
     Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
