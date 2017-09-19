@@ -160,7 +160,10 @@ function Invoke-ExtensionBuild {
 }
 
 function Invoke-AgentBuild {
-    Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache)
+    Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
+           [Parameter(Mandatory = $true)] [string] $SigntoolPath,
+           [Parameter(Mandatory = $true)] [string] $CertPath,
+           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath)
 
     $Job.PushStep("Agent build")
 
@@ -194,6 +197,11 @@ function Invoke-AgentBuild {
         }
     })
 
+    $agentMSI = "build\debug\vnsw\agent\contrail\contrail-vrouter-agent.msi"
+    
+    Write-Host "Signing agentMSI"
+    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $agentMSI
+    
     $Job.PopStep()
 }
 
