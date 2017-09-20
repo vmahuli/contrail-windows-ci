@@ -6,7 +6,6 @@ function Test-VRouterAgentIntegration {
     . $PSScriptRoot\CommonTestCode.ps1
     . $PSScriptRoot\..\Job.ps1
 
-    # TODO: Time tracking should be handled consistently for the whole test suite.
     $AgentIntegrationTestsTimeTracker = [Job]::new("Test-VRouterAgentIntegration")
 
     $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS = 60
@@ -260,6 +259,8 @@ function Test-VRouterAgentIntegration {
         $txPackets = [int]$txPacketsMatch.groups[1].Value
         if ($txPackets -eq 0) {
             throw "Registered TX packets equal to zero. EXPECTED: Registered TX packets greater than zero"
+        }
+    }
 
     function Create-ContainerInRemoteSession {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
@@ -293,6 +294,16 @@ function Test-VRouterAgentIntegration {
             }
         }
         throw $ErrorMessage
+    }
+
+    function Ping-Container {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        [Parameter(Mandatory = $true)] [string] $ContainerName,
+        [Parameter(Mandatory = $true)] [string] $IP)
+        $PingOutput = Invoke-Command -Session $Session -ScriptBlock {
+            & docker exec $Using:ContainerName ping $Using:IP -n 10 -w 500
+        }
+        Assert-PingSucceeded -Output $PingOutput
     }
 
     function Test-Ping {
@@ -331,7 +342,7 @@ function Test-VRouterAgentIntegration {
 
         Start-Sleep -Seconds 15
 
-        Write-Host "======> Given 2 containers belonging to the same network are running"
+        Write-Host "======> When 2 containers belonging to the same network are running"
         $NetworkName = $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.NetworkName
 
         $CreateContainer1Success = Create-ContainerInRemoteSession -Session $Session1 -NetworkName $NetworkName -ContainerName $Container1Name
@@ -344,14 +355,9 @@ function Test-VRouterAgentIntegration {
             & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
         }
 
-        Write-Host "======> When one container pings the other"
+        Write-Host "======> Then ping between them succeeds"
         Write-Host "$Container1Name is going to ping $Container2Name (IP: $Container2IP)."
-        $PingOutput = Invoke-Command -Session $Session1 -ScriptBlock {
-            & docker exec $Using:Container1Name ping $Using:Container2IP -n 10 -w 500
-        }
-
-        Write-Host "======> Then ping is answered"
-        Assert-PingSucceeded -Output $PingOutput
+        Ping-Container -Session $Session1 -ContainerName $Container1Name -IP $Container2IP
 
         Write-Host "Removing containers: $Container1Name and $Container2Name."
         Invoke-Command -Session $Session1 -ScriptBlock {
@@ -509,7 +515,7 @@ function Test-VRouterAgentIntegration {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
         Write-Host "===> Running: Test-SingleComputeNodePing"
-        Test-Ping -Session1 $Session -Session2 $Session -TestConfiguration $TestConfiguration -Container1Name "jolly_lumberjack" -Container2Name "juniper_tree"
+        Test-Ping -Session1 $Session -Session2 $Session -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
         Write-Host "===> PASSED: Test-SingleComputeNodePing"
     }
 
@@ -518,7 +524,7 @@ function Test-VRouterAgentIntegration {
                [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session2,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
         Write-Host "===> Running: Test-MultiComputeNodesPing"
-        Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "vigorous_flip" -Container2Name "serious_flap"
+        Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
         Write-Host "===> PASSED: Test-MultiComputeNodesPing"
     }
 
@@ -544,11 +550,11 @@ function Test-VRouterAgentIntegration {
 
     $AgentIntegrationTestsTimeTracker.StepQuiet("Test-Pkt0ReceivesTrafficAfterAgentIsStarted", {
         Test-Pkt0ReceivesTrafficAfterAgentIsStarted -Session $Session -TestConfiguration $TestConfiguration
-    }
+    })
 
     $AgentIntegrationTestsTimeTracker.StepQuiet("Test-GatewayArpIsResolvedInAgent", {
         Test-GatewayArpIsResolvedInAgent -Session $Session -TestConfiguration $TestConfiguration
-    }
+    })
 
     # Test cleanup
     Clear-TestConfiguration -Session $Session1 -TestConfiguration $TestConfiguration
