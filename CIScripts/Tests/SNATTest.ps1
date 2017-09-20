@@ -108,19 +108,26 @@ function Test-SNAT {
         # TODO: Remove `forwarding-mac` when Agent is functional
         Write-Host "Run vrouter_hyperv.py to provision SNAT VM..."
         $Res = Invoke-Command -Session $Session -ScriptBlock {
-            python "C:\Program Files\Juniper Networks\Agent\vrouter_hyperv.py" create `
-                --vm_location $Using:VmDirectory `
-                --vhd_path $Using:DiskPath `
-                --mgmt_vswitch_name $Using:MgmtSwitchName `
-                --vrouter_vswitch_name $Using:VRouterSwitchName `
-                --right-gw-cidr $Using:RightGW/24 `
-                --left-gw-cidr $Using:LeftGW/24 `
-                --forwarding-mac $Using:ForwardingMAC `
-                $Using:GUID `
-                $Using:GUID `
-                $Using:GUID | Out-Null
+            # Invoke-Command used as a workaround for temporary ErrorActionPreference modification
+            $Res = Invoke-Command -ScriptBlock {
+                $ErrorActionPreference = "Continue"
 
-            return $LASTEXITCODE
+                python "C:\Program Files\Juniper Networks\Agent\vrouter_hyperv.py" create `
+                    --vm_location $Using:VmDirectory `
+                    --vhd_path $Using:DiskPath `
+                    --mgmt_vswitch_name $Using:MgmtSwitchName `
+                    --vrouter_vswitch_name $Using:VRouterSwitchName `
+                    --right-gw-cidr $Using:RightGW/24 `
+                    --left-gw-cidr $Using:LeftGW/24 `
+                    --forwarding-mac $Using:ForwardingMAC `
+                    $Using:GUID `
+                    $Using:GUID `
+                    $Using:GUID 2>&1 | Write-Host
+
+                return $LASTEXITCODE
+            }
+
+            return $Res
         }
 
         if ($Res -ne 0) {
