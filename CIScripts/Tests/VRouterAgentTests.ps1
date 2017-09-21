@@ -10,6 +10,7 @@ function Test-VRouterAgentIntegration {
 
     $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS = 60
     $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS = 5
+    $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS = 15
 
     $TEST_NETWORK_GATEWAY = "10.7.3.1"
 
@@ -340,7 +341,7 @@ function Test-VRouterAgentIntegration {
            Assert-AgentIsRunning -Session $Session2
         }
 
-        Start-Sleep -Seconds 15
+        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
         Write-Host "======> When 2 containers belonging to the same network are running"
         $NetworkName = $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.NetworkName
@@ -361,13 +362,11 @@ function Test-VRouterAgentIntegration {
 
         Write-Host "Removing containers: $Container1Name and $Container2Name."
         Invoke-Command -Session $Session1 -ScriptBlock {
-            & docker stop $Using:Container1Name | Out-Null
-            & docker rm $Using:Container1Name | Out-Null
+            & docker rm --force $Using:Container1Name | Out-Null
         }
 
         Invoke-Command -Session $Session2 -ScriptBlock {
-            & docker stop $Using:Container2Name | Out-Null
-            & docker rm $Using:Container2Name | Out-Null
+            & docker rm --force $Using:Container2Name | Out-Null
         }
     }
 
@@ -394,7 +393,7 @@ function Test-VRouterAgentIntegration {
         Write-Host "======> When Agent is started"
         Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
         Assert-AgentIsRunning -Session $Session
-        Start-Sleep -Seconds 15
+        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
         Write-Host "======> Then pkt0 appears in vRouter"
         Assert-IsPkt0Injected -Session $Session
@@ -418,7 +417,7 @@ function Test-VRouterAgentIntegration {
         Write-Host "======> Given Agent is running"
         Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
         Assert-AgentIsRunning -Session $Session
-        Start-Sleep -Seconds 15
+        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
         Write-Host "======> Given pkt0 is injected"
         Assert-IsPkt0Injected -Session $Session
@@ -449,7 +448,7 @@ function Test-VRouterAgentIntegration {
         Write-Host "======> Given Agent is running"
         Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
         Test-IsVRouterAgentEnabled -Session $Session
-        Start-Sleep -Seconds 15
+        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
         Write-Host "======> Given pkt0 is injected"
         Assert-IsPkt0Injected -Session $Session
@@ -459,7 +458,7 @@ function Test-VRouterAgentIntegration {
         Assert-AgentIsNotRunning -Session $Session
         Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
         Assert-AgentIsRunning -Session $Session
-        Start-Sleep -Seconds 15
+        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
         Write-Host "======> Then pkt0 exists in vRouter"
         Assert-IsOnlyOnePkt0Injected -Session $Session
@@ -480,7 +479,7 @@ function Test-VRouterAgentIntegration {
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
         Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
         Assert-AgentIsRunning -Session $Session
-        Start-Sleep -Seconds 15  # Wait for KSync
+        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS  # Wait for KSync
 
         Write-Host "======> Then Pkt0 has traffic"
         Assert-Pkt0HasTraffic -Session $Session
@@ -503,7 +502,7 @@ function Test-VRouterAgentIntegration {
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
         Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
         Assert-AgentIsRunning -Session $Session
-        Start-Sleep -Seconds 15  # Wait for KSync
+        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS  # Wait for KSync
 
         Write-Host "======> Then Gateway ARP was resolved through Pkt0"
         Assert-IsGatewayArpResolvedInAgent -Session $Session
@@ -528,14 +527,6 @@ function Test-VRouterAgentIntegration {
         Write-Host "===> PASSED: Test-MultiComputeNodesPing"
     }
 
-    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-SingleComputeNodePing", {
-        Test-SingleComputeNodePing -Session $Session1 -TestConfiguration $TestConfiguration
-    })
-
-    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-MultiComputeNodesPing", {
-        Test-MultiComputeNodesPing -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
-    })
-
     $AgentIntegrationTestsTimeTracker.StepQuiet("Test-InitialPkt0Injection", {
         Test-InitialPkt0Injection -Session $Session1 -TestConfiguration $TestConfiguration
     })
@@ -549,11 +540,19 @@ function Test-VRouterAgentIntegration {
     })
 
     $AgentIntegrationTestsTimeTracker.StepQuiet("Test-Pkt0ReceivesTrafficAfterAgentIsStarted", {
-        Test-Pkt0ReceivesTrafficAfterAgentIsStarted -Session $Session -TestConfiguration $TestConfiguration
+        Test-Pkt0ReceivesTrafficAfterAgentIsStarted -Session $Session1 -TestConfiguration $TestConfiguration
     })
 
     $AgentIntegrationTestsTimeTracker.StepQuiet("Test-GatewayArpIsResolvedInAgent", {
-        Test-GatewayArpIsResolvedInAgent -Session $Session -TestConfiguration $TestConfiguration
+        Test-GatewayArpIsResolvedInAgent -Session $Session1 -TestConfiguration $TestConfiguration
+    })
+
+    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-SingleComputeNodePing", {
+        Test-SingleComputeNodePing -Session $Session1 -TestConfiguration $TestConfiguration
+    })
+
+    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-MultiComputeNodesPing", {
+        Test-MultiComputeNodesPing -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
     })
 
     # Test cleanup
