@@ -7,12 +7,14 @@ class DockerDriverConfiguration {
     [string] $Username;
     [string] $Password;
     [string] $AuthUrl;
-    [string] $ControllerIP;
     [DockerNetworkConfiguration] $NetworkConfiguration;
 }
 
 class TestConfiguration {
     [DockerDriverConfiguration] $DockerDriverConfiguration;
+    [string] $ControllerIP;
+    [string] $ControllerHostUsername;
+    [string] $ControllerHostPassword;
     [string] $AdapterName;
     [string] $VHostName;
     [string] $VMSwitchName;
@@ -88,6 +90,7 @@ function Test-IsVRouterExtensionEnabled {
 function Enable-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName,
+           [Parameter(Mandatory = $true)] [string] $ControllerIP,
            [Parameter(Mandatory = $true)] [DockerDriverConfiguration] $Configuration,
            [Parameter(Mandatory = $false)] [int] $WaitTime = 60)
 
@@ -98,19 +101,20 @@ function Enable-DockerDriver {
     Invoke-Command -Session $Session -ScriptBlock {
         # Nested ScriptBlock variable passing workaround
         $AdapterName = $Using:AdapterName
+        $ControllerIP = $Using:ControllerIP
         $Configuration = $Using:Configuration
         $TenantName = $Using:TenantName
 
         Start-Job -ScriptBlock {
-            Param ($Cfg, $Tenant, $Adapter)
+            Param ($Cfg, $ControllerIP, $Tenant, $Adapter)
 
             $Env:OS_USERNAME = $Cfg.Username
             $Env:OS_PASSWORD = $Cfg.Password
             $Env:OS_AUTH_URL = $Cfg.AuthUrl
             $Env:OS_TENANT_NAME = $Tenant
 
-            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" -forceAsInteractive -controllerIP $Cfg.ControllerIP -adapter "$Adapter" -vswitchName "Layered <adapter>"
-        } -ArgumentList $Configuration, $TenantName, $AdapterName | Out-Null
+            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" -forceAsInteractive -controllerIP $ControllerIP -adapter "$Adapter" -vswitchName "Layered <adapter>"
+        } -ArgumentList $Configuration, $ControllerIP, $TenantName, $AdapterName | Out-Null
     }
 
     Start-Sleep -s $WaitTime
@@ -200,7 +204,7 @@ function Initialize-TestConfiguration {
     Write-Host "Initializing Test Configuration"
 
     # DockerDriver automatically enables Extension, so there is no need to enable it manually
-    Enable-DockerDriver -Session $Session -AdapterName $TestConfiguration.AdapterName -Configuration $TestConfiguration.DockerDriverConfiguration -WaitTime 0
+    Enable-DockerDriver -Session $Session -AdapterName $TestConfiguration.AdapterName -ControllerIP $TestConfiguration.ControllerIP -Configuration $TestConfiguration.DockerDriverConfiguration -WaitTime 0
 
     $WaitForSeconds = 600;
     $SleepTimeBetweenChecks = 10;
@@ -240,4 +244,73 @@ function Clear-TestConfiguration {
     Disable-DockerDriver -Session $Session
     Disable-VRouterExtension -Session $Session -AdapterName $TestConfiguration.AdapterName `
         -VMSwitchName $TestConfiguration.VMSwitchName -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
+}
+
+function New-AgentConfigFile {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+
+    # Gather information about testbed's network adapters
+    $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
+            -Session $Session `
+            -AdapterName $TestConfiguration.VHostName
+
+    $PhysicalAdapter = Get-RemoteNetAdapterInformation `
+            -Session $Session `
+            -AdapterName $TestConfiguration.AdapterName
+
+    # Prepare parameters for script block
+    $ControllerIP = $TestConfiguration.ControllerIP
+    $VHostIfName = $HNSTransparentAdapter.ifName
+    $VHostIfIndex = $HNSTransparentAdapter.ifIndex
+    $VHostGatewayIP = $TEST_NETWORK_GATEWAY
+    $PhysIfName = $PhysicalAdapter.ifName
+
+    $SourceConfigFilePath = $TestConfiguration.AgentSampleConfigFilePath
+    $DestConfigFilePath = $TestConfiguration.AgentConfigFilePath
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        $ControllerIP = $Using:ControllerIP
+        $VHostIfName = $Using:VHostIfName
+        $VHostIfIndex = $Using:VHostIfIndex
+        $PhysIfName = $Using:PhysIfName
+
+        $SourceConfigFilePath = $Using:SourceConfigFilePath
+        $DestConfigFilePath = $Using:DestConfigFilePath
+
+        $VHostIP = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).IPAddress
+        $VHostGatewayIP = $Using:VHostGatewayIP
+
+        $ConfigFileContent = [System.IO.File]::ReadAllText($SourceConfigFilePath)
+
+        # Insert server IP only in [CONTROL-NODE] and [DISCOVERY] (first 2 occurrences of "server=")
+        [regex] $ServerIpPattern = "# server=.*"
+        $ServerIpString = "server=$ControllerIP"
+        $ConfigFileContent = $ServerIpPattern.replace($ConfigFileContent, $ServerIpString, 2)
+
+        # Insert ifName of HNSTransparent interface
+        $ConfigFileContent = $ConfigFileContent -Replace "# name=vhost0", "name=$VHostIfName"
+
+        # Insert ifName of Ethernet1 interface
+        $ConfigFileContent = $ConfigFileContent `
+                                -Replace "# physical_interface=vnet0", "physical_interface=$PhysIfName"
+
+        # Insert vhost IP address
+        $ConfigFileContent = $ConfigFileContent -Replace "# ip=10.1.1.1/24", "ip=$VHostIP/24"
+
+        # Insert vhost gateway IP address
+        $ConfigFileContent = $ConfigFileContent -Replace "# gateway=10.1.1.254", "gateway=$VHostGatewayIP"
+
+        # Save file with prepared config
+        [System.IO.File]::WriteAllText($DestConfigFilePath, $ConfigFileContent)
+    }
+}
+
+function Initialize-ComputeServices {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
 }

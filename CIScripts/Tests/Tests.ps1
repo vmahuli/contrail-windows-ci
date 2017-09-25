@@ -10,3 +10,4 @@
 . $PSScriptRoot\TCPoMPLSoGRETest.ps1
 . $PSScriptRoot\SNATTest.ps1
 . $PSScriptRoot\VRouterAgentTests.ps1
+. $PSScriptRoot\ComputeControllerIntegrationTests.ps1

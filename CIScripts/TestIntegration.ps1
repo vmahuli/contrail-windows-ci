@@ -1,5 +1,9 @@
 . $PSScriptRoot\InitializeCIScript.ps1
 
+# # Source Job monitoring classes
+. $PSScriptRoot\Job.ps1
+$Job = [Job]::new("Test-integration")
+
 # Sourcing VM management functions
 . $PSScriptRoot\VMUtils.ps1
 
@@ -37,11 +41,13 @@ $DockerDriverConfiguration = [DockerDriverConfiguration] @{
     Username = $Env:DOCKER_DRIVER_USERNAME;
     Password = $Env:DOCKER_DRIVER_PASSWORD;
     AuthUrl = $Env:DOCKER_DRIVER_AUTH_URL;
-    ControllerIP = $Env:DOCKER_DRIVER_CONTROLLER_IP;
     NetworkConfiguration = $DockerNetworkConfiguration;
 }
 
 $TestConfiguration = [TestConfiguration] @{
+    ControllerIP = $Env:CONTROLLER_IP;
+    ControllerHostUsername = $Env:CONTROLLER_HOST_USERNAME;
+    ControllerHostPassword = $Env:CONTROLLER_HOST_PASSWORD;
     AdapterName = $Env:ADAPTER_NAME;
     VMSwitchName = "Layered " + $Env:ADAPTER_NAME;
     VHostName = "vEthernet (HNSTransparent)"
@@ -72,10 +78,12 @@ Test-ICMPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfigurat
 Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
 Test-SNAT -Session $Sessions[0] -SNATConfiguration $SNATConfiguration -TestConfiguration $TestConfiguration
 Test-VRouterAgentIntegration -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
-
+Test-ComputeControllerIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
 if($Env:RUN_DRIVER_TESTS -eq "1") {
     Test-DockerDriver -Session $Sessions[0] -TestConfiguration $TestConfiguration
 }
 
 Write-Host "Removing VMs..."
 Remove-TestbedVMs -VMNames $VMNames -PowerCLIScriptPath $PowerCLIScriptPath -VIServerAccessData $VIServerAccessData
+
+$Job.Done()

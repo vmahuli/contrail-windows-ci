@@ -23,66 +23,6 @@ function Test-VRouterAgentIntegration {
     # Private functions of Test-VRouterAgentIntegration
     #
 
-    function New-AgentConfigFile {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
-
-        # Gather information about testbed's network adapters
-        $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
-                -Session $Session `
-                -AdapterName $TestConfiguration.VHostName
-
-        $PhysicalAdapter = Get-RemoteNetAdapterInformation `
-                -Session $Session `
-                -AdapterName $TestConfiguration.AdapterName
-
-        # Prepare parameters for script block
-        $ControllerIP = $TestConfiguration.DockerDriverConfiguration.ControllerIP
-        $VHostIfName = $HNSTransparentAdapter.ifName
-        $VHostIfIndex = $HNSTransparentAdapter.ifIndex
-        $VHostGatewayIP = $TEST_NETWORK_GATEWAY
-        $PhysIfName = $PhysicalAdapter.ifName
-
-        $SourceConfigFilePath = $TestConfiguration.AgentSampleConfigFilePath
-        $DestConfigFilePath = $TestConfiguration.AgentConfigFilePath
-
-        Invoke-Command -Session $Session -ScriptBlock {
-            $ControllerIP = $Using:ControllerIP
-            $VHostIfName = $Using:VHostIfName
-            $VHostIfIndex = $Using:VHostIfIndex
-            $PhysIfName = $Using:PhysIfName
-
-            $SourceConfigFilePath = $Using:SourceConfigFilePath
-            $DestConfigFilePath = $Using:DestConfigFilePath
-
-            $VHostIP = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).IPAddress
-            $VHostGatewayIP = $Using:VHostGatewayIP
-
-            $ConfigFileContent = [System.IO.File]::ReadAllText($SourceConfigFilePath)
-
-            # Insert server IP only in [CONTROL-NODE] and [DISCOVERY] (first 2 occurrences of "server=")
-            [regex] $ServerIpPattern = "# server=.*"
-            $ServerIpString = "server=$ControllerIP"
-            $ConfigFileContent = $ServerIpPattern.replace($ConfigFileContent, $ServerIpString, 2)
-
-            # Insert ifName of HNSTransparent interface
-            $ConfigFileContent = $ConfigFileContent -Replace "# name=vhost0", "name=$VHostIfName"
-
-            # Insert ifName of Ethernet1 interface
-            $ConfigFileContent = $ConfigFileContent `
-                                    -Replace "# physical_interface=vnet0", "physical_interface=$PhysIfName"
-
-            # Insert vhost IP address
-            $ConfigFileContent = $ConfigFileContent -Replace "# ip=10.1.1.1/24", "ip=$VHostIP/24"
-
-            # Insert vhost gateway IP address
-            $ConfigFileContent = $ConfigFileContent -Replace "# gateway=10.1.1.254", "gateway=$VHostGatewayIP"
-
-            # Save file with prepared config
-            [System.IO.File]::WriteAllText($DestConfigFilePath, $ConfigFileContent)
-        }
-    }
-
     function Get-TestbedIpAddressFromDns {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
