@@ -1,13 +1,20 @@
-class DockerNetworkConfiguration {
-    [string] $TenantName;
-    [string] $NetworkName;
+class NetworkConfiguration {
+    [string] $Name;
+    [string[]] $Subnets;
+}
+
+class TenantConfiguration {
+    [string] $Name;
+    [string] $DefaultNetworkName;
+    [NetworkConfiguration] $SingleSubnetNetwork;
+    [NetworkConfiguration] $MultipleSubnetsNetwork;
 }
 
 class DockerDriverConfiguration {
     [string] $Username;
     [string] $Password;
     [string] $AuthUrl;
-    [DockerNetworkConfiguration] $NetworkConfiguration;
+    [TenantConfiguration] $TenantConfiguration;
 }
 
 class TestConfiguration {
@@ -96,7 +103,7 @@ function Enable-DockerDriver {
 
     Write-Host "Enabling Docker Driver"
 
-    $TenantName = $Configuration.NetworkConfiguration.TenantName
+    $TenantName = $Configuration.TenantConfiguration.Name
 
     Invoke-Command -Session $Session -ScriptBlock {
         # Nested ScriptBlock variable passing workaround
@@ -174,13 +181,13 @@ function Test-IsVRouterAgentEnabled {
 
 function New-DockerNetwork {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-           [Parameter(Mandatory = $true)] [DockerNetworkConfiguration] $Configuration)
+           [Parameter(Mandatory = $true)] [TenantConfiguration] $TenantConfiguration)
 
-    Write-Host "Creating network $($Configuration.NetworkName)"
+    Write-Host "Creating network $($Configuration.DefaultNetworkName)"
 
     $NetworkID = Invoke-Command -Session $Session -ScriptBlock {
-        $TenantName = ($Using:Configuration).TenantName
-        $NetworkName = ($Using:Configuration).NetworkName
+        $TenantName = ($Using:TenantConfiguration).Name
+        $NetworkName = ($Using:TenantConfiguration).DefaultNetworkName
         return $(docker network create --ipam-driver windows --driver Contrail -o tenant=$TenantName -o network=$NetworkName $NetworkName)
     }
 
@@ -230,7 +237,7 @@ function Initialize-TestConfiguration {
         throw "Docker driver was not enabled."
     }
 
-    New-DockerNetwork -Session $Session -Configuration $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration | Out-Null
+    New-DockerNetwork -Session $Session -TenantConfiguration $TestConfiguration.DockerDriverConfiguration.TenantConfiguration | Out-Null
 }
 
 function Clear-TestConfiguration {

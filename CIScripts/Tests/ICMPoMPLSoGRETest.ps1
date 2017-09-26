@@ -9,7 +9,7 @@ function Test-ICMPoMPLSoGRE {
     Initialize-TestConfiguration -Session $Session2 -TestConfiguration $TestConfiguration
 
     Write-Host "Running containers"
-    $NetworkName = $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.NetworkName
+    $NetworkName = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
     $Container1ID = Invoke-Command -Session $Session1 -ScriptBlock { docker run --network $Using:NetworkName -d microsoft/nanoserver ping -t localhost }
     $Container2ID = Invoke-Command -Session $Session2 -ScriptBlock { docker run --network $Using:NetworkName -d microsoft/nanoserver ping -t localhost }
 

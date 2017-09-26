@@ -284,7 +284,7 @@ function Test-VRouterAgentIntegration {
         Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
         Write-Host "======> When 2 containers belonging to the same network are running"
-        $NetworkName = $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.NetworkName
+        $NetworkName = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
 
         $CreateContainer1Success = Create-ContainerInRemoteSession -Session $Session1 -NetworkName $NetworkName -ContainerName $Container1Name
         $CreateContainer2Success = Create-ContainerInRemoteSession -Session $Session2 -NetworkName $NetworkName -ContainerName $Container2Name

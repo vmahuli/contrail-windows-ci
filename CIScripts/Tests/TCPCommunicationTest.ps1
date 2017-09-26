@@ -6,7 +6,7 @@ function Test-TCPCommunication {
 
     Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
-    $NetworkName = $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.NetworkName
+    $NetworkName = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
 
     Write-Host "Creating containers"
     $ServerID, $ClientID = Invoke-Command -Session $Session -ScriptBlock {

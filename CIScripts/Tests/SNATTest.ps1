@@ -410,7 +410,7 @@ function Test-SNAT {
     Set-HNSTransparentForwarding -Session $Session -HNSAdapterIfIndex $HNSAdapter.IfIndex
 
     Write-Host "Start and configure test container..."
-    $DockerNetwork = $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.NetworkName
+    $DockerNetwork = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
     $ContainerID = Invoke-Command -Session $Session -ScriptBlock { docker run -id --network $Using:DockerNetwork microsoft/nanoserver powershell }
     $ContainerNetInfo = Get-RemoteContainerNetAdapterInformation -Session $Session -ContainerID $ContainerID
     Write-Host "Start and configure test container... DONE"

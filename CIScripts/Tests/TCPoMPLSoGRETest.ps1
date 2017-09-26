@@ -9,7 +9,7 @@ function Test-TCPoMPLSoGRE {
     Initialize-TestConfiguration -Session $Session2 -TestConfiguration $TestConfiguration
 
     Write-Host "Running containers"
-    $NetworkName = $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.NetworkName
+    $NetworkName = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
     $ServerID = Invoke-Command -Session $Session1 -ScriptBlock { docker run --network $Using:NetworkName -d iis-tcptest }
     $ClientID = Invoke-Command -Session $Session2 -ScriptBlock { docker run --network $Using:NetworkName -id microsoft/nanoserver powershell }
 

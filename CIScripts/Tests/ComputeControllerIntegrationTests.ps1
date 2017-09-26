@@ -1,5 +1,5 @@
 $Accel = [PowerShell].Assembly.GetType("System.Management.Automation.TypeAccelerators")
-$Accel::add("PSSessionT","System.Management.Automation.Runspaces.PSSession")
+$Accel::add("PSSessionT", "System.Management.Automation.Runspaces.PSSession")
 
 function Test-ComputeControllerIntegration {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
@@ -41,7 +41,7 @@ function Test-ComputeControllerIntegration {
                [Parameter(Mandatory = $true)] [string] $ComputeHostname)
         $Out = Invoke-RestMethod ("http://" + $DnsIP + ":8092/Snh_ShowAgentList?")
         $OurNode = $Out.DnsAgentListResponse.agent.list.AgentData.peer | Where-Object "#text" -Like "$ComputeHostname*"
-        if($OurNode) { 
+        if($OurNode) {
             return $true
         }
         return $false
@@ -52,7 +52,7 @@ function Test-ComputeControllerIntegration {
                [Parameter(Mandatory = $true)] [string] $ComputeIP)
         $Out = Invoke-RestMethod ("http://" + $DnsIP + ":8092/Snh_ShowAgentXmppDnsData?")
         $OurNode = $Out.AgentXmppDnsDataResponse.data.list.AgentDnsData.agent | Where-Object "#text" -Like "$ComputeIP"
-        if($OurNode) { 
+        if($OurNode) {
             return $true
         }
         return $false
@@ -63,7 +63,7 @@ function Test-ComputeControllerIntegration {
                [Parameter(Mandatory = $true)] [string] $ComputeHostname)
         $Out = Invoke-RestMethod ("http://" + $CollectorIP + ":8089/Snh_ShowCollectorServerReq?")
         $OurNode = $Out.ShowCollectorServerResp.generators.list.GeneratorSummaryInfo.source | Where-Object "#text" -Like "$ComputeHostname"
-        if($OurNode) { 
+        if($OurNode) {
             return $true
         }
         return $false
@@ -191,7 +191,7 @@ function Test-ComputeControllerIntegration {
     }
 
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
-        
+
         Test-ComputeNodeAppearsInDnsAgentList -Session $Session -TestConfiguration $TestConfiguration
         Test-ComputeNodeAppearsInXMPPDnsData -Session $Session -TestConfiguration $TestConfiguration
         Test-ComputeNodeAppearsInShowCollectorServer -Session $Session -TestConfiguration $TestConfiguration
