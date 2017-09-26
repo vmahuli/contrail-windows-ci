@@ -182,7 +182,20 @@ function Invoke-AgentBuild {
         $Tests = @()
 
         # TODO: Add other tests here once they are functional.
-        $Tests = @("agent:test_ksync", "agent:test_vnswif", "src/ksync:ksync_test")
+        $Tests = @(
+            "agent:test_ksync",
+            "agent:test_vnswif",
+            "src/ksync:ksync_test",
+            "src/dns:dns_bind_test",
+            "src/dns:dns_config_test",
+            "src/dns:dns_mgr_test",
+            "controller/src/schema:test",
+            "src/xml:xml_test",
+            "controller/src/xmpp:test",
+            "agent:test_oper_xml",
+            "agent:ifmap_dependency_manager_test",
+            "agent:test_xmpp_discovery_non_hv"
+        )
 
         $TestsString = ""
         if ($Tests.count -gt 0) {

@@ -17,10 +17,11 @@ $DefineTestIfGTestOutputSuggestsThatAllTestsHavePassed = {
 function Run-Test {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [String] $TestExecutable)
-    Write-Host -NoNewline "===> Agent tests: running $TestExecutable... "
+    Write-Host "===> Agent tests: running $TestExecutable..."
     $Res = Invoke-Command -Session $Session -ScriptBlock {
         $Res = Invoke-Command -ScriptBlock {
             $ErrorActionPreference = "SilentlyContinue"
+            Set-Location C:\Artifacts
             $TestOutput = Invoke-Expression "C:\Artifacts\$using:TestExecutable --config C:\Artifacts\vnswa_cfg.ini"
 
             # This is a workaround for the following bug:
@@ -39,9 +40,9 @@ function Run-Test {
         return $Res
     }
     if ($Res -eq 0) {
-        Write-Host "Succeeded."
+        Write-Host "        Succeeded."
     } else {
-        Write-Host "Failed (exit code: $Res)."
+        Write-Host "        Failed (exit code: $Res)."
     }
     return $Res
 }
@@ -67,6 +68,8 @@ function Test-Agent {
 
     $Res = 0
     $AgentTextExecutables = Get-ChildItem .\output\agent | Where-Object {$_.Name -match '^[\W\w]*test[\W\w]*.exe$'}
+    $AgentTextExecutables += Get-ChildItem .\output\agent | Where-Object {$_.Name -match '^ifmap_[\W\w]*.exe$'}
+    $AgentTextExecutables = $AgentTextExecutables | Select -Unique
     
     Foreach ($TestExecutable in $AgentTextExecutables) {
         $TestRes = Run-Test -Session $Session -TestExecutable $TestExecutable
