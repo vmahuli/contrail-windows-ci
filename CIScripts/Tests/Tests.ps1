@@ -11,3 +11,4 @@
 . $PSScriptRoot\SNATTest.ps1
 . $PSScriptRoot\VRouterAgentTests.ps1
 . $PSScriptRoot\ComputeControllerIntegrationTests.ps1
+. $PSScriptRoot\SubnetsTests.ps1
