@@ -1,5 +1,6 @@
 . $PSScriptRoot\TestConfigurationUtils.ps1
 
+. $PSScriptRoot\AgentServiceTests.ps1
 . $PSScriptRoot\AgentTests.ps1
 . $PSScriptRoot\ExtensionLongLeakTest.ps1
 . $PSScriptRoot\MultiEnableDisableExtensionTest.ps1
