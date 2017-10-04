@@ -41,24 +41,6 @@ function Test-AgentService {
         Start-Sleep -s $WAIT_TIME_FOR_AGENT_SERVICE_IN_SECONDS
     }
 
-    function Enable-AgentService {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
-
-        Invoke-Command -Session $Session -ScriptBlock {
-            Write-Host "Starting Agent"
-            Start-Service ContrailAgent | Out-Null
-        }
-    }
-
-    function Disable-AgentService {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
-
-        Invoke-Command -Session $Session -ScriptBlock {
-            Write-Host "Stoping Agent"
-            Stop-Service ContrailAgent | Out-Null
-        }
-    }
-
     function Test-IsAgentServiceRegistered {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
@@ -83,34 +65,6 @@ function Test-AgentService {
         $Res = Test-IsAgentServiceRegistered -Session $Session
         if ($Res) {
             throw "Agent service is registered. EXPECTED: Agent service unregistered"
-        }
-    }
-
-    function Assert-IsAgentServiceEnabled {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
-
-        $Service = Invoke-Command -Session $Session -ScriptBlock {
-            return $(Get-Service "ContrailAgent" -ErrorAction SilentlyContinue)
-        }
-        if (!$Service) {
-            throw "Agent service is not registered. EXPECTED: Agent service registered"
-        }
-        if ($Service.Status -eq "Stopped") {
-            throw "Agent service is stopped. EXPECTED: Agent service running"
-        }
-    }
-
-    function Assert-IsAgentServiceDisabled {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
-
-        $Service = Invoke-Command -Session $Session -ScriptBlock {
-            return $(Get-Service "ContrailAgent" -ErrorAction SilentlyContinue)
-        }
-        if (!$Service) {
-            throw "Agent service is not registered. EXPECTED: Agent service registered"
-        }
-        if ($Service.Status -eq "Running") {
-            throw "Agent service is running. EXPECTED: Agent service stopped"
         }
     }
 

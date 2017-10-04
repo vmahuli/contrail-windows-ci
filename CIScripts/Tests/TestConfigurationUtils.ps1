@@ -30,6 +30,9 @@ class TestConfiguration {
     [string] $AgentSampleConfigFilePath;
 }
 
+$MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
+$TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS = 2
+
 function Stop-ProcessIfExists {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [string] $ProcessName)
@@ -148,35 +151,64 @@ function Test-IsDockerDriverEnabled {
     return Test-IsProcessRunning -Session $Session -ProcessName "contrail-windows-docker"
 }
 
-function Enable-VRouterAgent {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-           [Parameter(Mandatory = $true)] [string] $ConfigFilePath)
-
-    Write-Host "Enabling Agent"
+function Enable-AgentService {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
     Invoke-Command -Session $Session -ScriptBlock {
-        $ConfigFilePath = $Using:ConfigFilePath
-
-        Start-Job -ScriptBlock {
-            Param ($ConfigFilePath)
-
-            & "C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.exe" --config_file $ConfigFilePath
-        } -ArgumentList $ConfigFilePath | Out-Null
+        Write-Host "Starting Agent"
+        Start-Service ContrailAgent | Out-Null
     }
 }
 
-function Disable-VRouterAgent {
+function Disable-AgentService {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
-    Write-Host "Disabling Agent"
-
-    Stop-ProcessIfExists -Session $Session -ProcessName "contrail-vrouter-agent"
+    Invoke-Command -Session $Session -ScriptBlock {
+        Write-Host "Stopping Agent"
+        Stop-Service ContrailAgent -ErrorAction SilentlyContinue | Out-Null
+    }
 }
 
-function Test-IsVRouterAgentEnabled {
+function Assert-IsAgentServiceEnabled {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
-    return Test-IsProcessRunning -Session $Session -ProcessName "contrail-vrouter-agent"
+    $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS
+    $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS
+    $MaxNumberOfChecks = [Math]::Ceiling($MaxWaitTimeInSeconds / $TimeBetweenChecksInSeconds)
+
+    for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
+        $Status = Invoke-Command -Session $Session -ScriptBlock {
+            return $((Get-Service "ContrailAgent" -ErrorAction SilentlyContinue).Status)
+        }
+        if ($Status.Value -eq "Running") {
+            return
+        }
+
+        Start-Sleep -s $TimeBetweenChecksInSeconds
+    }
+
+    throw "Agent service is not enabled. EXPECTED: Agent service is enabled"
+}
+
+function Assert-IsAgentServiceDisabled {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+    $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS
+    $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS
+    $MaxNumberOfChecks = [Math]::Ceiling($MaxWaitTimeInSeconds / $TimeBetweenChecksInSeconds)
+
+    for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
+        $Status = Invoke-Command -Session $Session -ScriptBlock {
+            return $((Get-Service "ContrailAgent" -ErrorAction SilentlyContinue).Status)
+        }
+        if ($Status.Value -eq "Stopped") {
+            return
+        }
+
+        Start-Sleep -s $TimeBetweenChecksInSeconds
+    }
+
+    throw "Agent service is not disabled. EXPECTED: Agent service is disabled"
 }
 
 function New-DockerNetwork {
@@ -268,7 +300,7 @@ function Clear-TestConfiguration {
     Write-Host "Cleaning up test configuration"
 
     Remove-AllUnusedDockerNetworks -Session $Session
-    Disable-VRouterAgent -Session $Session
+    Disable-AgentService -Session $Session
     Disable-DockerDriver -Session $Session
     Disable-VRouterExtension -Session $Session -AdapterName $TestConfiguration.AdapterName `
         -VMSwitchName $TestConfiguration.VMSwitchName -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
@@ -332,7 +364,6 @@ function New-AgentConfigFile {
         # Save file with prepared config
         [System.IO.File]::WriteAllText($DestConfigFilePath, $ConfigFileContent)
 
-        Copy-Item -Path $DestConfigFilePath -Destination C:\ProgramData\Contrail\etc\contrail\
     }
 }
 
@@ -342,7 +373,7 @@ function Initialize-ComputeServices {
 
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
-        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
+        Enable-AgentService -Session $Session
 }
 
 function Remove-DockerNetwork {

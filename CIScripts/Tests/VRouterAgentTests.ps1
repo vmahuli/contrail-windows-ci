@@ -88,42 +88,6 @@ function Test-VRouterAgentIntegration {
         }
     }
 
-    function Assert-AgentIsRunning {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
-
-        $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS
-        $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS
-        $MaxNumberOfChecks = [Math]::Ceiling($MaxWaitTimeInSeconds / $TimeBetweenChecksInSeconds)
-
-        for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
-            if (Test-IsVRouterAgentEnabled -Session $Session) {
-                return
-            }
-
-            Start-Sleep -s $TimeBetweenChecksInSeconds
-        }
-
-        throw "vRouter Agent is not running. EXPECTED: vRouter Agent is running"
-    }
-
-    function Assert-AgentIsNotRunning {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
-
-        $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS
-        $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS
-        $MaxNumberOfChecks = [Math]::Ceiling($MaxWaitTimeInSeconds / $TimeBetweenChecksInSeconds)
-
-        for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
-            if (!(Test-IsVRouterAgentEnabled -Session $Session)) {
-                return
-            }
-
-            Start-Sleep -s $TimeBetweenChecksInSeconds
-        }
-
-        throw "vRouter Agent is running. EXPECTED: vRouter Agent is not running"
-    }
-
     function Assert-NoVifs {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
@@ -271,14 +235,14 @@ function Test-VRouterAgentIntegration {
 
         # 1st compute node
         New-AgentConfigFile -Session $Session1 -TestConfiguration $TestConfiguration
-        Enable-VRouterAgent -Session $Session1 -ConfigFilePath $TestConfiguration.AgentConfigFilePath
-        Assert-AgentIsRunning -Session $Session1
+        Enable-AgentService -Session $Session1
+        Assert-IsAgentServiceEnabled -Session $Session1
 
         # 2nd compute node (if there actually is more than 1 compute node)
         if ($Session1 -ne $Session2) {
            New-AgentConfigFile -Session $Session2 -TestConfiguration $TestConfiguration
-           Enable-VRouterAgent -Session $Session2 -ConfigFilePath $TestConfiguration.AgentConfigFilePath
-           Assert-AgentIsRunning -Session $Session2
+           Enable-AgentService -Session $Session2
+           Assert-IsAgentServiceEnabled -Session $Session2
         }
 
         Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
@@ -331,8 +295,8 @@ function Test-VRouterAgentIntegration {
         Assert-NoVifs -Session $Session
 
         Write-Host "======> When Agent is started"
-        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
-        Assert-AgentIsRunning -Session $Session
+        Enable-AgentService -Session $Session
+        Assert-IsAgentServiceEnabled -Session $Session
         Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
         Write-Host "======> Then pkt0 appears in vRouter"
@@ -355,16 +319,16 @@ function Test-VRouterAgentIntegration {
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
 
         Write-Host "======> Given Agent is running"
-        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
-        Assert-AgentIsRunning -Session $Session
+        Enable-AgentService -Session $Session
+        Assert-IsAgentServiceEnabled -Session $Session
         Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
         Write-Host "======> Given pkt0 is injected"
         Assert-IsPkt0Injected -Session $Session
 
         Write-Host "======> When Agent is stopped"
-        Disable-VRouterAgent -Session $Session
-        Assert-AgentIsNotRunning -Session $Session
+        Disable-AgentService -Session $Session
+        Assert-IsAgentServiceDisabled -Session $Session
 
         Write-Host "======> Then pk0 exists in vRouter"
         Assert-IsPkt0Injected -Session $Session
@@ -386,18 +350,18 @@ function Test-VRouterAgentIntegration {
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
 
         Write-Host "======> Given Agent is running"
-        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
-        Test-IsVRouterAgentEnabled -Session $Session
+        Enable-AgentService -Session $Session
+        Assert-IsAgentServiceEnabled -Session $Session
         Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
         Write-Host "======> Given pkt0 is injected"
         Assert-IsPkt0Injected -Session $Session
 
         Write-Host "======> When Agent is Restarted"
-        Disable-VRouterAgent -Session $Session
-        Assert-AgentIsNotRunning -Session $Session
-        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
-        Assert-AgentIsRunning -Session $Session
+        Disable-AgentService -Session $Session
+        Assert-IsAgentServiceDisabled -Session $Session
+        Enable-AgentService -Session $Session
+        Assert-IsAgentServiceEnabled -Session $Session
         Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
         Write-Host "======> Then pkt0 exists in vRouter"
@@ -417,8 +381,8 @@ function Test-VRouterAgentIntegration {
 
         Write-Host "======> When Agent is started"
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
-        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
-        Assert-AgentIsRunning -Session $Session
+        Enable-AgentService -Session $Session
+        Assert-IsAgentServiceEnabled -Session $Session
         Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS  # Wait for KSync
 
         Write-Host "======> Then Pkt0 has traffic"
@@ -440,8 +404,8 @@ function Test-VRouterAgentIntegration {
 
         Write-Host "======> When Agent is started"
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
-        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
-        Assert-AgentIsRunning -Session $Session
+        Enable-AgentService -Session $Session
+        Assert-IsAgentServiceEnabled -Session $Session
         Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS  # Wait for KSync
 
         Write-Host "======> Then Gateway ARP was resolved through Pkt0"
