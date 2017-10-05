@@ -94,6 +94,7 @@ Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfigurati
 Test-VRouterAgentIntegration -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
 Test-ComputeControllerIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
 Test-MultipleSubnetsSupport -Session $Sessions[0] -TestConfiguration $TestConfiguration
+Test-Pkt0PipeImplementation -Session $Sessions[0] -TestConfiguration $TestConfiguration
 
 if($Env:RUN_DRIVER_TESTS -eq "1") {
     Test-DockerDriver -Session $Sessions[0] -TestConfiguration $TestConfiguration
