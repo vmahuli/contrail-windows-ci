@@ -165,8 +165,9 @@ function New-TestbedVMs {
         Write-Host "Copying Docker driver installer"
         Copy-Item -ToSession $Session -Path "docker_driver\docker-driver.msi" -Destination C:\Artifacts\
 
-        Write-Host "Copying Agent"
+        Write-Host "Copying Agent and Contrail vRouter API"
         Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-agent.msi" -Destination C:\Artifacts\
+        Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-api-1.0.tar.gz" -Destination C:\Artifacts\
 
         Write-Host "Copying Agent test executables and dlls"
         $AgentTextExecutables = Get-ChildItem .\agent | Where-Object {$_.Name -match '^[\W\w]*test[\W\w]*.exe$'}
@@ -194,6 +195,9 @@ function New-TestbedVMs {
         Copy-Item -ToSession $Session -Path "vrouter\*.cer" -Destination C:\Artifacts\ # TODO: Remove after JW-798
 
         Invoke-Command -Session $Session -ScriptBlock {
+            Write-Host "Installing Contrail vRouter API"
+            pip2 install C:\Artifacts\contrail-vrouter-api-1.0.tar.gz | Out-Null
+
             Write-Host "Installing vRouter Extension"
             Import-Certificate -CertStoreLocation Cert:\LocalMachine\Root\ "C:\Artifacts\vRouter.cer" | Out-Null # TODO: Remove after JW-798
             Import-Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher\ "C:\Artifacts\vRouter.cer" | Out-Null # TODO: Remove after JW-798
