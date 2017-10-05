@@ -169,7 +169,7 @@ function New-TestbedVMs {
         Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-agent.msi" -Destination C:\Artifacts\
         Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-api-1.0.tar.gz" -Destination C:\Artifacts\
 
-        Write-Host "Copying Agent test executables and dlls"
+        Write-Host "Copying Agent test executables"
         $AgentTextExecutables = Get-ChildItem .\agent | Where-Object {$_.Name -match '^[\W\w]*test[\W\w]*.exe$'}
 
         #Test executables from schema/test do not follow the convention
@@ -180,7 +180,6 @@ function New-TestbedVMs {
             Write-Host "    Copying $TestExecutable"
             Copy-Item -ToSession $Session -Path "agent\$TestExecutable" -Destination C:\Artifacts\
         }
-        Copy-Item -ToSession $Session -Path "agent\libxml2.dll" -Destination C:\Artifacts\
 
         Write-Host "Copying test configuration files and test data"
         Copy-Item -ToSession $Session -Path "agent\vnswa_cfg.ini" -Destination C:\Artifacts\
