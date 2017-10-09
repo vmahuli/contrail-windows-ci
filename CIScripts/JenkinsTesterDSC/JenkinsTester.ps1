@@ -1,6 +1,6 @@
 Configuration JenkinsTester {
-    param(
-        [Parameter(Mandatory=$true)][string[]]$MachineName
+    Param (
+        [Parameter(Mandatory = $true)] [string[]] $MachineName
     )
 
     Import-DscResource -ModuleName PsDesiredStateConfiguration

@@ -1,4 +1,3 @@
-$PowerCLIScriptPath = $Env:POWER_CLI_SCRIPT_PATH
 $MaxWaitVMMinutes = $Env:MAX_WAIT_VM_MINUTES
 
 $VIServerAccessData = [VIServerAccessData] @{
