@@ -13,8 +13,7 @@ class VIServerAccessData {
 }
 
 function Initialize-VIServer {
-    Param ([Parameter(Mandatory = $true)] [string] $PowerCLIScriptPath,
-           [Parameter(Mandatory = $true)] [VIServerAccessData] $VIServerAccessData)
+    Param ([Parameter(Mandatory = $true)] [VIServerAccessData] $VIServerAccessData)
 
     Push-Location
 
@@ -34,11 +33,6 @@ function Initialize-VIServer {
     }
 
     try {
-        $Res = Get-Command -Name Connect-VIServer -CommandType Cmdlet -ErrorAction SilentlyContinue
-        if (-Not $Res) {
-            & "$PowerCLIScriptPath" | Out-Null
-        }
-
         Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false | Out-Null
         Set-PowerCLIConfiguration -DefaultVIServerMode Single -Confirm:$false | Out-Null
 
@@ -55,7 +49,6 @@ function Initialize-VIServer {
 function New-TestbedVMs {
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of names of created VMs")] [string[]] $VMNames,
            [Parameter(Mandatory = $true, HelpMessage = "Flag indicating if we should install all artifacts on spawned VMs")] [bool] $InstallArtifacts,
-           [Parameter(Mandatory = $true, HelpMessage = "Path to VMWare PowerCLI initialization script")] [string] $PowerCLIScriptPath,
            [Parameter(Mandatory = $true, HelpMessage = "Access data for VIServer")] [VIServerAccessData] $VIServerAccessData,
            [Parameter(Mandatory = $true, HelpMessage = "Settings required for creating new VM")] [NewVMCreationSettings] $VMCreationSettings,
            [Parameter(Mandatory = $true, HelpMessage = "Credentials required to access created VMs")] [System.Management.Automation.PSCredential] $VMCredentials,
@@ -223,7 +216,7 @@ function New-TestbedVMs {
     }
 
     Write-Host "Connecting to VIServer"
-    Initialize-VIServer -PowerCLIScriptPath $PowerCLIScriptPath -VIServerAccessData $VIServerAccessData
+    Initialize-VIServer -VIServerAccessData $VIServerAccessData
 
     Write-Host "Starting VMs"
     $VMNames.ForEach({ New-StartedVM -VMName $_ -VMCreationSettings $VMCreationSettings })
@@ -250,10 +243,9 @@ function New-TestbedVMs {
 
 function Remove-TestbedVMs {
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of names of VMs")] [string[]] $VMNames,
-           [Parameter(Mandatory = $true, HelpMessage = "Path to VMWare PowerCLI initialization script")] [string] $PowerCLIScriptPath,
            [Parameter(Mandatory = $true, HelpMessage = "Access data for VIServer")] [VIServerAccessData] $VIServerAccessData)
 
-    Initialize-VIServer -PowerCLIScriptPath $PowerCLIScriptPath -VIServerAccessData $VIServerAccessData
+    Initialize-VIServer -VIServerAccessData $VIServerAccessData
 
     $VMNames.ForEach({
         Write-Host "Removing $_ from datastore"
