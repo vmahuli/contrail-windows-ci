@@ -455,12 +455,9 @@ function Test-VRouterAgentIntegration {
         Test-SingleComputeNodePing -Session $Session1 -TestConfiguration $TestConfiguration
     })
 
-    # TODO: Enable this test once it is actually expected to pass.
-    # Currently, when two containers on separate compute nodes communicate,
-    # removing those containers takes infinite time to complete.
-    #$AgentIntegrationTestsTimeTracker.StepQuiet("Test-MultiComputeNodesPing", {
-    #    Test-MultiComputeNodesPing -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
-    #})
+    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-MultiComputeNodesPing", {
+        Test-MultiComputeNodesPing -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
+    })
 
     # Test cleanup
     Clear-TestConfiguration -Session $Session1 -TestConfiguration $TestConfiguration
