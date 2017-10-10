@@ -8,6 +8,8 @@ class TenantConfiguration {
     [string] $DefaultNetworkName;
     [NetworkConfiguration] $SingleSubnetNetwork;
     [NetworkConfiguration] $MultipleSubnetsNetwork;
+    [NetworkConfiguration] $NetworkWithPolicy1;
+    [NetworkConfiguration] $NetworkWithPolicy2;
 }
 
 class DockerDriverConfiguration {

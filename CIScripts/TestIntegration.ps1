@@ -42,11 +42,23 @@ $MultipleSubnetsNetworkConfiguration = [NetworkConfiguration] @{
     Subnets = @($Env:MULTIPLE_SUBNETS_NETWORK_SUBNET1, $Env:MULTIPLE_SUBNETS_NETWORK_SUBNET2)
 }
 
+$NetworkWithPolicy1Configuration = [NetworkConfiguration] @{
+    Name = $Env:NETWORK_WITH_POLICY_1_NAME
+    Subnets = @($Env:NETWORK_WITH_POLICY_1_SUBNET)
+}
+
+$NetworkWithPolicy2Configuration = [NetworkConfiguration] @{
+    Name = $Env:NETWORK_WITH_POLICY_2_NAME
+    Subnets = @($Env:NETWORK_WITH_POLICY_2_SUBNET)
+}
+
 $TenantConfiguration = [TenantConfiguration] @{
     Name = $Env:DOCKER_NETWORK_TENANT_NAME;
     DefaultNetworkName = $SingleSubnetNetworkConfiguration.Name;
     SingleSubnetNetwork = $SingleSubnetNetworkConfiguration;
     MultipleSubnetsNetwork = $MultipleSubnetsNetworkConfiguration;
+    NetworkWithPolicy1 = $NetworkWithPolicy1Configuration;
+    NetworkWithPolicy2 = $NetworkWithPolicy2Configuration;
 }
 
 $DockerDriverConfiguration = [DockerDriverConfiguration] @{
