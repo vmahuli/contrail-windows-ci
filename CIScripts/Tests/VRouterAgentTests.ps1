@@ -188,10 +188,16 @@ function Test-VRouterAgentIntegration {
     function Create-ContainerInRemoteSession {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $NetworkName,
-               [Parameter(Mandatory = $true)] [string] $ContainerName)
-        Write-Host "Creating container: name = $ContainerName; network = $NetworkName."
+               [Parameter(Mandatory = $true)] [string] $ContainerName,
+               [Parameter(Mandatory = $false)] [string] $DockerImage)
+        if (!$DockerImage) {
+            $DockerImage = "microsoft/nanoserver"
+        }
+
+        Write-Host "Creating container: name = $ContainerName; network = $NetworkName; image = $DockerImage."
+
         $Output = Invoke-Command -Session $Session -ScriptBlock {
-            $DockerOutput = (& docker run -id --name $Using:ContainerName --network $Using:NetworkName microsoft/nanoserver powershell 2>&1) | Out-String
+            $DockerOutput = (& docker run -id --name $Using:ContainerName --network $Using:NetworkName $Using:DockerImage powershell 2>&1) | Out-String
             $LASTEXITCODE
             $DockerOutput
         }
@@ -242,13 +248,23 @@ function Test-VRouterAgentIntegration {
     function Send-UDPPacket {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $ContainerName,
-               [Parameter(Mandatory = $true)] [string] $IP)
+               [Parameter(Mandatory = $true)] [string] $IP,
+               [Parameter(Mandatory = $false)] [string] $Port,
+               [Parameter(Mandatory = $false)] [string] $Message)
+        if (!$Port) {
+            $Port = "1337"
+        }
+
+        if (!$Message) {
+            $Message = "Is anyone there!?"
+        }
+
         $Command = (`
             '$IpAddress = [System.Net.IPAddress]::Parse(\"{0}\");' +`
-            '$IpEndPoint = New-Object System.Net.IPEndPoint($IpAddress, 1337);' +`
+            '$IpEndPoint = New-Object System.Net.IPEndPoint($IpAddress, {1});' +`
             '$UdpClient = New-Object System.Net.Sockets.UdpClient;' +`
-            '$Data = [System.Text.Encoding]::UTF8.GetBytes(\"Is anyone there!?\");' +`
-            '$UdpClient.SendAsync($Data, $Data.length, $IpEndPoint)') -f $IP
+            '$Data = [System.Text.Encoding]::UTF8.GetBytes(\"{2}\");' +`
+            'Foreach ($num in 1..10) {{$UdpClient.SendAsync($Data, $Data.length, $IpEndPoint); Start-Sleep -Seconds 1}}') -f $IP, $Port, $Message
         Invoke-Command -Session $Session -ScriptBlock {
             & docker exec $Using:ContainerName powershell -Command $Using:Command | Out-Null
         }
@@ -338,6 +354,19 @@ function Test-VRouterAgentIntegration {
             -Network $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name `
             -Subnet $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Subnets[0]
         Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
+    }
+
+    function Initialize-ComputeNodeForMultihostUDPTests {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+               [Parameter(Mandatory = $true)] [NetworkConfiguration] $NetworkConfiguration)
+
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-ComputeServices -Session $Session -TestConfiguration $TestConfiguration
+        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration `
+            -Name $NetworkConfiguration.Name `
+            -Network $NetworkConfiguration.Name `
+            -Subnet $NetworkConfiguration.Subnets[0]
     }
 
     #
@@ -736,6 +765,107 @@ function Test-VRouterAgentIntegration {
         })
     }
 
+    function Test-MultihostUdpTraffic {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
+               [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-MultihostUdpTraffic"
+
+            Write-Host "======> Given: Contrail compute services are started on two compute nodes"
+            Initialize-ComputeNodeForMultihostUDPTests `
+                -Session $Session1 `
+                -TestConfiguration $TestConfiguration `
+                -NetworkConfiguration $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1
+            Initialize-ComputeNodeForMultihostUDPTests `
+                -Session $Session2 `
+                -TestConfiguration $TestConfiguration `
+                -NetworkConfiguration $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1
+            Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
+
+            Write-Host "======> When 2 containers belonging to different networks are running"
+            # TODO: Two separate networks with policies should eventually be used instead of
+            # one network without a policy.
+            $Network1Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
+            $Network2Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
+
+            $Container1Name = "jolly-lumberjack"
+            $Container2Name = "juniper-tree"
+
+            $CreateContainer1Success = Create-ContainerInRemoteSession `
+                -Session $Session1 `
+                -NetworkName $Network1Name `
+                -ContainerName $Container1Name `
+                -DockerImage "microsoft/windowsservercore"
+            $CreateContainer2Success = Create-ContainerInRemoteSession `
+                -Session $Session2 `
+                -NetworkName $Network2Name `
+                -ContainerName $Container2Name `
+                -DockerImage "microsoft/windowsservercore"
+
+            if ($CreateContainer1Success -ne 0 -or $CreateContainer2Success -ne 0) {
+                throw "Container creation failed. EXPECTED: succeeded."
+            }
+
+            $Container2IP = Invoke-Command -Session $Session2 -ScriptBlock {
+                & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
+            }
+
+            Write-Host "======> When: Container $Container1Name (network: $Network1Name) is sending UDP"
+            Write-Host "        packets to container $Container2Name (network: $Network2Name, IP: $Container2IP)"
+
+            $Port = "1905"
+            $Message = "Even diamonds require polishing."
+
+            Write-Host "    Setting up a listener on container $Container2Name..."
+            $JobListener = Invoke-Command -Session $Session2 -AsJob -ScriptBlock {
+                $Command = (`
+                    '$IpEndPoint = New-Object System.Net.IPEndPoint([System.Net.IPAddress]::Any, {0});' +`
+                    '$UdpClient = New-Object System.Net.Sockets.UdpClient {0};' +`
+                    '$Task = $UdpClient.ReceiveAsync();' +`
+                    '$Task.Wait();' +`
+                    '$ReceivedMessage = [System.Text.Encoding]::UTF8.GetString($Task.Result.Buffer);' +`
+                    'return $ReceivedMessage;') -f $Using:Port
+    
+                & docker exec $Using:Container2Name powershell -Command $Command
+            }
+
+            Start-Sleep -Seconds 8
+            Write-Host "    Sending a message from container $Container1Name..."
+            Send-UDPPacket -Session $Session1 -ContainerName $Container1Name -IP $Container2IP -Port $Port -Message $Message
+            $JobListener | Wait-Job -Timeout 20 | Out-Null
+            $JobListener | Stop-Job | Out-Null
+            $ReceivedMessage = $JobListener | Receive-Job
+            $ReceivedMessage
+
+            Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
+            Write-Host "======> Then: Flow should be created for UDP protocol on the compute node of $Container1Name"
+            Write-Host "        and container $Container2Name should receive the message."
+            $FlowOutput = Invoke-Command -Session $Session1 -ScriptBlock {
+                & flow -l --match "proto udp"
+            }
+            # TODO: Flows should be checked once networks with policies are used.
+            # Assert-FlowReturnedSomeFlows -Output $FlowOutput
+            # Write-Host "        Flow successfully created."
+
+            Write-Host "        Message sent: $Message"
+            Write-Host "        Message received: $ReceivedMessage"
+
+            if ($Message -ne $ReceivedMessage) {
+                throw "Sent and received messages do not match!"
+            } else {
+                Write-Host "        Match!"
+            }
+
+            Write-Host "Removing containers: $Container1Name and $Container2Name."
+            Remove-ContainerInRemoteSession -Session $Session1 -ContainerName $Container1Name | Out-Null
+            Remove-ContainerInRemoteSession -Session $Session2 -ContainerName $Container2Name | Out-Null
+
+            Write-Host "===> PASSED: Test-MultihostUdpTraffic"
+        })
+    }
+
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         Test-InitialPkt0Injection -Session $Session1 -TestConfiguration $TestConfiguration
         Test-Pkt0RemainsInjectedAfterAgentStops -Session $Session1 -TestConfiguration $TestConfiguration
@@ -747,6 +877,7 @@ function Test-VRouterAgentIntegration {
         Test-FlowsAreInjectedOnIcmpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnTcpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnUdpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
+        Test-MultihostUdpTraffic -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
     })
 
     # Test cleanup
