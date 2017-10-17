@@ -3,12 +3,14 @@ function Test-MultiEnableDisableExtension {
            [Parameter(Mandatory = $true)] [int] $EnableDisableCount,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-    Write-Host "===> Running Multi Enable-Disable Extension Test ($EnableDisableCount times)..."
+    $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+        Write-Host "===> Running Multi Enable-Disable Extension Test ($EnableDisableCount times)..."
 
-    foreach ($I in 1..$EnableDisableCount) {
-        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-    }
+        foreach ($I in 1..$EnableDisableCount) {
+            Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        }
 
-    Write-Host "===> Success!"
+        Write-Host "===> Success!"
+    })
 }

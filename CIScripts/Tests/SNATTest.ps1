@@ -15,6 +15,8 @@ function Test-SNAT {
            [Parameter(Mandatory = $true)] [SNATConfiguration] $SNATConfiguration,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
+    . $PSScriptRoot\CommonTestCode.ps1
+
     function New-MgmtSwitch {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [string] $MgmtSwitchName)
@@ -361,79 +363,79 @@ function Test-SNAT {
         }
     }
 
-    Write-Host "===> Running Simple SNAT test"
+    $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+        Write-Host "===> Running Simple SNAT test"
 
-    Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
-    . $PSScriptRoot\CommonTestCode.ps1
+        # SNAT VM options
+        $SNATMgmtSwitchName = "snat-mgmt"
+        $SNATDiskPath = $SNATConfiguration.DiskDir + "\" + $SNATConfiguration.DiskFileName
 
-    # SNAT VM options
-    $SNATMgmtSwitchName = "snat-mgmt"
-    $SNATDiskPath = $SNATConfiguration.DiskDir + "\" + $SNATConfiguration.DiskFileName
+        # Some random GUID for vrouter_hyperv.py
+        $NameLen = 14
+        $SNAT_GUID = [guid]::NewGuid().Guid
+        $SNATVMName = "contrail-wingw-$SNAT_GUID"
+        $SNATLeftName = "int-$SNAT_GUID".Substring(0, $NameLen)
+        $SNATRightName = "gw-$SNAT_GUID".Substring(0, $NameLen)
+        $SNATVethName = "veth-$SNAT_GUID".Substring(0, $NameLen)
 
-    # Some random GUID for vrouter_hyperv.py
-    $NameLen = 14
-    $SNAT_GUID = [guid]::NewGuid().Guid
-    $SNATVMName = "contrail-wingw-$SNAT_GUID"
-    $SNATLeftName = "int-$SNAT_GUID".Substring(0, $NameLen)
-    $SNATRightName = "gw-$SNAT_GUID".Substring(0, $NameLen)
-    $SNATVethName = "veth-$SNAT_GUID".Substring(0, $NameLen)
+        New-MgmtSwitch -Session $Session -MgmtSwitchName $SNATMgmtSwitchName
 
-    New-MgmtSwitch -Session $Session -MgmtSwitchName $SNATMgmtSwitchName
+        $SNATVeth = New-RoutingInterface -Session $Session `
+            -SwitchName $TestConfiguration.VMSwitchName `
+            -Name $SNATVethName `
+            -IPAddress $SNATConfiguration.VethIP
 
-    $SNATVeth = New-RoutingInterface -Session $Session `
-        -SwitchName $TestConfiguration.VMSwitchName `
-        -Name $SNATVethName `
-        -IPAddress $SNATConfiguration.VethIP
+        # TODO: JW-976: Remove `ForwardingMAC` when Agent is functional
+        New-SNATVM -Session $Session `
+            -VmDirectory $SNATConfiguration.VMDir -DiskPath $SNATDiskPath `
+            -MgmtSwitchName $SNATMgmtSwitchName `
+            -VRouterSwitchName $TestConfiguration.VMSwitchName `
+            -RightGW $SNATConfiguration.GatewayIP `
+            -LeftGW $SNATConfiguration.ContainerGatewayIP `
+            -ForwardingMAC $SNATVeth.MacAddress `
+            -GUID $SNAT_GUID
 
-    # TODO: JW-976: Remove `ForwardingMAC` when Agent is functional
-    New-SNATVM -Session $Session `
-        -VmDirectory $SNATConfiguration.VMDir -DiskPath $SNATDiskPath `
-        -MgmtSwitchName $SNATMgmtSwitchName `
-        -VRouterSwitchName $TestConfiguration.VMSwitchName `
-        -RightGW $SNATConfiguration.GatewayIP `
-        -LeftGW $SNATConfiguration.ContainerGatewayIP `
-        -ForwardingMAC $SNATVeth.MacAddress `
-        -GUID $SNAT_GUID
+        Write-Host "Extracting adapters data..."
+        $PhysicalAdapter = Get-RemoteNetAdapterInformation -Session $Session -AdapterName $TestConfiguration.AdapterName
+        $VHostAdapter = Get-RemoteNetAdapterInformation -Session $Session -AdapterName $TestConfiguration.VHostName
+        $HNSAdapter = Get-RemoteNetAdapterInformation -Session $Session -AdapterName $TestConfiguration.VHostName
+        $SNATLeft = Get-RemoteVMNetAdapterInformation -Session $Session -AdapterName $SNATLeftName -VMName $SNATVMName
+        $SNATRight = Get-RemoteVMNetAdapterInformation -Session $Session -AdapterName $SNATRightName -VMName $SNATVMName
+        Write-Host "Extracting adapters data... DONE"
 
-    Write-Host "Extracting adapters data..."
-    $PhysicalAdapter = Get-RemoteNetAdapterInformation -Session $Session -AdapterName $TestConfiguration.AdapterName
-    $VHostAdapter = Get-RemoteNetAdapterInformation -Session $Session -AdapterName $TestConfiguration.VHostName
-    $HNSAdapter = Get-RemoteNetAdapterInformation -Session $Session -AdapterName $TestConfiguration.VHostName
-    $SNATLeft = Get-RemoteVMNetAdapterInformation -Session $Session -AdapterName $SNATLeftName -VMName $SNATVMName
-    $SNATRight = Get-RemoteVMNetAdapterInformation -Session $Session -AdapterName $SNATRightName -VMName $SNATVMName
-    Write-Host "Extracting adapters data... DONE"
+        # TODO: JW-976: Remove `Set-GWVethForwarding` and `Set-HNSTransparentForwarding` when Agent is functional?
+        Set-RoutingRules -Session $Session -GatewayIP $SNATConfiguration.GatewayIP -VethIP $SNATConfiguration.VethIP -SNATVethIfIndex $SNATVeth.IfIndex
+        Set-GWVethForwarding -Session $Session -SNATVethIfIndex $SNATVeth.IfIndex -GatewayIP $SNATConfiguration.GatewayIP -SNATRightMacAddressWindows $SNATRight.MacAddressWindows
+        Set-HNSTransparentForwarding -Session $Session -HNSAdapterIfIndex $HNSAdapter.IfIndex
 
-    # TODO: JW-976: Remove `Set-GWVethForwarding` and `Set-HNSTransparentForwarding` when Agent is functional?
-    Set-RoutingRules -Session $Session -GatewayIP $SNATConfiguration.GatewayIP -VethIP $SNATConfiguration.VethIP -SNATVethIfIndex $SNATVeth.IfIndex
-    Set-GWVethForwarding -Session $Session -SNATVethIfIndex $SNATVeth.IfIndex -GatewayIP $SNATConfiguration.GatewayIP -SNATRightMacAddressWindows $SNATRight.MacAddressWindows
-    Set-HNSTransparentForwarding -Session $Session -HNSAdapterIfIndex $HNSAdapter.IfIndex
+        Write-Host "Start and configure test container..."
+        $DockerNetwork = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
+        $ContainerID = Invoke-Command -Session $Session -ScriptBlock { docker run -id --network $Using:DockerNetwork microsoft/nanoserver powershell }
+        $ContainerNetInfo = Get-RemoteContainerNetAdapterInformation -Session $Session -ContainerID $ContainerID
+        Write-Host "Start and configure test container... DONE"
 
-    Write-Host "Start and configure test container..."
-    $DockerNetwork = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
-    $ContainerID = Invoke-Command -Session $Session -ScriptBlock { docker run -id --network $Using:DockerNetwork microsoft/nanoserver powershell }
-    $ContainerNetInfo = Get-RemoteContainerNetAdapterInformation -Session $Session -ContainerID $ContainerID
-    Write-Host "Start and configure test container... DONE"
+        Set-VRouterConfiguration -Session $Session -PhysicalAdapter $PhysicalAdapter -VHostAdapter $VHostAdapter `
+            -ContainerAdapter $ContainerNetInfo -SNATLeft $SNATLeft -SNATRight $SNATRight -SNATVeth $SNATVeth
 
-    Set-VRouterConfiguration -Session $Session -PhysicalAdapter $PhysicalAdapter -VHostAdapter $VHostAdapter `
-        -ContainerAdapter $ContainerNetInfo -SNATLeft $SNATLeft -SNATRight $SNATRight -SNATVeth $SNATVeth
+        Set-EndhostConfiguration -Session $Session -PhysicalMac $PhysicalAdapter.MacAddress `
+            -EndhostIP $SNATConfiguration.EndhostIP -GatewayIP $SNATConfiguration.GatewayIP `
+            -EndhostUsername $SNATConfiguration.EndhostUsername -EndhostPassword $SNATConfiguration.EndhostPassword
 
-    Set-EndhostConfiguration -Session $Session -PhysicalMac $PhysicalAdapter.MacAddress `
-        -EndhostIP $SNATConfiguration.EndhostIP -GatewayIP $SNATConfiguration.GatewayIP `
-        -EndhostUsername $SNATConfiguration.EndhostUsername -EndhostPassword $SNATConfiguration.EndhostPassword
+        Test-CanPingEndhostFromContainer -Session $Session -ContainerID $ContainerID -EndhostIP $SNATConfiguration.EndhostIP
 
-    Test-CanPingEndhostFromContainer -Session $Session -ContainerID $ContainerID -EndhostIP $SNATConfiguration.EndhostIP
+        Invoke-Command -Session $Session -ScriptBlock { docker rm -f $Using:ContainerID } | Out-Null
 
-    Invoke-Command -Session $Session -ScriptBlock { docker rm -f $Using:ContainerID } | Out-Null
+        Remove-SNATVM -Session $Session -DiskPath $SNATDiskPath -GUID $SNAT_GUID
+        Remove-RoutingInterface -Session $Session -Name $SNATVethName
+        Remove-MgmtSwitch -Session $Session -MgmtSwitchName $SNATMgmtSwitchName
 
-    Remove-SNATVM -Session $Session -DiskPath $SNATDiskPath -GUID $SNAT_GUID
-    Remove-RoutingInterface -Session $Session -Name $SNATVethName
-    Remove-MgmtSwitch -Session $Session -MgmtSwitchName $SNATMgmtSwitchName
+        Test-VMAShouldBeCleanedUp -VMName $SNATVMName -Session $Session
+        Test-VHDXShouldBeCleanedUp -GUID $SNAT_GUID -DiskDir $SNATConfiguration.DiskDir -Session $Session
 
-    Test-VMAShouldBeCleanedUp -VMName $SNATVMName -Session $Session
-    Test-VHDXShouldBeCleanedUp -GUID $SNAT_GUID -DiskDir $SNATConfiguration.DiskDir -Session $Session
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
-    Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-
-    Write-Host "===> Success"
+        Write-Host "===> Success"
+    })
 }

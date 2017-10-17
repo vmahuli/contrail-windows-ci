@@ -36,7 +36,7 @@ function Run-Test {
                 return $LASTEXITCODE
             }
         }
-        
+
         return $Res
     }
     if ($Res -eq 0) {
@@ -50,39 +50,42 @@ function Run-Test {
 function Test-Agent {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
-    Write-Host "===> Agent tests: setting up an environment."
-    $Res = Invoke-Command -Session $Session -ScriptBlock {
-        $env:Path += ";C:\Program Files\Juniper Networks\Agent"
-    }
-    Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-    Invoke-Command -Session $Session -ScriptBlock $DefineTestIfGTestOutputSuggestsThatAllTestsHavePassed
-    Invoke-Command -Session $Session -ScriptBlock {
-        $ConfigurationFile = "C:\Artifacts\vnswa_cfg.ini"
-        $Configuration = Get-Content $ConfigurationFile
-        $VirtualInterfaceName = (Get-NetAdapter -Name "vEthernet (HNSTransparent)").IfName
-        $PhysicalInterfaceName = (Get-NetAdapter -Name "Ethernet1").IfName
-        $Configuration = $Configuration -replace "name=.*", "name=$VirtualInterfaceName"
-        $Configuration = $Configuration -replace "physical_interface=.*", "physical_interface=$PhysicalInterfaceName"
-        Set-Content $ConfigurationFile $Configuration
-    }
 
-    $Res = 0
-    $AgentTextExecutables = Get-ChildItem .\output\agent | Where-Object {$_.Name -match '^[\W\w]*test[\W\w]*.exe$'}
-    $AgentTextExecutables += Get-ChildItem .\output\agent | Where-Object {$_.Name -match '^ifmap_[\W\w]*.exe$'}
-    $AgentTextExecutables = $AgentTextExecutables | Select -Unique
-    
-    Foreach ($TestExecutable in $AgentTextExecutables) {
-        $TestRes = Run-Test -Session $Session -TestExecutable $TestExecutable
-        if ($TestRes -ne 0) {
-            $Res = 1
+    $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+        Write-Host "===> Agent tests: setting up an environment."
+        $Res = Invoke-Command -Session $Session -ScriptBlock {
+            $env:Path += ";C:\Program Files\Juniper Networks\Agent"
         }
-    }
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Invoke-Command -Session $Session -ScriptBlock $DefineTestIfGTestOutputSuggestsThatAllTestsHavePassed
+        Invoke-Command -Session $Session -ScriptBlock {
+            $ConfigurationFile = "C:\Artifacts\vnswa_cfg.ini"
+            $Configuration = Get-Content $ConfigurationFile
+            $VirtualInterfaceName = (Get-NetAdapter -Name "vEthernet (HNSTransparent)").IfName
+            $PhysicalInterfaceName = (Get-NetAdapter -Name "Ethernet1").IfName
+            $Configuration = $Configuration -replace "name=.*", "name=$VirtualInterfaceName"
+            $Configuration = $Configuration -replace "physical_interface=.*", "physical_interface=$PhysicalInterfaceName"
+            Set-Content $ConfigurationFile $Configuration
+        }
 
-    Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration | Out-Null
-    Write-Host "===> Agent tests: environment has been cleaned up."
-    if ($Res -eq 0) {
-        Write-Host "===> Agent tests: all tests succeeded."
-    } else {
-        Throw "===> Agent tests: some tests failed."
-    }
+        $Res = 0
+        $AgentTextExecutables = Get-ChildItem .\output\agent | Where-Object {$_.Name -match '^[\W\w]*test[\W\w]*.exe$'}
+        $AgentTextExecutables += Get-ChildItem .\output\agent | Where-Object {$_.Name -match '^ifmap_[\W\w]*.exe$'}
+        $AgentTextExecutables = $AgentTextExecutables | Select -Unique
+
+        Foreach ($TestExecutable in $AgentTextExecutables) {
+            $TestRes = Run-Test -Session $Session -TestExecutable $TestExecutable
+            if ($TestRes -ne 0) {
+                $Res = 1
+            }
+        }
+
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration | Out-Null
+        Write-Host "===> Agent tests: environment has been cleaned up."
+        if ($Res -eq 0) {
+            Write-Host "===> Agent tests: all tests succeeded."
+        } else {
+            Throw "===> Agent tests: some tests failed."
+        }
+    })
 }

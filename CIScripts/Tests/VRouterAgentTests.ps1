@@ -7,9 +7,6 @@ function Test-VRouterAgentIntegration {
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     . $PSScriptRoot\CommonTestCode.ps1
-    . $PSScriptRoot\..\Job.ps1
-
-    $AgentIntegrationTestsTimeTracker = [Job]::new("Test-VRouterAgentIntegration")
 
     $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS = 60
     $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS = 5
@@ -351,415 +348,408 @@ function Test-VRouterAgentIntegration {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-        Write-Host "===> Running: Test-InitialPkt0Injection"
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-InitialPkt0Injection"
 
-        Write-Host "======> Given Extension is running"
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
+            Write-Host "======> Given Extension is running"
+            Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
 
-        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+            New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
 
-        Write-Host "======> Given clean vRouter"
-        Assert-NoVifs -Session $Session
+            Write-Host "======> Given clean vRouter"
+            Assert-NoVifs -Session $Session
 
-        Write-Host "======> When Agent is started"
-        Enable-AgentService -Session $Session
-        Assert-IsAgentServiceEnabled -Session $Session
-        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
+            Write-Host "======> When Agent is started"
+            Enable-AgentService -Session $Session
+            Assert-IsAgentServiceEnabled -Session $Session
+            Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
-        Write-Host "======> Then pkt0 appears in vRouter"
-        Assert-IsPkt0Injected -Session $Session
+            Write-Host "======> Then pkt0 appears in vRouter"
+            Assert-IsPkt0Injected -Session $Session
 
-        Write-Host "===> PASSED: Test-InitialPkt0Injection"
+            Write-Host "===> PASSED: Test-InitialPkt0Injection"
+        })
     }
 
     function Test-Pkt0RemainsInjectedAfterAgentStops {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-        Write-Host "===> Running: Test-Pkt0RemainsInjectedAfterAgentStops"
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-Pkt0RemainsInjectedAfterAgentStops"
 
-        Write-Host "======> Given Extension is running"
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
+            Write-Host "======> Given Extension is running"
+            Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
 
-        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+            New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
 
-        Write-Host "======> Given Agent is running"
-        Enable-AgentService -Session $Session
-        Assert-IsAgentServiceEnabled -Session $Session
-        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
+            Write-Host "======> Given Agent is running"
+            Enable-AgentService -Session $Session
+            Assert-IsAgentServiceEnabled -Session $Session
+            Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
-        Write-Host "======> Given pkt0 is injected"
-        Assert-IsPkt0Injected -Session $Session
+            Write-Host "======> Given pkt0 is injected"
+            Assert-IsPkt0Injected -Session $Session
 
-        Write-Host "======> When Agent is stopped"
-        Disable-AgentService -Session $Session
-        Assert-IsAgentServiceDisabled -Session $Session
+            Write-Host "======> When Agent is stopped"
+            Disable-AgentService -Session $Session
+            Assert-IsAgentServiceDisabled -Session $Session
 
-        Write-Host "======> Then pk0 exists in vRouter"
-        Assert-IsPkt0Injected -Session $Session
+            Write-Host "======> Then pk0 exists in vRouter"
+            Assert-IsPkt0Injected -Session $Session
 
-        Write-Host "===> PASSED: Test-Pkt0RemainsInjectedAfterAgentStops"
+            Write-Host "===> PASSED: Test-Pkt0RemainsInjectedAfterAgentStops"
+        })
     }
 
     function Test-OnePkt0ExistsAfterAgentIsRestarted {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-        Write-Host "===> Running: Test-OnePkt0ExistsAfterAgentIsRestarted"
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-OnePkt0ExistsAfterAgentIsRestarted"
 
-        Write-Host "======> Given Extension is running"
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
+            Write-Host "======> Given Extension is running"
+            Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
 
-        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+            New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
 
-        Write-Host "======> Given Agent is running"
-        Enable-AgentService -Session $Session
-        Assert-IsAgentServiceEnabled -Session $Session
-        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
+            Write-Host "======> Given Agent is running"
+            Enable-AgentService -Session $Session
+            Assert-IsAgentServiceEnabled -Session $Session
+            Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
-        Write-Host "======> Given pkt0 is injected"
-        Assert-IsPkt0Injected -Session $Session
+            Write-Host "======> Given pkt0 is injected"
+            Assert-IsPkt0Injected -Session $Session
 
-        Write-Host "======> When Agent is Restarted"
-        Disable-AgentService -Session $Session
-        Assert-IsAgentServiceDisabled -Session $Session
-        Enable-AgentService -Session $Session
-        Assert-IsAgentServiceEnabled -Session $Session
-        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
+            Write-Host "======> When Agent is Restarted"
+            Disable-AgentService -Session $Session
+            Assert-IsAgentServiceDisabled -Session $Session
+            Enable-AgentService -Session $Session
+            Assert-IsAgentServiceEnabled -Session $Session
+            Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
-        Write-Host "======> Then pkt0 exists in vRouter"
-        Assert-IsOnlyOnePkt0Injected -Session $Session
+            Write-Host "======> Then pkt0 exists in vRouter"
+            Assert-IsOnlyOnePkt0Injected -Session $Session
+        })
     }
 
     function Test-Pkt0ReceivesTrafficAfterAgentIsStarted {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-        Write-Host "===> Running: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
 
-        Write-Host "======> Given Extension is running"
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
+            Write-Host "======> Given Extension is running"
+            Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
 
-        Write-Host "======> When Agent is started"
-        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
-        Enable-AgentService -Session $Session
-        Assert-IsAgentServiceEnabled -Session $Session
-        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS  # Wait for KSync
+            Write-Host "======> When Agent is started"
+            New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+            Enable-AgentService -Session $Session
+            Assert-IsAgentServiceEnabled -Session $Session
+            Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS  # Wait for KSync
 
-        Write-Host "======> Then Pkt0 has traffic"
-        Assert-Pkt0HasTraffic -Session $Session
+            Write-Host "======> Then Pkt0 has traffic"
+            Assert-Pkt0HasTraffic -Session $Session
 
-        Write-Host "===> PASSED: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
+            Write-Host "===> PASSED: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
+        })
     }
 
     function Test-GatewayArpIsResolvedInAgent {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-        Write-Host "===> Running: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
 
-        Write-Host "======> Given Extension is running"
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
+            Write-Host "======> Given Extension is running"
+            Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
 
-        Write-Host "======> When Agent is started"
-        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
-        Enable-AgentService -Session $Session
-        Assert-IsAgentServiceEnabled -Session $Session
-        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS  # Wait for KSync
+            Write-Host "======> When Agent is started"
+            New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+            Enable-AgentService -Session $Session
+            Assert-IsAgentServiceEnabled -Session $Session
+            Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS  # Wait for KSync
 
-        Write-Host "======> Then Gateway ARP was resolved through Pkt0"
-        Assert-IsGatewayArpResolvedInAgent -Session $Session
+            Write-Host "======> Then Gateway ARP was resolved through Pkt0"
+            Assert-IsGatewayArpResolvedInAgent -Session $Session
 
-        Write-Host "===> PASSED: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
+            Write-Host "===> PASSED: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
+        })
     }
 
     function Test-SingleComputeNodePing {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
-        Write-Host "===> Running: Test-SingleComputeNodePing"
-        Test-Ping -Session1 $Session -Session2 $Session -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
-        Write-Host "===> PASSED: Test-SingleComputeNodePing"
+
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-SingleComputeNodePing"
+            Test-Ping -Session1 $Session -Session2 $Session -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
+            Write-Host "===> PASSED: Test-SingleComputeNodePing"
+        })
     }
 
     function Test-MultiComputeNodesPing {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
                [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
-        Write-Host "===> Running: Test-MultiComputeNodesPing"
-        Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
-        Write-Host "===> PASSED: Test-MultiComputeNodesPing"
+
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-MultiComputeNodesPing"
+            Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
+            Write-Host "===> PASSED: Test-MultiComputeNodesPing"
+        })
     }
 
     function Test-FlowsAreInjectedOnIcmpTraffic {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-        Write-Host "===> Running: Test-FlowsAreInjectedOnIcmpTraffic"
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-FlowsAreInjectedOnIcmpTraffic"
 
-        Write-Host "======> Given: Contrail compute services are started"
-        Initialize-ComputeNodeForFlowTests -Session $Session -TestConfiguration $TestConfiguration
+            Write-Host "======> Given: Contrail compute services are started"
+            Initialize-ComputeNodeForFlowTests -Session $Session -TestConfiguration $TestConfiguration
 
-        Write-Host "======> When 2 containers belonging to different networks are running"
-        $Network1Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name
-        $Network2Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name
-        $Container1Name = "jolly-lumberjack"
-        $Container2Name = "juniper-tree"
+            Write-Host "======> When 2 containers belonging to different networks are running"
+            $Network1Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name
+            $Network2Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name
+            $Container1Name = "jolly-lumberjack"
+            $Container2Name = "juniper-tree"
 
-        $CreateContainer1Success = Create-ContainerInRemoteSession `
-            -Session $Session `
-            -NetworkName $Network1Name `
-            -ContainerName $Container1Name
-        $CreateContainer2Success = Create-ContainerInRemoteSession `
-            -Session $Session `
-            -NetworkName $Network2Name `
-            -ContainerName $Container2Name
+            $CreateContainer1Success = Create-ContainerInRemoteSession `
+                -Session $Session `
+                -NetworkName $Network1Name `
+                -ContainerName $Container1Name
+            $CreateContainer2Success = Create-ContainerInRemoteSession `
+                -Session $Session `
+                -NetworkName $Network2Name `
+                -ContainerName $Container2Name
 
-        if ($CreateContainer1Success -ne 0 -or $CreateContainer2Success -ne 0) {
-            throw "Container creation failed. EXPECTED: succeeded."
-        }
+            if ($CreateContainer1Success -ne 0 -or $CreateContainer2Success -ne 0) {
+                throw "Container creation failed. EXPECTED: succeeded."
+            }
 
-        $Container2IP = Invoke-Command -Session $Session -ScriptBlock {
-            & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
-        }
+            $Container2IP = Invoke-Command -Session $Session -ScriptBlock {
+                & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
+            }
 
-        Write-Host "======> When: Container $Container1Name (network: $Network1Name)"
-        Write-Host "        pings container $Container2Name (network: $Network2Name, IP: $Container2IP)"
-        Invoke-Command -Session $Session -ScriptBlock {
-            & docker exec $Using:Container1Name ping $Using:Container2IP -n 3 -w 500
-        }
+            Write-Host "======> When: Container $Container1Name (network: $Network1Name)"
+            Write-Host "        pings container $Container2Name (network: $Network2Name, IP: $Container2IP)"
+            Invoke-Command -Session $Session -ScriptBlock {
+                & docker exec $Using:Container1Name ping $Using:Container2IP -n 3 -w 500
+            }
 
-        Write-Host "======> Then: Flow should be created for ICMP protocol"
-        $FlowOutput = Invoke-Command -Session $Session -ScriptBlock {
-            & flow -l --match "proto icmp"
-        }
-        Write-Host "Flow output: $FlowOutput"
-        Assert-FlowReturnedSomeFlows -Output $FlowOutput
-        Write-Host "        Successfully created."
+            Write-Host "======> Then: Flow should be created for ICMP protocol"
+            $FlowOutput = Invoke-Command -Session $Session -ScriptBlock {
+                & flow -l --match "proto icmp"
+            }
+            Write-Host "Flow output: $FlowOutput"
+            Assert-FlowReturnedSomeFlows -Output $FlowOutput
+            Write-Host "        Successfully created."
 
-        Write-Host "Removing containers: $Container1Name and $Container2Name."
-        Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container1Name | Out-Null
-        Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container2Name | Out-Null
+            Write-Host "Removing containers: $Container1Name and $Container2Name."
+            Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container1Name | Out-Null
+            Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container2Name | Out-Null
 
-        Write-Host "===> PASSED: Test-FlowsAreInjectedOnIcmpTraffic"
+            Write-Host "===> PASSED: Test-FlowsAreInjectedOnIcmpTraffic"
+        })
     }
 
     function Test-FlowsAreInjectedOnTcpTraffic {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-        Write-Host "===> Running: Test-FlowsAreInjectedOnTcpTraffic"
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-FlowsAreInjectedOnTcpTraffic"
 
-        Write-Host "======> Given: Contrail compute services are started"
-        Initialize-ComputeNodeForFlowTests -Session $Session -TestConfiguration $TestConfiguration
+            Write-Host "======> Given: Contrail compute services are started"
+            Initialize-ComputeNodeForFlowTests -Session $Session -TestConfiguration $TestConfiguration
 
-        Write-Host "======> When 2 containers belonging to different networks are running"
-        $Network1Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name
-        $Network2Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name
-        $Container1Name = "jolly-lumberjack"
-        $Container2Name = "juniper-tree"
+            Write-Host "======> When 2 containers belonging to different networks are running"
+            $Network1Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name
+            $Network2Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name
+            $Container1Name = "jolly-lumberjack"
+            $Container2Name = "juniper-tree"
 
-        $CreateContainer1Success = Create-ContainerInRemoteSession `
-            -Session $Session `
-            -NetworkName $Network1Name `
-            -ContainerName $Container1Name
-        $CreateContainer2Success = Create-ContainerInRemoteSession `
-            -Session $Session `
-            -NetworkName $Network2Name `
-            -ContainerName $Container2Name
+            $CreateContainer1Success = Create-ContainerInRemoteSession `
+                -Session $Session `
+                -NetworkName $Network1Name `
+                -ContainerName $Container1Name
+            $CreateContainer2Success = Create-ContainerInRemoteSession `
+                -Session $Session `
+                -NetworkName $Network2Name `
+                -ContainerName $Container2Name
 
-        if ($CreateContainer1Success -ne 0 -or $CreateContainer2Success -ne 0) {
-            throw "Container creation failed. EXPECTED: succeeded."
-        }
-
-        $Container2IP = Invoke-Command -Session $Session -ScriptBlock {
-            & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
-        }
-
-        Write-Host "======> When: Container $Container1Name (network: $Network1Name) is trying to"
-        Write-Host "        open TCP connection to $Container2Name (network: $Network2Name, IP: $Container2IP)"
-        Write-Host
-
-        $Port = "1905"
-        $Message = "Even diamonds require polishing."
-
-        Write-Host "        Setting up TCP sender and listener on containers..."
-
-        $ReceivedMessage = Invoke-Command -Session $Session -ScriptBlock {
-            $Port = $Using:Port
-            $Container1Name = $Using:Container1Name
-            $Container2Name = $Using:Container2Name
-            $Container2IP = $Using:Container2IP
-            $Message = $Using:Message
-
-            $JobListener = Start-Job -ScriptBlock {
-                $Command = (`
-                    '$ErrorActionPreference = \"SilentlyContinue\";' +`
-                    '$Server = New-Object System.Net.Sockets.TcpListener({0});' +`
-                    '$Server.Start();' +`
-                    '$Socket = $Server.AcceptTcpClient();' +`
-                    '$StreamReader = New-Object System.IO.StreamReader($Socket.GetStream());' +`
-                    '$Input = $StreamReader.ReadLine();' +`
-                    'return $Input;') -f $Using:Port
-
-                $Output = & docker exec $Using:Container2Name powershell -Command $Command
-                return $Output
+            if ($CreateContainer1Success -ne 0 -or $CreateContainer2Success -ne 0) {
+                throw "Container creation failed. EXPECTED: succeeded."
             }
 
-            Start-Sleep -Seconds 2
-
-            $JobSender = Start-Job -ScriptBlock {
-                $Command = (`
-                    '$ErrorActionPreference = \"SilentlyContinue\";' +`
-                    '$IpAddress = [System.Net.IPAddress]::Parse(\"{0}\");' +`
-                    '$TcpClient = New-Object System.Net.Sockets.TcpClient;' +`
-                    '$TaskConnect = $TcpClient.ConnectAsync($IpAddress, {1});' +`
-                    '$TaskConnect.Wait(2000);' +`
-                    '$StreamWriter = New-Object System.IO.StreamWriter($TcpClient.GetStream());' +`
-                    '$StreamWriter.WriteLine(\"{2}\");' +`
-                    '$StreamWriter.Flush();') -f $Using:Container2IP, $Using:Port, $Using:Message
-
-                & docker exec $Using:Container1Name powershell -Command $Command
+            $Container2IP = Invoke-Command -Session $Session -ScriptBlock {
+                & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
             }
 
-            $JobSender | Wait-Job -Timeout 5 | Out-Null
-            $JobListener | Wait-Job -Timeout 5 | Out-Null
-            $ReceivedMessage = $JobListener | Receive-Job
-            return $ReceivedMessage
-        }
+            Write-Host "======> When: Container $Container1Name (network: $Network1Name) is trying to"
+            Write-Host "        open TCP connection to $Container2Name (network: $Network2Name, IP: $Container2IP)"
+            Write-Host
 
-        # TODO: Enable this test once it is actually expected to pass.
-        # .NET in microsoft/nanoserver docker image doesn't have TCPServer
-        #Write-Host "        Sent message: $Message"
-        #Write-Host "        Received message: $ReceivedMessage"
+            $Port = "1905"
+            $Message = "Even diamonds require polishing."
 
-        #if ($Message -ne $ReceivedMessage) {
-        #    throw "Sent and received messages do not match."
-        #} else {
-        #    Write-Host "        Match!"
-        #}
+            Write-Host "        Setting up TCP sender and listener on containers..."
 
-        Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
+            $ReceivedMessage = Invoke-Command -Session $Session -ScriptBlock {
+                $Port = $Using:Port
+                $Container1Name = $Using:Container1Name
+                $Container2Name = $Using:Container2Name
+                $Container2IP = $Using:Container2IP
+                $Message = $Using:Message
 
-        Write-Host "======> Then: Flow should be created for TCP protocol"
-        $FlowOutput = Invoke-Command -Session $Session -ScriptBlock {
-            & flow -l --match "proto tcp"
-        }
-        Write-Host "Flow output: $FlowOutput"
-        Assert-FlowReturnedSomeFlows -Output $FlowOutput
-        Write-Host "        Successfully created."
-        
-        Write-Host "Removing containers: $Container1Name and $Container2Name."
-        Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container1Name | Out-Null
-        Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container2Name | Out-Null
+                $JobListener = Start-Job -ScriptBlock {
+                    $Command = (`
+                        '$ErrorActionPreference = \"SilentlyContinue\";' +`
+                        '$Server = New-Object System.Net.Sockets.TcpListener({0});' +`
+                        '$Server.Start();' +`
+                        '$Socket = $Server.AcceptTcpClient();' +`
+                        '$StreamReader = New-Object System.IO.StreamReader($Socket.GetStream());' +`
+                        '$Input = $StreamReader.ReadLine();' +`
+                        'return $Input;') -f $Using:Port
 
-        Write-Host "===> PASSED: Test-FlowsAreInjectedOnTcpTraffic"
+                    $Output = & docker exec $Using:Container2Name powershell -Command $Command
+                    return $Output
+                }
+
+                Start-Sleep -Seconds 2
+
+                $JobSender = Start-Job -ScriptBlock {
+                    $Command = (`
+                        '$ErrorActionPreference = \"SilentlyContinue\";' +`
+                        '$IpAddress = [System.Net.IPAddress]::Parse(\"{0}\");' +`
+                        '$TcpClient = New-Object System.Net.Sockets.TcpClient;' +`
+                        '$TaskConnect = $TcpClient.ConnectAsync($IpAddress, {1});' +`
+                        '$TaskConnect.Wait(2000);' +`
+                        '$StreamWriter = New-Object System.IO.StreamWriter($TcpClient.GetStream());' +`
+                        '$StreamWriter.WriteLine(\"{2}\");' +`
+                        '$StreamWriter.Flush();') -f $Using:Container2IP, $Using:Port, $Using:Message
+
+                    & docker exec $Using:Container1Name powershell -Command $Command
+                }
+
+                $JobSender | Wait-Job -Timeout 5 | Out-Null
+                $JobListener | Wait-Job -Timeout 5 | Out-Null
+                $ReceivedMessage = $JobListener | Receive-Job
+                return $ReceivedMessage
+            }
+
+            # TODO: Enable this test once it is actually expected to pass.
+            # .NET in microsoft/nanoserver docker image doesn't have TCPServer
+            #Write-Host "        Sent message: $Message"
+            #Write-Host "        Received message: $ReceivedMessage"
+
+            #if ($Message -ne $ReceivedMessage) {
+            #    throw "Sent and received messages do not match."
+            #} else {
+            #    Write-Host "        Match!"
+            #}
+
+            Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
+
+            Write-Host "======> Then: Flow should be created for TCP protocol"
+            $FlowOutput = Invoke-Command -Session $Session -ScriptBlock {
+                & flow -l --match "proto tcp"
+            }
+            Write-Host "Flow output: $FlowOutput"
+            Assert-FlowReturnedSomeFlows -Output $FlowOutput
+            Write-Host "        Successfully created."
+
+            Write-Host "Removing containers: $Container1Name and $Container2Name."
+            Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container1Name | Out-Null
+            Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container2Name | Out-Null
+
+            Write-Host "===> PASSED: Test-FlowsAreInjectedOnTcpTraffic"
+        })
     }
 
     function Test-FlowsAreInjectedOnUdpTraffic {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-        Write-Host "===> Running: Test-FlowsAreInjectedOnUdpTraffic"
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-FlowsAreInjectedOnUdpTraffic"
 
-        Write-Host "======> Given: Contrail compute services are started"
-        Initialize-ComputeNodeForFlowTests -Session $Session -TestConfiguration $TestConfiguration
+            Write-Host "======> Given: Contrail compute services are started"
+            Initialize-ComputeNodeForFlowTests -Session $Session -TestConfiguration $TestConfiguration
 
-        Write-Host "======> When 2 containers belonging to different networks are running"
-        $Network1Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name
-        $Network2Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name
-        $Container1Name = "jolly-lumberjack"
-        $Container2Name = "juniper-tree"
+            Write-Host "======> When 2 containers belonging to different networks are running"
+            $Network1Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name
+            $Network2Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name
+            $Container1Name = "jolly-lumberjack"
+            $Container2Name = "juniper-tree"
 
-        $CreateContainer1Success = Create-ContainerInRemoteSession `
-            -Session $Session `
-            -NetworkName $Network1Name `
-            -ContainerName $Container1Name
-        $CreateContainer2Success = Create-ContainerInRemoteSession `
-            -Session $Session `
-            -NetworkName $Network2Name `
-            -ContainerName $Container2Name
+            $CreateContainer1Success = Create-ContainerInRemoteSession `
+                -Session $Session `
+                -NetworkName $Network1Name `
+                -ContainerName $Container1Name
+            $CreateContainer2Success = Create-ContainerInRemoteSession `
+                -Session $Session `
+                -NetworkName $Network2Name `
+                -ContainerName $Container2Name
 
-        if ($CreateContainer1Success -ne 0 -or $CreateContainer2Success -ne 0) {
-            throw "Container creation failed. EXPECTED: succeeded."
-        }
+            if ($CreateContainer1Success -ne 0 -or $CreateContainer2Success -ne 0) {
+                throw "Container creation failed. EXPECTED: succeeded."
+            }
 
-        $Container2IP = Invoke-Command -Session $Session -ScriptBlock {
-            & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
-        }
+            $Container2IP = Invoke-Command -Session $Session -ScriptBlock {
+                & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
+            }
 
-        Write-Host "======> When: Container $Container1Name (network: $Network1Name) is sending UDP"
-        Write-Host "        packets to container $Container2Name (network: $Network2Name, IP: $Container2IP)"
-        Send-UDPPacket -Session $Session -ContainerName $Container1Name -IP $Container2IP
-        Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
+            Write-Host "======> When: Container $Container1Name (network: $Network1Name) is sending UDP"
+            Write-Host "        packets to container $Container2Name (network: $Network2Name, IP: $Container2IP)"
+            Send-UDPPacket -Session $Session -ContainerName $Container1Name -IP $Container2IP
+            Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
 
-        Write-Host "======> Then: Flow should be created for UDP protocol"
-        $FlowOutput = Invoke-Command -Session $Session -ScriptBlock {
-            & flow -l --match "proto udp"
-        }
-        Assert-FlowReturnedSomeFlows -Output $FlowOutput
-        Write-Host "        Successfully created."
-        Write-Host "Flow output: $FlowOutput"
+            Write-Host "======> Then: Flow should be created for UDP protocol"
+            $FlowOutput = Invoke-Command -Session $Session -ScriptBlock {
+                & flow -l --match "proto udp"
+            }
+            Assert-FlowReturnedSomeFlows -Output $FlowOutput
+            Write-Host "        Successfully created."
+            Write-Host "Flow output: $FlowOutput"
 
-        Write-Host "Removing containers: $Container1Name and $Container2Name."
-        Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container1Name | Out-Null
-        Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container2Name | Out-Null
+            Write-Host "Removing containers: $Container1Name and $Container2Name."
+            Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container1Name | Out-Null
+            Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container2Name | Out-Null
 
-        Write-Host "===> PASSED: Test-FlowsAreInjectedOnUdpTraffic"
+            Write-Host "===> PASSED: Test-FlowsAreInjectedOnUdpTraffic"
+        })
     }
 
-    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-InitialPkt0Injection", {
+    $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         Test-InitialPkt0Injection -Session $Session1 -TestConfiguration $TestConfiguration
-    })
-
-    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-Pkt0RemainsInjectedAfterAgentStops", {
         Test-Pkt0RemainsInjectedAfterAgentStops -Session $Session1 -TestConfiguration $TestConfiguration
-    })
-
-    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-OnePkt0ExistsAfterAgentIsRestarted", {
         Test-OnePkt0ExistsAfterAgentIsRestarted -Session $Session1 -TestConfiguration $TestConfiguration
-    })
-
-    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-Pkt0ReceivesTrafficAfterAgentIsStarted", {
         Test-Pkt0ReceivesTrafficAfterAgentIsStarted -Session $Session1 -TestConfiguration $TestConfiguration
-    })
-
-    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-GatewayArpIsResolvedInAgent", {
         Test-GatewayArpIsResolvedInAgent -Session $Session1 -TestConfiguration $TestConfiguration
-    })
-
-    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-SingleComputeNodePing", {
         Test-SingleComputeNodePing -Session $Session1 -TestConfiguration $TestConfiguration
-    })
-
-    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-MultiComputeNodesPing", {
         Test-MultiComputeNodesPing -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
-    })
-
-    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-FlowsAreInjectedOnIcmpTraffic", {
         Test-FlowsAreInjectedOnIcmpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
-    })
-
-    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-FlowsAreInjectedOnTcpTraffic", {
         Test-FlowsAreInjectedOnTcpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
-    })
-
-    $AgentIntegrationTestsTimeTracker.StepQuiet("Test-FlowsAreInjectedOnUdpTraffic", {
         Test-FlowsAreInjectedOnUdpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
     })
 
     # Test cleanup
     Clear-TestConfiguration -Session $Session1 -TestConfiguration $TestConfiguration
     Clear-TestConfiguration -Session $Session2 -TestConfiguration $TestConfiguration
-
-    $AgentIntegrationTestsTimeTracker.Done()
 }
