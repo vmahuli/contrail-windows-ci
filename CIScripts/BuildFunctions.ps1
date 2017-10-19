@@ -194,7 +194,18 @@ function Invoke-AgentBuild {
             "controller/src/xmpp:test",
             "agent:test_oper_xml",
             "agent:ifmap_dependency_manager_test",
-            "agent:test_xmpp_discovery_non_hv"
+            "agent:test_xmpp_discovery_non_hv",
+            "src/base:libtask_test",
+            "src/base:bitset_test",
+            "src/base:index_allocator_test",
+            "src/base:dependency_test",
+            "src/base:label_block_test",
+            "src/base:queue_task_test",
+            "src/base:subset_test",
+            "src/base:task_test",
+            "src/base:timer_test",
+            "src/base:patricia_test",
+            "src/base:boost_US_test"
         )
 
         $TestsString = ""
