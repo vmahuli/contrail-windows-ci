@@ -213,6 +213,17 @@ function Assert-IsAgentServiceDisabled {
     throw "Agent service is not disabled. EXPECTED: Agent service is disabled"
 }
 
+function Assert-AgentProcessCrashed {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+    $Res = Invoke-Command -Session $Session -ScriptBlock {
+        return $(Get-EventLog -LogName "System" -EntryType "Error" -Source "Service Control Manager" -Newest 10 | Where {$_.Message -match "The ContrailAgent service terminated unexpectedly" -AND $_.TimeGenerated -gt (Get-Date).AddSeconds(-5)})
+    }
+    if(!$Res) {
+        throw "Agent process didn't crash. EXPECTED: Agent process crashed"
+    }
+}
+
 function New-DockerNetwork {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,

@@ -65,6 +65,12 @@ function Test-AgentService {
         }
     }
 
+    function Invoke-AgentCrash {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+        Stop-ProcessIfExists -Session $Session -ProcessName "contrail-vrouter-agent"
+    }
+
     #
     # Tests definitions
     #
@@ -195,12 +201,45 @@ function Test-AgentService {
         })
     }
 
+    function Test-AgentServiceRestart {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+               
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-AgentServiceRestart"
+
+            Write-Host "======> Given Agent is enabled"
+            Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            Install-Agent -Session $Session
+            Assert-IsAgentServiceRegistered -Session $Session
+
+            New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+
+            Enable-AgentService -Session $Session
+            Assert-IsAgentServiceEnabled -Session $Session
+
+            Write-Host "======> When Agent process is crashed"
+            # Wait for contrail-vrouter-agent process to start
+            Start-Sleep -s 2
+            Invoke-AgentCrash -Session $Session
+            Start-Sleep -s 2
+            Assert-AgentProcessCrashed -Session $Session
+
+            Write-Host "======> Then Agent service is restarted"
+            Assert-IsAgentServiceEnabled -Session $Session
+
+            Write-Host "===> PASSED: Test-AgentServiceRestart"
+        })
+    }
+
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         Test-AgentServiceIsRegisteredAfterInstall -Session $Session -TestConfiguration $TestConfiguration
         Test-AgentServiceIsDisabledAfterInstall -Session $Session -TestConfiguration $TestConfiguration
         Test-AgentServiceIsUnregisteredAfterUninstall -Session $Session -TestConfiguration $TestConfiguration
         Test-AgentServiceEnabling -Session $Session -TestConfiguration $TestConfiguration
         Test-AgentServiceDisabling -Session $Session -TestConfiguration $TestConfiguration
+        Test-AgentServiceRestart -Session $Session -TestConfiguration $TestConfiguration
     })
 
     # Test cleanup

@@ -36,7 +36,8 @@ function Test-Pkt0PipeImplementation {
 
             Write-Host "======> Then Agent should crash when started"
             Enable-AgentService -Session $Session
-            Assert-IsAgentServiceDisabled -Session $Session
+            Start-Sleep -s 2
+            Assert-AgentProcessCrashed -Session $Session
 
             Write-Host "======> Cleanup"
             Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
@@ -89,7 +90,8 @@ function Test-Pkt0PipeImplementation {
                 -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
 
             Write-Host "======> Then Agent should crash"
-            Assert-IsAgentServiceDisabled -Session $Session
+            Start-Sleep -s 3
+            Assert-AgentProcessCrashed -Session $Session
 
             Write-Host "======> Cleanup"
             Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
