@@ -1,22 +1,24 @@
-function Get-AccessTokenFromKeyStone {
+$CONVERT_TO_JSON_MAX_DEPTH = 100
+
+function Get-AccessTokenFromKeystone {
     Param ([Parameter(Mandatory = $true)] [string] $AuthUrl,
            [Parameter(Mandatory = $true)] [string] $TenantName,
-           [Parameter(Mandatory = $true)] [string] $UserName,
+           [Parameter(Mandatory = $true)] [string] $Username,
            [Parameter(Mandatory = $true)] [string] $Password)
 
     $Request = @{
         auth = @{
             tenantName          = $TenantName
             passwordCredentials = @{
-                username = $UserName
+                username = $Username
                 password = $Password
             }
         }
     }
 
-    $AuthUrl += "/v2.0/tokens"
+    $AuthUrl += "/tokens"
     $Response = Invoke-RestMethod -Uri $AuthUrl -Method Post -ContentType "application/json" `
-        -Body (ConvertTo-Json $Request)
+        -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request)
     return $Response.access.token.id
 }
 
@@ -38,13 +40,12 @@ class SubnetConfiguration {
     }
 }
 
-function Add-OpenContrailNetwork {
-    Param ([Parameter(Mandatory = $true)] [string] $OpenContrailUrl,
+function Add-ContrailVirtualNetwork {
+    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
            [Parameter(Mandatory = $true)] [string] $AuthToken,
            [Parameter(Mandatory = $true)] [string] $TenantName,
            [Parameter(Mandatory = $true)] [string] $NetworkName,
-           [Parameter(Mandatory = $false)] [SubnetConfiguration] $SubnetConfig `
-               = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", "10.0.0.100", "10.0.0.200"))
+           [SubnetConfiguration] $SubnetConfig = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", "10.0.0.100", "10.0.0.200"))
 
     $Subnet = @{
         subnet           = @{
@@ -75,18 +76,43 @@ function Add-OpenContrailNetwork {
         }
     }
 
-    $RequestUrl = $OpenContrailUrl + "/virtual-networks"
+    $RequestUrl = $ContrailUrl + "/virtual-networks"
     $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} `
-        -Method Post -ContentType "application/json" -Body (ConvertTo-Json -Depth 10 $Request) `
+        -Method Post -ContentType "application/json" -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request)
 
     return $Response.'virtual-network'.'uuid'
 }
 
-function Remove-OpenContrailNetwork {
-    Param ([Parameter(Mandatory = $true)] [string] $OpenContrailUrl,
+function Remove-ContrailVirtualNetwork {
+    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
            [Parameter(Mandatory = $true)] [string] $AuthToken,
-           [Parameter(Mandatory = $true)] [string] $NetworkUuid)
+           [Parameter(Mandatory = $true)] [string] $NetworkUuid,
+           [bool] $Force = $false)
 
-    $RequestUrl = $OpenContrailUrl + "/virtual-network/" + $NetworkUuid
-    Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete
+    $NetworkUrl = $ContrailUrl + "/virtual-network/" + $NetworkUuid
+    $Network = Invoke-RestMethod -Method Get -Uri $NetworkUrl -Headers @{"X-Auth-Token" = $AuthToken}
+
+    $VirtualMachines = $Network.'virtual-network'.virtual_machine_interface_back_refs
+    $IpInstances = $Network.'virtual-network'.instance_ip_back_refs
+
+    if ($VirtualMachines -or $IpInstances) {
+        if (!$Force) {
+            Write-Error "Couldn't remove network. Resources are still referred. Use force mode"
+            return
+        }
+
+        # First we have to remove resources referred by network instance in correct order:
+        #   - Instance IPs
+        #   - Virtual machines
+        ForEach ($IpInstance in $IpInstances) {
+            Invoke-RestMethod -Uri $IpInstance.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+        }
+
+        ForEach ($VirtualMachine in $VirtualMachines) {
+            Invoke-RestMethod -Uri $VirtualMachine.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+        }
+    }
+
+    # We can now remove the network
+    Invoke-RestMethod -Uri $NetworkUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
 }

@@ -14,3 +14,4 @@
 . $PSScriptRoot\ComputeControllerIntegrationTests.ps1
 . $PSScriptRoot\SubnetsTests.ps1
 . $PSScriptRoot\Pkt0PipeImplementationTests.ps1
+. $PSScriptRoot\DockerMultitenancy.ps1

@@ -70,6 +70,7 @@ $DockerDriverConfiguration = [DockerDriverConfiguration] @{
 
 $TestConfiguration = [TestConfiguration] @{
     ControllerIP = $Env:CONTROLLER_IP;
+    ControllerRestPort = 8082
     ControllerHostUsername = $Env:CONTROLLER_HOST_USERNAME;
     ControllerHostPassword = $Env:CONTROLLER_HOST_PASSWORD;
     AdapterName = $Env:ADAPTER_NAME;
@@ -106,6 +107,7 @@ Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfigurati
 Test-VRouterAgentIntegration -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
 Test-ComputeControllerIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
 Test-MultipleSubnetsSupport -Session $Sessions[0] -TestConfiguration $TestConfiguration
+Test-DockerMultiTenancy -Session $Sessions[0] -TestConfiguration $TestConfiguration
 Test-Pkt0PipeImplementation -Session $Sessions[0] -TestConfiguration $TestConfiguration
 
 if($Env:RUN_DRIVER_TESTS -eq "1") {
