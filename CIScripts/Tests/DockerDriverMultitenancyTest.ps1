@@ -1,4 +1,4 @@
-function Test-DockerMultiTenancy {
+function Test-DockerDriverMultiTenancy {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
