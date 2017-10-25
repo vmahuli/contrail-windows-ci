@@ -17,8 +17,22 @@ $Job = [Job]::new("Build-all")
 Copy-Repos -Repos $Repos
 Invoke-ContrailCommonActions -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -VSSetupEnvScriptPath $Env:VS_SETUP_ENV_SCRIPT_PATH
 
+$ReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)
+
 Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH
-Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH
+Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH -ReleaseMode $ReleaseMode
+
+# TODO: JW-1211: Remove and build Agent in release mode
+if ($ReleaseMode) {
+    Move-Item -Path ./build/production -Destination ./backup-production
+    Remove-Item -Path ./build -Force -Recurse
+}
+
 Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH
+
+# TODO: JW-1211: Remove and build Agent in release mode
+if ($ReleaseMode) {
+    Move-Item -Path ./backup-production -Destination ./build/production
+}
 
 $Job.Done()

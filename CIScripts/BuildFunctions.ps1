@@ -14,7 +14,7 @@ class Repo {
 
 function Copy-Repos {
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of repos to clone")] [Repo[]] $Repos)
-    
+
     $Job.Step("Cloning repositories", {
         $CustomBranches = @($Repos.Where({ $_.Branch -ne $_.DefaultBranch }) | Select-Object -ExpandProperty Branch -Unique)
         $Repos.ForEach({
@@ -43,7 +43,7 @@ function Invoke-ContrailCommonActions {
     $Job.Step("Sourcing VS environment variables", {
         Invoke-BatchFile "$VSSetupEnvScriptPath"
     })
-    
+
     $Job.Step("Copying common third-party dependencies", {
         New-Item -ItemType Directory .\third_party
         Get-ChildItem "$ThirdPartyCache\common" -Directory |
@@ -79,11 +79,11 @@ function Invoke-DockerDriverBuild {
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath)
-    
+
     $Job.PushStep("Docker driver build")
     $Env:GOPATH=pwd
     $srcPath = "$Env:GOPATH/src/$DriverSrcPath"
-    
+
     New-Item -ItemType Directory ./bin
     Push-Location bin
 
@@ -118,7 +118,7 @@ function Invoke-DockerDriverBuild {
 
         Move-Item $srcPath/docker-driver.msi ./
     })
-    
+
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath "docker-driver.msi"
 
     Pop-Location
@@ -130,7 +130,8 @@ function Invoke-ExtensionBuild {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
-           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath)
+           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
+           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
 
     $Job.PushStep("Extension build")
 
@@ -139,20 +140,22 @@ function Invoke-ExtensionBuild {
         Copy-Item -Recurse third_party\cmocka vrouter\test\
     })
 
-    
+    $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
+
     $Job.Step("Building Extension and Utils", {
-        scons vrouter
+        $BuildModeOption = "--optimization=" + $BuildMode
+        scons $BuildModeOption vrouter
         if ($LASTEXITCODE -ne 0) {
             throw "Building vRouter solution failed"
         }
     })
 
-    $vRouterMSI = "build\debug\vrouter\extension\vRouter.msi"
-    $utilsMSI = "build\debug\vrouter\utils\utils.msi"
-    
+    $vRouterMSI = "build\{0}\vrouter\extension\vRouter.msi" -f $BuildMode
+    $utilsMSI = "build\{0}\vrouter\utils\utils.msi" -f $BuildMode
+
     Write-Host "Signing utilsMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $utilsMSI
-    
+
     Write-Host "Signing vRouterMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $vRouterMSI
 
@@ -222,10 +225,10 @@ function Invoke-AgentBuild {
     })
 
     $agentMSI = "build\debug\vnsw\agent\contrail\contrail-vrouter-agent.msi"
-    
+
     Write-Host "Signing agentMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $agentMSI
-    
+
     $Job.PopStep()
 }
 
