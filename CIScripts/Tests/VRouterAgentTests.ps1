@@ -7,6 +7,7 @@ function Test-VRouterAgentIntegration {
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     . $PSScriptRoot\CommonTestCode.ps1
+    . $PSScriptRoot\..\ContrailUtils.ps1
 
     $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS = 60
     $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS = 5
@@ -530,15 +531,86 @@ function Test-VRouterAgentIntegration {
         })
     }
 
-    function Test-MultiComputeNodesPing {
+    function Get-VrfStats {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+        $VrfStats = Invoke-Command -Session $Session -ScriptBlock {
+            $vrfstatsOutput = $(vrfstats --get 1)
+            $mplsUdpPktCount = [regex]::new("Udp Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+            $mplsGrePktCount = [regex]::new("Gre Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+            $vxlanPktCount = [regex]::new("Vxlan Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+            return @{
+                MplsUdpPktCount = $mplsUdpPktCount
+                MplsGrePktCount = $mplsGrePktCount
+                VxlanPktCount = $vxlanPktCount
+            }
+        }
+        return $VrfStats
+    }
+
+    function Test-ICMPoMPLSoGRE {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
                [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
-            Write-Host "===> Running: Test-MultiComputeNodesPing"
+            Write-Host "===> Running: Test-ICMPoMPLSoGRE"
+
+            Write-Host "======> Given Controller with default (MPLSoGRE) configuration"
             Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
-            Write-Host "===> PASSED: Test-MultiComputeNodesPing"
+
+            Write-Host "======> Then GRE tunnel is used"
+            $VrfStats = Get-VrfStats -Session $Session1
+            if ($VrfStats.MplsGrePktCount -eq 0 -or $VrfStats.MplsUdpPktCount -ne 0 -or $VrfStats.VxlanPktCount -ne 0) {
+                throw "Containers pinged themselves correctly but used the wrong type of tunnel (VrfStats: Udp = {0}, Gre = {1}, Vxlan = {2})" `
+                    -f $VrfStats.MplsUdpPktCount, $VrfStats.MplsGrePktCount, $VrfStats.VxlanPktCount
+            }
+
+            Write-Host "===> PASSED: Test-ICMPoMPLSoGRE"
+        })
+    }
+
+    function Test-ICMPoMPLSoUDP {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
+               [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-ICMPoMPLSoUDP"
+
+            Write-Host "======> Given Controller with MPLSoUPD configuration"
+            $TestConfigurationTemp = $TestConfiguration.ShallowCopy()
+            $TestConfigurationTemp.DockerDriverConfiguration = $TestConfiguration.DockerDriverConfiguration.ShallowCopy()
+            $TestConfigurationTemp.ControllerIP = $Env:CONTROLLER_IP_UDP
+            $TestConfigurationTemp.DockerDriverConfiguration.AuthUrl = $Env:DOCKER_DRIVER_AUTH_URL_UDP
+
+            $ContrailUrl = $TestConfigurationTemp.ControllerIP + ":" + $TestConfigurationTemp.ControllerRestPort
+            $ContrailCredentials = $TestConfigurationTemp.DockerDriverConfiguration
+            $AuthToken = Get-AccessTokenFromKeystone -AuthUrl $ContrailCredentials.AuthUrl -TenantName $ContrailCredentials.TenantConfiguration.Name `
+                -Username $ContrailCredentials.Username -Password $ContrailCredentials.Password
+            $RouterIp1 = Invoke-Command -Session $Session1 -ScriptBlock {
+                return $((Get-NetIPAddress -InterfaceAlias $Using:TestConfigurationTemp.VHostName -AddressFamily IPv4).IpAddress)
+            }
+            $RouterIp2 = Invoke-Command -Session $Session2 -ScriptBlock {
+                return $((Get-NetIPAddress -InterfaceAlias $Using:TestConfigurationTemp.VHostName -AddressFamily IPv4).IpAddress)
+            }
+            $RouterUuid1 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session1.ComputerName -RouterIp RouterIp1
+            $RouterUuid2 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session2.ComputerName -RouterIp RouterIp2
+
+            Try {
+                Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfigurationTemp -Container1Name "container1" -Container2Name "container2"
+            } Finally {
+                Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid1
+                Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid2
+            }
+            Write-Host "======> Then UDP tunnel is used"
+            $VrfStats = Get-VrfStats -Session $Session1
+            if ($VrfStats.MplsUdpPktCount -eq 0 -or $VrfStats.MplsGrePktCount -ne 0 -or $VrfStats.VxlanPktCount -ne 0) {
+                throw "Containers pinged themselves correctly but used the wrong type of tunnel (VrfStats: Udp = {0}, Gre = {1}, Vxlan = {2})" `
+                    -f $VrfStats.MplsUdpPktCount, $VrfStats.MplsGrePktCount, $VrfStats.VxlanPktCount
+            }
+
+            Write-Host "===> PASSED: Test-ICMPoMPLSoUDP"
         })
     }
 
@@ -873,7 +945,8 @@ function Test-VRouterAgentIntegration {
         Test-Pkt0ReceivesTrafficAfterAgentIsStarted -Session $Session1 -TestConfiguration $TestConfiguration
         Test-GatewayArpIsResolvedInAgent -Session $Session1 -TestConfiguration $TestConfiguration
         Test-SingleComputeNodePing -Session $Session1 -TestConfiguration $TestConfiguration
-        Test-MultiComputeNodesPing -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
+        Test-ICMPoMPLSoGRE -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
+        Test-ICMPoMPLSoUDP -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnIcmpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnTcpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnUdpTraffic -Session $Session1 -TestConfiguration $TestConfiguration

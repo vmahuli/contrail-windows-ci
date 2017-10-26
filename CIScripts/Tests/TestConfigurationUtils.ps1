@@ -17,6 +17,10 @@ class DockerDriverConfiguration {
     [string] $Password;
     [string] $AuthUrl;
     [TenantConfiguration] $TenantConfiguration;
+
+    [Object]ShallowCopy() {
+        return $this.MemberwiseClone()
+    }
 }
 
 class TestConfiguration {
@@ -30,7 +34,10 @@ class TestConfiguration {
     [string] $VMSwitchName;
     [string] $ForwardingExtensionName;
     [string] $AgentConfigFilePath;
-    [string] $AgentSampleConfigFilePath;
+
+    [Object]ShallowCopy() {
+        return $this.MemberwiseClone()
+    }
 }
 
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
@@ -325,7 +332,7 @@ function Clear-TestConfiguration {
 
 function New-AgentConfigFile {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     # Gather information about testbed's network adapters
     $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
@@ -343,7 +350,6 @@ function New-AgentConfigFile {
     $VHostGatewayIP = $TEST_NETWORK_GATEWAY
     $PhysIfName = $PhysicalAdapter.ifName
 
-    $SourceConfigFilePath = $TestConfiguration.AgentSampleConfigFilePath
     $DestConfigFilePath = $TestConfiguration.AgentConfigFilePath
 
     Invoke-Command -Session $Session -ScriptBlock {
@@ -352,35 +358,27 @@ function New-AgentConfigFile {
         $VHostIfIndex = $Using:VHostIfIndex
         $PhysIfName = $Using:PhysIfName
 
-        $SourceConfigFilePath = $Using:SourceConfigFilePath
         $DestConfigFilePath = $Using:DestConfigFilePath
 
         $VHostIP = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).IPAddress
         $VHostGatewayIP = $Using:VHostGatewayIP
 
-        $ConfigFileContent = [System.IO.File]::ReadAllText($SourceConfigFilePath)
+        $ConfigFileContent = @"
+[CONTROL-NODE]
+server=$ControllerIP
 
-        # Insert server IP only in [CONTROL-NODE] and [DISCOVERY] (first 2 occurrences of "server=")
-        [regex] $ServerIpPattern = "# server=.*"
-        $ServerIpString = "server=$ControllerIP"
-        $ConfigFileContent = $ServerIpPattern.replace($ConfigFileContent, $ServerIpString, 2)
+[DISCOVERY]
+server=$ControllerIP
 
-        # Insert ifName of HNSTransparent interface
-        $ConfigFileContent = $ConfigFileContent -Replace "# name=vhost0", "name=$VHostIfName"
-
-        # Insert ifName of Ethernet1 interface
-        $ConfigFileContent = $ConfigFileContent `
-                                -Replace "# physical_interface=vnet0", "physical_interface=$PhysIfName"
-
-        # Insert vhost IP address
-        $ConfigFileContent = $ConfigFileContent -Replace "# ip=10.1.1.1/24", "ip=$VHostIP/24"
-
-        # Insert vhost gateway IP address
-        $ConfigFileContent = $ConfigFileContent -Replace "# gateway=10.1.1.254", "gateway=$VHostGatewayIP"
+[VIRTUAL-HOST-INTERFACE]
+name=$VHostIfName
+ip=$VHostIP/24
+gateway=$VHostGatewayIP
+physical_interface=$PhysIfName
+"@
 
         # Save file with prepared config
         [System.IO.File]::WriteAllText($DestConfigFilePath, $ConfigFileContent)
-
     }
 }
 
