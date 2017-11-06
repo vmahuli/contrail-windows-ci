@@ -84,6 +84,10 @@ function Invoke-DockerDriverBuild {
     $Env:GOPATH=pwd
     $srcPath = "$Env:GOPATH/src/$DriverSrcPath"
 
+    $Job.Step("Contrail-go-api source code generation", {
+        python tools/generateds/generateDS.py -f -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ -g golang-api controller/src/schema/vnc_cfg.xsd
+    })
+
     New-Item -ItemType Directory ./bin
     Push-Location bin
 
