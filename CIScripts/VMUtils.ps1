@@ -47,6 +47,7 @@ function Initialize-VIServer {
 }
 
 function New-TestbedVMs {
+    [CmdletBinding(DefaultParametersetName = "None")]
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of names of created VMs")] [string[]] $VMNames,
            [Parameter(Mandatory = $true, HelpMessage = "Flag indicating if we should install all artifacts on spawned VMs")] [bool] $InstallArtifacts,
            [Parameter(Mandatory = $true, HelpMessage = "Access data for VIServer")] [VIServerAccessData] $VIServerAccessData,
@@ -55,7 +56,9 @@ function New-TestbedVMs {
            [Parameter(Mandatory = $true, HelpMessage = "Directory with artifacts collected from other jobs")] [string] $ArtifactsDir,
            [Parameter(Mandatory = $true, HelpMessage = "Location of crash dump files")] [string] $DumpFilesLocation,
            [Parameter(Mandatory = $true, HelpMessage = "Crash dump files base name (prefix)")] [string] $DumpFilesBaseName,
-           [Parameter(Mandatory = $true, HelpMessage = "Max time to wait for VMs")] [int] $MaxWaitVMMinutes)
+           [Parameter(Mandatory = $true, HelpMessage = "Max time to wait for VMs")] [int] $MaxWaitVMMinutes,
+           [Parameter(HelpMessage = "Switch indicating if MSVC debug DLLs should be copied", ParameterSetName = "CopyMsvcDebugDlls")] [switch] $CopyMsvcDebugDlls,
+           [Parameter(Mandatory = $true, HelpMessage = "Directory with MSVC debug DLLs", ParameterSetName = "CopyMsvcDebugDlls")] [string] $MsvcDebugDllsDir)
 
     function New-StartedVM {
         Param ([Parameter(Mandatory = $true)] [string] $VMName,
@@ -215,6 +218,15 @@ function New-TestbedVMs {
         Pop-Location
     }
 
+    function Copy-MsvcDebugDlls {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [string] $MsvcDebugDllsDir)
+
+        Invoke-Command -Session $Session -ScriptBlock {
+            Copy-Item -Path "$Using:MsvcDebugDllsDir\*.dll" -Destination "C:\Windows\system32\"
+        }
+    }
+
     Write-Host "Connecting to VIServer"
     Initialize-VIServer -VIServerAccessData $VIServerAccessData
 
@@ -236,6 +248,11 @@ function New-TestbedVMs {
     if ($InstallArtifacts -eq $true) {
         Write-Host "Installing artifacts"
         $Sessions.ForEach({ Install-Artifacts -Session $_ -ArtifactsDir $ArtifactsDir })
+    }
+
+    if ($CopyMsvcDebugDlls.IsPresent) {
+        Write-Host "Copying MSVC debug DLLs"
+        $Sessions.ForEach({ Copy-MsvcDebugDlls -Session $_ -MsvcDebugDllsDir $MsvcDebugDllsDir })
     }
 
     return $Sessions
