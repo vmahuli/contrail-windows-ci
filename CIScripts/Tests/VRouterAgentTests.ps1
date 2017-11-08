@@ -615,14 +615,27 @@ function Test-VRouterAgentIntegration {
     }
 
     function Test-FlowsAreInjectedOnIcmpTraffic {
-        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
+               [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
             Write-Host "===> Running: Test-FlowsAreInjectedOnIcmpTraffic"
 
             Write-Host "======> Given: Contrail compute services are started"
-            Initialize-ComputeNodeForFlowTests -Session $Session -TestConfiguration $TestConfiguration
+            Clear-TestConfiguration -Session $Session1 -TestConfiguration $TestConfiguration
+            Initialize-ComputeServices -Session $Session1 -TestConfiguration $TestConfiguration
+            Clear-TestConfiguration -Session $Session2 -TestConfiguration $TestConfiguration
+            Initialize-ComputeServices -Session $Session2 -TestConfiguration $TestConfiguration
+            New-DockerNetwork -Session $Session1 -TestConfiguration $TestConfiguration `
+                -Name $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name `
+                -Network $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name `
+                -Subnet $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Subnets[0]
+            New-DockerNetwork -Session $Session2 -TestConfiguration $TestConfiguration `
+                -Name $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name `
+                -Network $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name `
+                -Subnet $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Subnets[0]
+            Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
             Write-Host "======> When 2 containers belonging to different networks are running"
             $Network1Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name
@@ -631,11 +644,11 @@ function Test-VRouterAgentIntegration {
             $Container2Name = "juniper-tree"
 
             $CreateContainer1Success = Create-ContainerInRemoteSession `
-                -Session $Session `
+                -Session $Session1 `
                 -NetworkName $Network1Name `
                 -ContainerName $Container1Name
             $CreateContainer2Success = Create-ContainerInRemoteSession `
-                -Session $Session `
+                -Session $Session2 `
                 -NetworkName $Network2Name `
                 -ContainerName $Container2Name
 
@@ -643,18 +656,16 @@ function Test-VRouterAgentIntegration {
                 throw "Container creation failed. EXPECTED: succeeded."
             }
 
-            $Container2IP = Invoke-Command -Session $Session -ScriptBlock {
+            $Container2IP = Invoke-Command -Session $Session2 -ScriptBlock {
                 & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
             }
 
             Write-Host "======> When: Container $Container1Name (network: $Network1Name)"
             Write-Host "        pings container $Container2Name (network: $Network2Name, IP: $Container2IP)"
-            Invoke-Command -Session $Session -ScriptBlock {
-                & docker exec $Using:Container1Name ping $Using:Container2IP -n 3 -w 500
-            }
+            Ping-Container -Session $Session1 -ContainerName $Container1Name -IP $Container2IP
 
             Write-Host "======> Then: Flow should be created for ICMP protocol"
-            $FlowOutput = Invoke-Command -Session $Session -ScriptBlock {
+            $FlowOutput = Invoke-Command -Session $Session1 -ScriptBlock {
                 & flow -l --match "proto icmp"
             }
             Write-Host "Flow output: $FlowOutput"
@@ -662,8 +673,8 @@ function Test-VRouterAgentIntegration {
             Write-Host "        Successfully created."
 
             Write-Host "Removing containers: $Container1Name and $Container2Name."
-            Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container1Name | Out-Null
-            Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container2Name | Out-Null
+            Remove-ContainerInRemoteSession -Session $Session1 -ContainerName $Container1Name | Out-Null
+            Remove-ContainerInRemoteSession -Session $Session2 -ContainerName $Container2Name | Out-Null
 
             Write-Host "===> PASSED: Test-FlowsAreInjectedOnIcmpTraffic"
         })
@@ -947,7 +958,7 @@ function Test-VRouterAgentIntegration {
         Test-SingleComputeNodePing -Session $Session1 -TestConfiguration $TestConfiguration
         Test-ICMPoMPLSoGRE -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
         Test-ICMPoMPLSoUDP -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
-        Test-FlowsAreInjectedOnIcmpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
+        Test-FlowsAreInjectedOnIcmpTraffic -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnTcpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnUdpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
         Test-MultihostUdpTraffic -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
