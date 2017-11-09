@@ -78,7 +78,8 @@ function Invoke-DockerDriverBuild {
     Param ([Parameter(Mandatory = $true)] [string] $DriverSrcPath,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
-           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath)
+           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
+           [Parameter(Mandatory = $true)] [string] $OutputPath)
 
     $Job.PushStep("Docker driver build")
     $Env:GOPATH=pwd
@@ -127,6 +128,10 @@ function Invoke-DockerDriverBuild {
 
     Pop-Location
 
+    $Job.Step("Copying artifacts to $OutputPath", {
+        Copy-Item bin/* $OutputPath
+    })
+
     $Job.PopStep()
 }
 
@@ -135,6 +140,7 @@ function Invoke-ExtensionBuild {
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
+           [Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
 
     $Job.PushStep("Extension build")
@@ -154,14 +160,23 @@ function Invoke-ExtensionBuild {
         }
     })
 
-    $vRouterMSI = "build\{0}\vrouter\extension\vRouter.msi" -f $BuildMode
-    $utilsMSI = "build\{0}\vrouter\utils\utils.msi" -f $BuildMode
+    $vRouterRoot = "build\{0}\vrouter" -f $BuildMode
+    $vRouterMSI = "$vRouterRoot\extension\vRouter.msi"
+    $utilsMSI = "$vRouterRoot\utils\utils.msi"
+    $vTestPath = "$vRouterRoot\utils\vtest\"
 
     Write-Host "Signing utilsMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $utilsMSI
 
     Write-Host "Signing vRouterMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $vRouterMSI
+
+    $Job.Step("Copying artifacts to $OutputPath", {
+        Copy-Item $utilsMSI $OutputPath -Recurse -Container
+        Copy-Item $vRouterMSI $OutputPath -Recurse -Container
+        Copy-Item $CertPath $OutputPath -Recurse -Container
+        Copy-Item $vTestPath "$OutputPath\utils\vtest" -Recurse -Container
+    })
 
     $Job.PopStep()
 }
@@ -171,6 +186,7 @@ function Invoke-AgentBuild {
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
+           [Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
 
     $Job.PushStep("Agent build")
@@ -231,10 +247,23 @@ function Invoke-AgentBuild {
         }
     })
 
-    $agentMSI = "build\{0}\vnsw\agent\contrail\contrail-vrouter-agent.msi" -f $BuildMode
+    $rootBuildDir = "build\{0}" -f $BuildMode
+    $agentMSI = "$rootBuildDir\vnsw\agent\contrail\contrail-vrouter-agent.msi"
 
     Write-Host "Signing agentMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $agentMSI
+
+    $Job.Step("Copying artifacts to $OutputPath", {
+        $vRouterApiPath = "build\noarch\contrail-vrouter-api\dist\contrail-vrouter-api-1.0.tar.gz"
+        $testInisPath = "controller\src\vnsw\agent\test"
+        $libxmlPath = "build\bin\libxml2.dll"
+
+        Copy-Item $vRouterApiPath $OutputPath -Recurse -Container
+        Copy-Item $agentMSI $OutputPath -Recurse -Container
+        Copy-Item -Path $rootBuildDir -Recurse -Include "*.exe" -Destination $OutputPath -Container # This copies all test executables 
+        Copy-Item -Path $testInisPath -Include "*.ini" -Destination $OutputPath
+        Copy-Item $libxmlPath $OutputPath -Recurse -Container
+    })
 
     $Job.PopStep()
 }
