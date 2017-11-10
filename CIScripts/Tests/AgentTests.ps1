@@ -59,10 +59,17 @@ function Test-Agent {
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Invoke-Command -Session $Session -ScriptBlock $DefineTestIfGTestOutputSuggestsThatAllTestsHavePassed
         Invoke-Command -Session $Session -ScriptBlock {
+            $TestConfiguration = $Using:TestConfiguration
+
+            # Those env vars are used by agent tests for determining timeout's threshold
+            # They were copied from Linux unit test job
+            $Env:TASK_UTIL_WAIT_TIME = 10000
+            $Env:TASK_UTIL_RETRY_COUNT = 6000
+
             $ConfigurationFile = "C:\Artifacts\vnswa_cfg.ini"
             $Configuration = Get-Content $ConfigurationFile
-            $VirtualInterfaceName = (Get-NetAdapter -Name "vEthernet (HNSTransparent)").IfName
-            $PhysicalInterfaceName = (Get-NetAdapter -Name "Ethernet1").IfName
+            $VirtualInterfaceName = (Get-NetAdapter -Name $TestConfiguration.VHostName).IfName
+            $PhysicalInterfaceName = (Get-NetAdapter -Name $TestConfiguration.AdapterName).IfName
             $Configuration = $Configuration -replace "name=.*", "name=$VirtualInterfaceName"
             $Configuration = $Configuration -replace "physical_interface=.*", "physical_interface=$PhysicalInterfaceName"
             Set-Content $ConfigurationFile $Configuration
