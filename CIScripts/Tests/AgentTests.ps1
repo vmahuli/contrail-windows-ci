@@ -23,6 +23,7 @@ function Run-Test {
             $ErrorActionPreference = "SilentlyContinue"
             Set-Location C:\Artifacts
             $TestOutput = Invoke-Expression "C:\Artifacts\$using:TestExecutable --config C:\Artifacts\vnswa_cfg.ini"
+            Write-Host $TestOutput
 
             # This is a workaround for the following bug:
             # https://bugs.launchpad.net/opencontrail/+bug/1714205

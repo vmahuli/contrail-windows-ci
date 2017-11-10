@@ -230,9 +230,10 @@ function Invoke-AgentBuild {
             "src/base:queue_task_test",
             "src/base:subset_test",
             "src/base:task_test",
-            "src/base:timer_test",
             "src/base:patricia_test",
             "src/base:boost_US_test"
+            # Marked as flaky in SCons
+            # "src/base:timer_test"
         )
 
         $TestsString = ""
