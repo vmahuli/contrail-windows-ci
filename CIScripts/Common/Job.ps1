@@ -123,7 +123,7 @@ class Job {
     }
 
     StepQuiet([string] $msg, [scriptblock] $block) {
-        $this.PushStep($msg)
+        $this.PushQuiet($msg)
         $sb = [scriptblock]::Create($block)
         & $sb | ForEach-Object { Write-Host "$_" }
         $this.PopStep()

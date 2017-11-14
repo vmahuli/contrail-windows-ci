@@ -3,7 +3,7 @@ function Test-TCPoMPLSoGRE {
            [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session2,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-    . $PSScriptRoot\CommonTestCode.ps1
+    . $PSScriptRoot\..\Utils\CommonTestCode.ps1
 
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         Write-Host "===> Running TCP over MPLS over GRE test"

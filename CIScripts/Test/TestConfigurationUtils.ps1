@@ -44,7 +44,7 @@ $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
 $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS = 2
 
 function Stop-ProcessIfExists {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $ProcessName)
 
     Invoke-Command -Session $Session -ScriptBlock {
@@ -56,7 +56,7 @@ function Stop-ProcessIfExists {
 }
 
 function Test-IsProcessRunning {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $ProcessName)
 
     $Proc = Invoke-Command -Session $Session -ScriptBlock {
@@ -67,7 +67,7 @@ function Test-IsProcessRunning {
 }
 
 function Enable-VRouterExtension {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName,
            [Parameter(Mandatory = $true)] [string] $VMSwitchName,
            [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName,
@@ -82,7 +82,7 @@ function Enable-VRouterExtension {
 }
 
 function Disable-VRouterExtension {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName,
            [Parameter(Mandatory = $true)] [string] $VMSwitchName,
            [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName)
@@ -96,7 +96,7 @@ function Disable-VRouterExtension {
 }
 
 function Test-IsVRouterExtensionEnabled {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $VMSwitchName,
            [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName)
 
@@ -108,7 +108,7 @@ function Test-IsVRouterExtensionEnabled {
 }
 
 function Enable-DockerDriver {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName,
            [Parameter(Mandatory = $true)] [string] $ControllerIP,
            [Parameter(Mandatory = $true)] [DockerDriverConfiguration] $Configuration,
@@ -141,7 +141,7 @@ function Enable-DockerDriver {
 }
 
 function Disable-DockerDriver {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Host "Disabling Docker Driver"
 
@@ -156,13 +156,13 @@ function Disable-DockerDriver {
 }
 
 function Test-IsDockerDriverEnabled {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     return Test-IsProcessRunning -Session $Session -ProcessName "contrail-windows-docker"
 }
 
 function Enable-AgentService {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Invoke-Command -Session $Session -ScriptBlock {
         Write-Host "Starting Agent"
@@ -171,7 +171,7 @@ function Enable-AgentService {
 }
 
 function Disable-AgentService {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Invoke-Command -Session $Session -ScriptBlock {
         Write-Host "Stopping Agent"
@@ -180,7 +180,7 @@ function Disable-AgentService {
 }
 
 function Assert-IsAgentServiceEnabled {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS
     $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS
@@ -201,7 +201,7 @@ function Assert-IsAgentServiceEnabled {
 }
 
 function Assert-IsAgentServiceDisabled {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS
     $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS
@@ -222,7 +222,7 @@ function Assert-IsAgentServiceDisabled {
 }
 
 function Assert-AgentProcessCrashed {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     $Res = Invoke-Command -Session $Session -ScriptBlock {
         return $(Get-EventLog -LogName "System" -EntryType "Error" -Source "Service Control Manager" -Newest 10 | Where {$_.Message -match "The ContrailAgent service terminated unexpectedly" -AND $_.TimeGenerated -gt (Get-Date).AddSeconds(-5)})
@@ -233,7 +233,7 @@ function Assert-AgentProcessCrashed {
 }
 
 function New-DockerNetwork {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
            [Parameter(Mandatory = $false)] [string] $Name,
            [Parameter(Mandatory = $false)] [string] $TenantName,
@@ -269,7 +269,7 @@ function New-DockerNetwork {
 }
 
 function Remove-AllUnusedDockerNetworks {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Host "Removing all docker networks"
 
@@ -279,7 +279,7 @@ function Remove-AllUnusedDockerNetworks {
 }
 
 function Initialize-TestConfiguration {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
            [Parameter(Mandatory = $false)] [bool] $NoNetwork = $false)
 
@@ -318,7 +318,7 @@ function Initialize-TestConfiguration {
 }
 
 function Clear-TestConfiguration {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     Write-Host "Cleaning up test configuration"
@@ -331,7 +331,7 @@ function Clear-TestConfiguration {
 }
 
 function New-AgentConfigFile {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     # Gather information about testbed's network adapters
@@ -383,7 +383,7 @@ physical_interface=$PhysIfName
 }
 
 function Initialize-ComputeServices {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
             [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
@@ -392,7 +392,7 @@ function Initialize-ComputeServices {
 }
 
 function Remove-DockerNetwork {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
            [Parameter(Mandatory = $false)] [string] $Name)
 
@@ -406,7 +406,7 @@ function Remove-DockerNetwork {
 }
 
 function New-Container {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $NetworkName,
            [Parameter(Mandatory = $false)] [string] $Name)
 
@@ -423,7 +423,7 @@ function New-Container {
 }
 
 function Remove-Container {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $false)] [string] $NameOrId)
 
     Invoke-Command -Session $Session -ScriptBlock {

@@ -5,7 +5,7 @@ function Test-ComputeControllerIntegration {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-    . $PSScriptRoot\CommonTestCode.ps1
+    . $PSScriptRoot\..\Utils\CommonTestCode.ps1
 
     $WAIT_TIME_SEC = 15
 

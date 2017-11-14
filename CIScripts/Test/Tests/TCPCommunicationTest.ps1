@@ -2,7 +2,7 @@ function Test-TCPCommunication {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-    . $PSScriptRoot\CommonTestCode.ps1
+    . $PSScriptRoot\..\Utils\CommonTestCode.ps1
 
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         Write-Host "===> Running TCP Communication test"

@@ -15,7 +15,7 @@ function Test-SNAT {
            [Parameter(Mandatory = $true)] [SNATConfiguration] $SNATConfiguration,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-    . $PSScriptRoot\CommonTestCode.ps1
+    . $PSScriptRoot\..\Utils\CommonTestCode.ps1
 
     function New-MgmtSwitch {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,

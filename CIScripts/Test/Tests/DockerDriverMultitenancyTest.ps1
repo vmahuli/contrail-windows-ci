@@ -2,8 +2,8 @@ function Test-DockerDriverMultiTenancy {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-    . $PSScriptRoot\CommonTestCode.ps1
-    . $PSScriptRoot\..\ContrailUtils.ps1
+    . $PSScriptRoot\..\Utils\CommonTestCode.ps1
+    . $PSScriptRoot\..\Utils\ContrailUtils.ps1
 
     #
     # Private functions of Test-DockerMultiTenancy

@@ -1,2 +1,2 @@
 $ReleaseModeBuild = $true
-. $PSScriptRoot\SpawnTestbedCommon.ps1
+. $PSScriptRoot\SpawnTestbed.ps1

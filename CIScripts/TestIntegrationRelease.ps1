@@ -1,2 +1,2 @@
 $ReleaseModeBuild = $true
-. $PSScriptRoot\TestIntegrationCommon.ps1
+. $PSScriptRoot\TestIntegration.ps1

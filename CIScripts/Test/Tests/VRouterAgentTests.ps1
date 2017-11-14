@@ -6,8 +6,8 @@ function Test-VRouterAgentIntegration {
            [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-    . $PSScriptRoot\CommonTestCode.ps1
-    . $PSScriptRoot\..\ContrailUtils.ps1
+    . $PSScriptRoot\..\Utils\CommonTestCode.ps1
+    . $PSScriptRoot\..\Utils\ContrailUtils.ps1
 
     $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS = 60
     $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS = 5

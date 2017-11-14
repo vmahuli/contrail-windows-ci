@@ -1,3 +1,6 @@
+. $PSScriptRoot\..\Common\VMUtils.ps1
+. $PSScriptRoot\..\Common\Aliases.ps1
+
 class NewVMCreationSettings {
     [string] $ResourcePoolName;
     [string] $TemplateName;
@@ -6,54 +9,12 @@ class NewVMCreationSettings {
     [string] $NewVMLocation;
 }
 
-class VIServerAccessData {
-    [string] $Username;
-    [string] $Password;
-    [string] $Server;
-}
-
-function Initialize-VIServer {
-    Param ([Parameter(Mandatory = $true)] [VIServerAccessData] $VIServerAccessData)
-
-    Push-Location
-
-    # Global named mutex needed here because all PowerCLI commnads are running in global context and modify common configuration files.
-    # Without this mutex, PowerCLI commands may throw an exception in case of configuration file being blocked by another job.
-    $Mutex = [System.Threading.Mutex]::new($false, "WinContrailCIPowerCLIMutex")
-    $MaxTimeout = 1000 * 60 * 10 # 10 min
-
-    try {
-        if (!$Mutex.WaitOne($MaxTimeout)) {
-            throw "Timeout while waiting for mutex"
-        }
-    }
-    catch [System.Threading.AbandonedMutexException] {
-        [void] $Mutex.Close()
-        throw "Global mutex has been abandoned. Try restarting the job."
-    }
-
-    try {
-        Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false | Out-Null
-        Set-PowerCLIConfiguration -DefaultVIServerMode Single -Confirm:$false | Out-Null
-
-        Connect-VIServer -User $VIServerAccessData.Username -Password $VIServerAccessData.Password -Server $VIServerAccessData.Server | Out-Null
-    }
-    finally {
-        [void] $Mutex.ReleaseMutex()
-        [void] $Mutex.Close()
-    }
-
-    Pop-Location
-}
-
 function New-TestbedVMs {
     [CmdletBinding(DefaultParametersetName = "None")]
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of names of created VMs")] [string[]] $VMNames,
-           [Parameter(Mandatory = $true, HelpMessage = "Flag indicating if we should install all artifacts on spawned VMs")] [bool] $InstallArtifacts,
            [Parameter(Mandatory = $true, HelpMessage = "Access data for VIServer")] [VIServerAccessData] $VIServerAccessData,
            [Parameter(Mandatory = $true, HelpMessage = "Settings required for creating new VM")] [NewVMCreationSettings] $VMCreationSettings,
-           [Parameter(Mandatory = $true, HelpMessage = "Credentials required to access created VMs")] [System.Management.Automation.PSCredential] $VMCredentials,
-           [Parameter(Mandatory = $true, HelpMessage = "Directory with artifacts collected from other jobs")] [string] $ArtifactsDir,
+           [Parameter(Mandatory = $true, HelpMessage = "Credentials required to access created VMs")] [PSCredentialT] $VMCredentials,
            [Parameter(Mandatory = $true, HelpMessage = "Location of crash dump files")] [string] $DumpFilesLocation,
            [Parameter(Mandatory = $true, HelpMessage = "Crash dump files base name (prefix)")] [string] $DumpFilesBaseName,
            [Parameter(Mandatory = $true, HelpMessage = "Max time to wait for VMs")] [int] $MaxWaitVMMinutes,
@@ -103,26 +64,8 @@ function New-TestbedVMs {
         }
     }
 
-    function New-RemoteSessions {
-        Param ([Parameter(Mandatory = $true)] [string[]] $VMNames,
-               [Parameter(Mandatory = $true)] [System.Management.Automation.PSCredential] $Credentials)
-
-        $Sessions = [System.Collections.ArrayList] @()
-        $VMNames.ForEach({
-            $Sess = New-PSSession -ComputerName $_ -Credential $Credentials
-
-            Invoke-Command -Session $Sess -ScriptBlock {
-                $ErrorActionPreference = "Stop"
-            }
-
-            $Sessions += $Sess
-        })
-
-        return $Sessions
-    }
-
     function Enable-NBLDebugging {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
         Invoke-Command -Session $Session -ScriptBlock {
             # Enable tracing of NBL owner, so that !ndiskd.pendingnbls debugger extension can search and identify lost NBLs.
@@ -131,7 +74,7 @@ function New-TestbedVMs {
     }
 
     function Initialize-CrashDumpSaving {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $DumpFilesLocation,
                [Parameter(Mandatory = $true)] [string] $DumpFilesBaseName)
 
@@ -148,78 +91,8 @@ function New-TestbedVMs {
         }
     }
 
-    function Install-Artifacts {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-               [Parameter(Mandatory = $true)] [string] $ArtifactsDir)
-
-        Push-Location $ArtifactsDir
-
-        Invoke-Command -Session $Session -ScriptBlock {
-            New-Item -ItemType Directory -Force C:\Artifacts | Out-Null
-        }
-
-        Write-Host "Copying Docker driver installer"
-        Copy-Item -ToSession $Session -Path "docker_driver\docker-driver.msi" -Destination C:\Artifacts\
-
-        Write-Host "Copying Agent and Contrail vRouter API"
-        Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-agent.msi" -Destination C:\Artifacts\
-        Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-api-1.0.tar.gz" -Destination C:\Artifacts\
-
-        Write-Host "Copying Agent test executables"
-        $AgentTextExecutables = Get-ChildItem .\agent | Where-Object {$_.Name -match '^[\W\w]*test[\W\w]*.exe$'}
-
-        #Test executables from schema/test do not follow the convention
-        $AgentTextExecutables += Get-ChildItem .\agent | Where-Object {$_.Name -match '^ifmap_[\W\w]*.exe$'}
-
-        $AgentTextExecutables = $AgentTextExecutables | Select -Unique
-        Foreach ($TestExecutable in $AgentTextExecutables) {
-            Write-Host "    Copying $TestExecutable"
-            Copy-Item -ToSession $Session -Path "agent\$TestExecutable" -Destination C:\Artifacts\
-        }
-
-        Write-Host "Copying test configuration files and test data"
-        Copy-Item -ToSession $Session -Path "agent\vnswa_cfg.ini" -Destination C:\Artifacts\
-        Copy-Item -Recurse -ToSession $Session -Path "agent\controller" -Destination C:\Artifacts\
-
-        Write-Host "Copying vtest scenarios"
-        Copy-Item -ToSession $Session -Path "vrouter\utils\vtest" -Destination C:\Artifacts\ -Recurse -Force
-
-        Write-Host "Copying vRouter and Utils MSIs"
-        Copy-Item -ToSession $Session -Path "vrouter\vRouter.msi" -Destination C:\Artifacts\
-        Copy-Item -ToSession $Session -Path "vrouter\utils.msi" -Destination C:\Artifacts\
-        Copy-Item -ToSession $Session -Path "vrouter\*.cer" -Destination C:\Artifacts\ # TODO: Remove after JW-798
-
-        Invoke-Command -Session $Session -ScriptBlock {
-            Write-Host "Installing Contrail vRouter API"
-            pip2 install C:\Artifacts\contrail-vrouter-api-1.0.tar.gz | Out-Null
-
-            Write-Host "Installing vRouter Extension"
-            Import-Certificate -CertStoreLocation Cert:\LocalMachine\Root\ "C:\Artifacts\vRouter.cer" | Out-Null # TODO: Remove after JW-798
-            Import-Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher\ "C:\Artifacts\vRouter.cer" | Out-Null # TODO: Remove after JW-798
-            Start-Process msiexec.exe -ArgumentList @("/i", "C:\Artifacts\vRouter.msi", "/quiet") -Wait
-
-            Write-Host "Installing Utils"
-            Start-Process msiexec.exe -ArgumentList @("/i", "C:\Artifacts\utils.msi", "/quiet") -Wait
-
-            Write-Host "Installing Docker driver"
-            Start-Process msiexec.exe -ArgumentList @("/i", "C:\Artifacts\docker-driver.msi", "/quiet") -Wait
-
-            Write-Host "Installing Agent"
-            Start-Process msiexec.exe -ArgumentList @("/i", "C:\Artifacts\contrail-vrouter-agent.msi", "/quiet") -Wait
-
-            # Refresh Path
-            $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-        }
-
-        Write-Host "Copying Docker driver tests"
-        $TestFiles = @("controller", "hns", "hnsManager", "driver")
-        $TestFiles.ForEach( { Copy-Item -ToSession $Session -Path "docker_driver\$_.test" -Destination "C:\Program Files\Juniper Networks\$_.test.exe" })
-
-        Pop-Location
-    }
-
     function Copy-MsvcDebugDlls {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $MsvcDebugDllsDir)
 
         Invoke-Command -Session $Session -ScriptBlock {
@@ -244,11 +117,6 @@ function New-TestbedVMs {
         Initialize-CrashDumpSaving -Session $_ -DumpFilesLocation $DumpFilesLocation -DumpFilesBaseName $DumpFilesBaseName
         Enable-NBLDebugging -Session $_
     })
-
-    if ($InstallArtifacts -eq $true) {
-        Write-Host "Installing artifacts"
-        $Sessions.ForEach({ Install-Artifacts -Session $_ -ArtifactsDir $ArtifactsDir })
-    }
 
     if ($CopyMsvcDebugDlls.IsPresent) {
         Write-Host "Copying MSVC debug DLLs"
