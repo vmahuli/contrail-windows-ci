@@ -206,12 +206,8 @@ function Invoke-AgentBuild {
     })
 
     $Job.Step("Building contrail-vrouter-agent.exe, .msi and tests", {
-        $Tests = @()
-
-        # TODO: Add other tests here once they are functional.
         $Tests = @(
             "agent:test_ksync",
-            "agent:test_vnswif",
             "src/ksync:ksync_test",
             "src/dns:dns_bind_test",
             "src/dns:dns_config_test",
