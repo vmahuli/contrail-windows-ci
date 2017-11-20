@@ -16,7 +16,7 @@
 . $PSScriptRoot\Tests\Pkt0PipeImplementationTests.ps1
 . $PSScriptRoot\Tests\DockerDriverMultitenancyTest.ps1
 
-function Run-Tests {
+function Run-TestScenarios {
     Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
 
     $Job.Step("Running all integration tests", {
@@ -102,4 +102,45 @@ function Run-Tests {
             Test-DockerDriver -Session $Sessions[0] -TestConfiguration $TestConfiguration
         }
     })
+}
+
+function Collect-Logs {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
+
+    foreach ($Session in $Sessions) {
+        if ($Session.State -eq "Opened") {
+            Write-Host
+            Write-Host "Displaying logs from $($Session.ComputerName)"
+
+            Invoke-Command -Session $Session {
+                $LogPaths = @(
+                    "$Env:ProgramData/ContrailDockerDriver/log.txt",
+                    "$Env:ProgramData/ContrailDockerDriver/log.old.txt"
+                )
+
+                foreach ($Path in $LogPaths) {
+                    if (Test-Path $Path) {
+                        Write-Host
+                        Write-Host "Contents of ${Path}:"
+                        Get-Content $Path
+                    }
+                }
+            }
+        }
+    }
+}
+
+function Run-Tests {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
+
+    try {
+        Run-TestScenarios -Sessions $Sessions
+    }
+    catch {
+        Write-Host $_
+
+        Collect-Logs -Sessions $Sessions
+
+        throw
+    }
 }
