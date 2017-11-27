@@ -34,6 +34,7 @@ class TestConfiguration {
     [string] $VMSwitchName;
     [string] $ForwardingExtensionName;
     [string] $AgentConfigFilePath;
+    [string] $LinuxVirtualMachineIp;
 
     [Object]ShallowCopy() {
         return $this.MemberwiseClone()

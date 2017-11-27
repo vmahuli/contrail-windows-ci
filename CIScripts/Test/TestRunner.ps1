@@ -15,6 +15,7 @@
 . $PSScriptRoot\Tests\SubnetsTests.ps1
 . $PSScriptRoot\Tests\Pkt0PipeImplementationTests.ps1
 . $PSScriptRoot\Tests\DockerDriverMultitenancyTest.ps1
+. $PSScriptRoot\Tests\WindowsLinuxIntegrationTests.ps1
 
 function Run-TestScenarios {
     Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
@@ -68,6 +69,7 @@ function Run-TestScenarios {
             ForwardingExtensionName = $Env:FORWARDING_EXTENSION_NAME;
             AgentConfigFilePath = "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-agent.conf";
             DockerDriverConfiguration = $DockerDriverConfiguration;
+            LinuxVirtualMachineIp = $Env:LINUX_VIRTUAL_MACHINE_IP;
         }
 
         $SNATConfiguration = [SNATConfiguration] @{
@@ -96,6 +98,7 @@ function Run-TestScenarios {
         Test-ComputeControllerIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
         Test-MultipleSubnetsSupport -Session $Sessions[0] -TestConfiguration $TestConfiguration
         Test-DockerDriverMultiTenancy -Session $Sessions[0] -TestConfiguration $TestConfiguration
+        Test-WindowsLinuxIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
         Test-Pkt0PipeImplementation -Session $Sessions[0] -TestConfiguration $TestConfiguration
 
         if($Env:RUN_DRIVER_TESTS -eq "1") {

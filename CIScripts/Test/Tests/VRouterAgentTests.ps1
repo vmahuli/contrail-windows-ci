@@ -402,31 +402,6 @@ function Test-VRouterAgentIntegration {
         return $ExitCode
     }
 
-    function Assert-PingSucceeded {
-        Param ([Parameter(Mandatory = $true)] [Object[]] $Output)
-        $ErrorMessage = "Ping failed. EXPECTED: Ping succeeded."
-        Foreach ($Line in $Output) {
-            if ($Line -match ", Received = (?<NumOfReceivedPackets>[\d]+),[.]*") {
-                if ($matches.NumOfReceivedPackets -gt 0) {
-                    return
-                } else {
-                    throw $ErrorMessage
-                }
-            }
-        }
-        throw $ErrorMessage
-    }
-
-    function Ping-Container {
-        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-               [Parameter(Mandatory = $true)] [string] $ContainerName,
-               [Parameter(Mandatory = $true)] [string] $IP)
-        $PingOutput = Invoke-Command -Session $Session -ScriptBlock {
-            & docker exec $Using:ContainerName ping $Using:IP -n 10 -w 500
-        }
-        Assert-PingSucceeded -Output $PingOutput
-    }
-
     function Send-UDPPacket {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $ContainerName,
