@@ -1,7 +1,6 @@
 . $PSScriptRoot\TestConfigurationUtils.ps1
 
 . $PSScriptRoot\Tests\AgentServiceTests.ps1
-. $PSScriptRoot\Tests\AgentTests.ps1
 . $PSScriptRoot\Tests\ExtensionLongLeakTest.ps1
 . $PSScriptRoot\Tests\MultiEnableDisableExtensionTest.ps1
 . $PSScriptRoot\Tests\DockerDriverTest.ps1
@@ -85,7 +84,6 @@ function Run-TestScenarios {
         }
 
         Test-AgentService -Session $Sessions[0] -TestConfiguration $TestConfiguration
-        Test-Agent -Session $Sessions[0] -TestConfiguration $TestConfiguration
         Test-ExtensionLongLeak -Session $Sessions[0] -TestDurationHours $Env:LEAK_TEST_DURATION -TestConfiguration $TestConfiguration
         Test-MultiEnableDisableExtension -Session $Sessions[0] -EnableDisableCount $Env:MULTI_ENABLE_DISABLE_EXTENSION_COUNT -TestConfiguration $TestConfiguration
         Test-VTestScenarios -Session $Sessions[0] -TestConfiguration $TestConfiguration
