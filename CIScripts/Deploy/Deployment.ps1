@@ -29,22 +29,6 @@ function Install-Artifacts {
     Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-agent.msi" -Destination C:\Artifacts\
     Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-api-1.0.tar.gz" -Destination C:\Artifacts\
 
-    Write-Host "Copying Agent test executables"
-    $AgentTextExecutables = Get-ChildItem .\agent | Where-Object {$_.Name -match '^[\W\w]*test[\W\w]*.exe$'}
-
-    #Test executables from schema/test do not follow the convention
-    $AgentTextExecutables += Get-ChildItem .\agent | Where-Object {$_.Name -match '^ifmap_[\W\w]*.exe$'}
-
-    $AgentTextExecutables = $AgentTextExecutables | Select -Unique
-    Foreach ($TestExecutable in $AgentTextExecutables) {
-        Write-Host "    Copying $TestExecutable"
-        Copy-Item -ToSession $Session -Path "agent\$TestExecutable" -Destination C:\Artifacts\
-    }
-
-    Write-Host "Copying test configuration files and test data"
-    Copy-Item -ToSession $Session -Path "agent\vnswa_cfg.ini" -Destination C:\Artifacts\
-    Copy-Item -Recurse -ToSession $Session -Path "agent\controller" -Destination C:\Artifacts\
-
     Write-Host "Copying vtest scenarios"
     Copy-Item -ToSession $Session -Path "vrouter\utils\vtest" -Destination C:\Artifacts\ -Recurse -Force
 
