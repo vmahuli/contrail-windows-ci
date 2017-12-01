@@ -258,8 +258,6 @@ function Invoke-AgentBuild {
             "controller/src/schema:test",
             "src/xml:xml_test",
             "controller/src/xmpp:test",
-            "agent:test_oper_xml",
-            "agent:ifmap_dependency_manager_test",
             "src/base:libtask_test",
             "src/base:bitset_test",
             "src/base:index_allocator_test",
@@ -269,9 +267,23 @@ function Invoke-AgentBuild {
             "src/base:subset_test",
             "src/base:patricia_test",
             "src/base:boost_US_test"
-            # Marked as flaky in SCons
-            # "src/base:timer_test"
-            # "src/base:task_test"
+
+            # oper
+            "agent:test_agent_sandesh",
+            "agent:test_config_manager",
+            "agent:test_intf",
+            "agent:test_intf_policy",
+            "agent:test_find_scale",
+            "agent:test_logical_intf",
+            "agent:test_vrf_assign",
+            "agent:test_inet_interface",
+            "agent:test_aap6",
+            "agent:test_ipv6",
+            "agent:test_forwarding_class",
+            "agent:test_qos_config",
+            "agent:test_oper_xml",
+            "agent:ifmap_dependency_manager_test",
+            "agent:test_physical_devices"
         )
 
         $TestsString = ""
