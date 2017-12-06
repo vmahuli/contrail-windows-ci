@@ -387,7 +387,7 @@ function New-AgentConfigFile {
     $VHostGatewayIP = $TEST_NETWORK_GATEWAY
     $PhysIfName = $PhysicalAdapter.ifName
 
-    $DestConfigFilePath = $TestConfiguration.AgentConfigFilePath
+    $AgentConfigFilePath = $TestConfiguration.AgentConfigFilePath
 
     Invoke-Command -Session $Session -ScriptBlock {
         $ControllerIP = $Using:ControllerIP
@@ -395,12 +395,13 @@ function New-AgentConfigFile {
         $VHostIfIndex = $Using:VHostIfIndex
         $PhysIfName = $Using:PhysIfName
 
-        $DestConfigFilePath = $Using:DestConfigFilePath
-
         $VHostIP = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).IPAddress
         $VHostGatewayIP = $Using:VHostGatewayIP
 
         $ConfigFileContent = @"
+[DEFAULT]
+platform=windows
+
 [CONTROL-NODE]
 server=$ControllerIP
 
@@ -415,7 +416,7 @@ physical_interface=$PhysIfName
 "@
 
         # Save file with prepared config
-        [System.IO.File]::WriteAllText($DestConfigFilePath, $ConfigFileContent)
+        [System.IO.File]::WriteAllText($Using:AgentConfigFilePath, $ConfigFileContent)
     }
 }
 
