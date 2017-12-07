@@ -1,3 +1,5 @@
+. $PSScriptRoot\..\Common\DeferExcept.ps1
+
 class Repo {
     [string] $Url;
     [string] $Branch;
@@ -12,38 +14,45 @@ class Repo {
     }
 }
 
-function Copy-Repos {
+function Clone-Repos {
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of repos to clone")] [Repo[]] $Repos)
 
     $Job.Step("Cloning repositories", {
-        $CustomBranches = @($Repos.Where({ $_.Branch -ne $_.DefaultBranch }) | Select-Object -ExpandProperty Branch -Unique)
+        $CustomBranches = @($Repos.Where({ $_.Branch -ne $_.DefaultBranch }) |
+                            Select-Object -ExpandProperty Branch -Unique)
         $Repos.ForEach({
             # If there is only one unique custom branch provided, at first try to use it for all repos.
             # Otherwise, use branch specific for this repo.
             $CustomMultiBranch = $(if ($CustomBranches.Count -eq 1) { $CustomBranches[0] } else { $_.Branch })
 
             Write-Host $("Cloning " +  $_.Url + " from branch: " + $CustomMultiBranch)
-            git clone -b $CustomMultiBranch $_.Url $_.Dir
 
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
-                git clone -b $_.Branch $_.Url $_.Dir
-
+            # We must use -q (quiet) flag here, since git clone prints to stderr and tries to do some real-time
+            # command line magic (like updating cloning progress). Powershell command in Jenkinsfile
+            # can't handle it and throws a Write-ErrorException.
+            try {
+                DeferExcept({
+                    git clone -q -b $CustomMultiBranch $_.Url $_.Dir
+                })
+            } finally {
                 if ($LASTEXITCODE -ne 0) {
-                    throw "Cloning from " + $_.Url + " failed"
+                    Write-Host $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
+                    DeferExcept({
+                        git clone -q -b $_.Branch $_.Url $_.Dir
+                    })
+
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "Cloning from " + $_.Url + " failed"
+                    }
                 }
             }
+
         })
     })
 }
 
-function Invoke-ContrailCommonActions {
-    Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
-           [Parameter(Mandatory = $true)] [string] $VSSetupEnvScriptPath)
-    $Job.Step("Sourcing VS environment variables", {
-        Invoke-BatchFile "$VSSetupEnvScriptPath"
-    })
-
+function Prepare-BuildEnvironment {
+    Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache)
     $Job.Step("Copying common third-party dependencies", {
         New-Item -ItemType Directory .\third_party
         Get-ChildItem "$ThirdPartyCache\common" -Directory |
@@ -67,7 +76,9 @@ function Set-MSISignature {
            [Parameter(Mandatory = $true)] [string] $MSIPath)
     $Job.Step("Signing MSI", {
         $cerp = Get-Content $CertPasswordFilePath
-        & $SigntoolPath sign /f $CertPath /p $cerp $MSIPath
+        DeferExcept({
+            & $SigntoolPath sign /f $CertPath /p $cerp $MSIPath
+        })
         if ($LASTEXITCODE -ne 0) {
             throw "Signing $MSIPath failed"
         }
@@ -79,31 +90,46 @@ function Invoke-DockerDriverBuild {
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
-           [Parameter(Mandatory = $true)] [string] $OutputPath)
+           [Parameter(Mandatory = $true)] [string] $OutputPath,
+           [Parameter(Mandatory = $true)] [string] $LogsPath)
 
     $Job.PushStep("Docker driver build")
-    $Env:GOPATH=pwd
-    $srcPath = "$Env:GOPATH/src/$DriverSrcPath"
+    $GoPath = $Env:GOPATH
+    if (-not $GoPath) {
+        $GoPath = pwd
+        $Env:GOPATH = $GoPath
+    }
+    $srcPath = "$GoPath/src/$DriverSrcPath"
 
     $Job.Step("Contrail-go-api source code generation", {
-        python tools/generateds/generateDS.py -f -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ -g golang-api controller/src/schema/vnc_cfg.xsd
+        DeferExcept({
+            python tools/generateds/generateDS.py -q -f `
+                                                  -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
+                                                  -g golang-api controller/src/schema/vnc_cfg.xsd
+        })
     })
 
     New-Item -ItemType Directory ./bin
     Push-Location bin
 
     $Job.Step("Installing test runner", {
-        go get -u -v github.com/onsi/ginkgo/ginkgo
+        DeferExcept({
+            go get -u -v github.com/onsi/ginkgo/ginkgo
+        })
     })
 
     $Job.Step("Building driver", {
-        go build -v $DriverSrcPath
+        DeferExcept({
+            go build -v $DriverSrcPath
+        })
     })
 
     $Job.Step("Precompiling tests", {
         $modules = @("driver", "controller", "hns", "hnsManager")
         $modules.ForEach({
-            .\ginkgo.exe build $srcPath/$_
+            DeferExcept({
+                .\ginkgo.exe build $srcPath/$_
+            })
             Move-Item $srcPath/$_/$_.test ./
         })
     })
@@ -113,18 +139,26 @@ function Invoke-DockerDriverBuild {
     })
 
     $Job.Step("Intalling MSI builder", {
-        go get -u -v github.com/mh-cbon/go-msi
+        DeferExcept({
+            go get -u -v github.com/mh-cbon/go-msi
+        })
     })
 
     $Job.Step("Building MSI", {
         Push-Location $srcPath
-        & "$Env:GOPATH/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 --src template --out $pwd/gomsi
+        DeferExcept({
+            & "$GoPath/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 `
+                                        --src template --out $pwd/gomsi
+        })
         Pop-Location
 
         Move-Item $srcPath/docker-driver.msi ./
     })
 
-    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath "docker-driver.msi"
+    Set-MSISignature -SigntoolPath $SigntoolPath `
+                     -CertPath $CertPath `
+                     -CertPasswordFilePath $CertPasswordFilePath `
+                     -MSIPath "docker-driver.msi"
 
     Pop-Location
 
@@ -141,6 +175,7 @@ function Invoke-ExtensionBuild {
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
            [Parameter(Mandatory = $true)] [string] $OutputPath,
+           [Parameter(Mandatory = $true)] [string] $LogsPath,
            [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
 
     $Job.PushStep("Extension build")
@@ -154,7 +189,10 @@ function Invoke-ExtensionBuild {
 
     $Job.Step("Building Extension and Utils", {
         $BuildModeOption = "--optimization=" + $BuildMode
-        scons $BuildModeOption vrouter
+        DeferExcept({
+            $Env:cerp = Get-Content $CertPasswordFilePath
+            scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsDir/vrouter_build.log
+        })
         if ($LASTEXITCODE -ne 0) {
             throw "Building vRouter solution failed"
         }
@@ -166,10 +204,16 @@ function Invoke-ExtensionBuild {
     $vTestPath = "$vRouterRoot\utils\vtest\"
 
     Write-Host "Signing utilsMSI"
-    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $utilsMSI
+    Set-MSISignature -SigntoolPath $SigntoolPath `
+                     -CertPath $CertPath `
+                     -CertPasswordFilePath $CertPasswordFilePath `
+                     -MSIPath $utilsMSI
 
     Write-Host "Signing vRouterMSI"
-    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $vRouterMSI
+    Set-MSISignature -SigntoolPath $SigntoolPath `
+                     -CertPath $CertPath `
+                     -CertPasswordFilePath $CertPasswordFilePath `
+                     -MSIPath $vRouterMSI
 
     $Job.Step("Copying artifacts to $OutputPath", {
         Copy-Item $utilsMSI $OutputPath -Recurse -Container
@@ -230,6 +274,7 @@ function Invoke-AgentBuild {
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
            [Parameter(Mandatory = $true)] [string] $OutputPath,
+           [Parameter(Mandatory = $true)] [string] $LogsPath,
            [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
 
     $Job.PushStep("Agent build")
@@ -242,7 +287,9 @@ function Invoke-AgentBuild {
     $BuildModeOption = "--optimization=" + $BuildMode
 
     $Job.Step("Building API", {
-        scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist
+        DeferExcept({
+            scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist | Tee-Object -FilePath $LogsDir/build_api.log
+        })
         if ($LASTEXITCODE -ne 0) {
             throw "Building API failed"
         }
@@ -290,8 +337,11 @@ function Invoke-AgentBuild {
         if ($Tests.count -gt 0) {
             $TestsString = $Tests -join " "
         }
-        $AgentAndTestsBuildCommand = "scons -j 4 {0} contrail-vrouter-agent.msi {1}" -f "$BuildModeOption", "$TestsString"
-        Invoke-Expression $AgentAndTestsBuildCommand
+        $AgentAndTestsBuildCommand = "scons -j 4 {0} contrail-vrouter-agent.msi {1}" `
+                                     -f "$BuildModeOption", "$TestsString"
+        DeferExcept({
+            Invoke-Expression $AgentAndTestsBuildCommand | Tee-Object -FilePath $LogsDir/build_agent_and_tests.log
+        })
 
         if ($LASTEXITCODE -ne 0) {
             throw "Building Agent and tests failed"
@@ -335,7 +385,10 @@ function Invoke-AgentBuild {
     $agentMSI = "$rootBuildDir\vnsw\agent\contrail\contrail-vrouter-agent.msi"
 
     Write-Host "Signing agentMSI"
-    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $agentMSI
+    Set-MSISignature -SigntoolPath $SigntoolPath `
+                     -CertPath $CertPath `
+                     -CertPasswordFilePath $CertPasswordFilePath `
+                     -MSIPath $agentMSI
 
     $Job.Step("Copying artifacts to $OutputPath", {
         $vRouterApiPath = "build\noarch\contrail-vrouter-api\dist\contrail-vrouter-api-1.0.tar.gz"
@@ -346,6 +399,9 @@ function Invoke-AgentBuild {
         Copy-Item $agentMSI $OutputPath -Recurse -Container
         Copy-Item -Path $testInisPath -Include "*.ini" -Destination $OutputPath
         Copy-Item $libxmlPath $OutputPath -Recurse -Container
+
+        # This copies all test executables
+        Copy-Item -Path $rootBuildDir -Recurse -Include "*.exe" -Destination $OutputPath -Container
     })
 
     $Job.PopStep()

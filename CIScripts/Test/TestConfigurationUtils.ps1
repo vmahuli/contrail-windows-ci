@@ -384,6 +384,10 @@ function New-AgentConfigFile {
     $ControllerIP = $TestConfiguration.ControllerIP
     $VHostIfName = $HNSTransparentAdapter.ifName
     $VHostIfIndex = $HNSTransparentAdapter.ifIndex
+
+    # NOTE: $TEST_NETWORK_GATEWAY is not set here,
+    # so it's equivalent to $VHostGatewayIP = ""
+    # TODO: Needs fixing for JW-1262
     $VHostGatewayIP = $TEST_NETWORK_GATEWAY
     $PhysIfName = $PhysicalAdapter.ifName
 
