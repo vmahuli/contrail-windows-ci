@@ -4,6 +4,8 @@
 
 $Job = [Job]::new("Teardown")
 
-Teardown-PowerCLI -VMNames (Get-TestbedHostnamesFromEnv)
+# TODO: TestVMNames
+
+Teardown-PowerCLI -VMNames $TestbedVMNames
 
 $Job.Done()
