@@ -17,6 +17,6 @@ if($Env:VM_NAMES) {
     }
 }
 
-$TestbedSessions, $TestbedVMNames = Provision-PowerCLI -VMNames $VMNames -IsReleaseMode $ReleaseModeBuild
+$Env:TESTBED_HOSTNAMES = (Provision-PowerCLI -VMNames $VMNames -IsReleaseMode $ReleaseModeBuild) -join ","
 
 $Job.Done()
