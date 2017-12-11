@@ -3,23 +3,47 @@
 . $PSScriptRoot\Common\Init.ps1
 . $PSScriptRoot\Common\Job.ps1
 . $PSScriptRoot\Build\BuildFunctions.ps1
-
-$Repos = @(
-    [Repo]::new($Env:DRIVER_REPO_URL, $Env:DRIVER_BRANCH, "src/github.com/codilime/contrail-windows-docker", "master"),
-    [Repo]::new($Env:TOOLS_REPO_URL, $Env:TOOLS_BRANCH, "tools/build/", "windows"),
-    [Repo]::new($Env:SANDESH_REPO_URL, $Env:SANDESH_BRANCH, "tools/sandesh/", "windows"),
-    [Repo]::new($Env:GENERATEDS_REPO_URL, $Env:GENERATEDS_BRANCH, "tools/generateDS/", "windows"),
-    [Repo]::new($Env:VROUTER_REPO_URL, $Env:VROUTER_BRANCH, "vrouter/", "windows"),
-    [Repo]::new($Env:WINDOWSSTUBS_REPO_URL, $Env:WINDOWSSTUBS_BRANCH, "windows/", "windows"),
-    [Repo]::new($Env:CONTROLLER_REPO_URL, $Env:CONTROLLER_BRANCH, "controller/", "windows3.1")
-)
+. $PSScriptRoot\Build\StagingCI.ps1
+. $PSScriptRoot\Build\ProdCI.ps1
 
 $Job = [Job]::new("Build")
 
+$IsTriggeredByGerrit = Test-Path Env:GERRIT_CHANGE_ID
+if($IsTriggeredByGerrit) {
+    # Build is triggered by Jenkins Gerrit plugin, when someone submits a pull
+    # request to review.opencontrail.org.
+
+    $TriggeredProject = Get-GerritProjectName -ProjectString $ENV:GERRIT_PROJECT
+    $TriggeredBranch = $ENV:GERRIT_BRANCH
+    $Repos = Get-ProductionRepos -TriggeredProject $TriggeredProject `
+                                 -TriggeredBranch $TriggeredBranch `
+                                 -GerritHost $Env:GERRIT_HOST
+} else {
+    # Build is triggered by Jenkins GitHub plugin, when someone submits a pull
+    # request to select github.com/codilime/* repos.
+
+    $Repos = Get-StagingRepos -DriverBranch $ENV:DRIVER_BRANCH `
+                              -WindowsstubsBranch $ENV:WINDOWSSTUBS_BRANCH `
+                              -ToolsBranch $Env:TOOLS_BRANCH `
+                              -SandeshBranch $Env:SANDESH_BRANCH `
+                              -GenerateDSBranch $Env:GENERATEDS_BRANCH `
+                              -VRouterBranch $Env:VROUTER_BRANCH `
+                              -ControllerBranch $Env:CONTROLLER_BRANCH
+}
+
 Clone-Repos -Repos $Repos
-Prepare-BuildEnvironment -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
+
+if($IsTriggeredByGerrit) {
+    # Gerrit is different from GitHub, because it operates on patches. We need
+    # to merge the downloaded patch with triggered repo.
+    
+    Merge-GerritPatchset -TriggeredProject $TriggeredProject `
+                         -Repos $Repos `
+                         -Refspec $Env:GERRIT_REFSPEC
+}
 
 $IsReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)
+Prepare-BuildEnvironment -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
 
 $DockerDriverOutputDir = "output/docker_driver"
 $vRouterOutputDir = "output/vrouter"
