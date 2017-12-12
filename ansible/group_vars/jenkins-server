@@ -1,0 +1,28 @@
+jenkins_plugins:
+  - ansible
+  - ansicolor
+  - jenkins_plugins       # ???
+  - build-pipeline-plugin
+  - build-timeout
+  - build-timestamp
+  - diskcheck
+  - email-ext
+  - envinject
+  - gerrit-trigger
+  - github-branch-source
+  - ghprb
+  - html5-notifier-plugin
+  - jobConfigHistory
+  - pipeline-github-lib
+  - powershell
+  - publish-over-ssh
+  - ssh
+  - ssh-slaves
+  - swarm
+  - thinBackup
+  - timestamper
+  - workflow-aggregator
+  - ws-cleanup
+jenkins_repo_url: deb http://pkg.jenkins-ci.org/debian-stable binary/
+jenkins_repo_key_url: http://pkg.jenkins-ci.org/debian-stable/jenkins-ci.org.key
+jenkins_java_options: ""

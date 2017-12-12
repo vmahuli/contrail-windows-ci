@@ -1,0 +1,13 @@
+ansible==2.4.0.0
+
+# For management of windows nodes
+pywinrm>=0.2.2
+pywinrm[credssp]
+
+# For templating in contrail-controller role
+netaddr
+
+# For vmware_* modules
+pyvmomi
+requests-credssp
+xmltodict

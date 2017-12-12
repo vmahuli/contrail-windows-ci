@@ -1,0 +1,50 @@
+---
+
+- name: OS upgrade
+  apt:
+    update_cache: yes
+    upgrade: full
+    state: latest
+  register: sys-upgrade
+  tags:
+  - skip_ansible_lint # Yes, we want to use latest version
+
+- name: Post-upgrade reboot
+  command: reboot
+  async: 0
+  poll: 0
+  when: sys-upgrade.changed
+  tags:
+  - skip_ansible_lint
+
+- name: Wait for server start...
+  wait_for:
+    host: "{{ ansible_ssh_host }}"
+    port: 22
+    state: started
+  connection: local
+  become: no
+
+- name: Create LVM vg for Jenkins
+  lvg:
+    vg: jenkins_vg
+    pvs: /dev/sdb
+
+- name: Create LVM lv for Jenkins
+  lvol:
+    vg: jenkins_vg
+    lv: varlib_jenkins_lv
+    size: 90%FREE
+
+- name: Create filesystem on Jenkins lv
+  filesystem:
+    fstype: ext4
+    dev: /dev/jenkins_vg/varlib_jenkins_lv
+    opts: -m 1
+
+- name: Configure Jenkins lv mount
+  mount:
+    path: /var/lib/jenkins
+    src: /dev/jenkins_vg/varlib_jenkins_lv
+    fstype: ext4
+    state: mounted

@@ -1,0 +1,6 @@
+---
+- src: wurbanski.jenkins-swarm-agent
+  version: 6e87fb350cc7ba1915c31c6a0532d83305c7663e
+
+- src: geerlingguy.jenkins
+  version: 3.2.1

@@ -1,0 +1,7 @@
+---
+
+- name: "Create ssh key pair for {{ username }} user"
+  user:
+    name: "{{ username }}"
+    generate_ssh_key: yes
+    ssh_key_comment: "{{ username }}@{{ inventory_hostname }}"
