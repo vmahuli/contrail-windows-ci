@@ -426,9 +426,10 @@ physical_interface=$PhysIfName
 
 function Initialize-ComputeServices {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+               [Parameter(Mandatory = $false)] [Boolean] $NoNetwork = $false)
 
-        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $NoNetwork
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
         Enable-AgentService -Session $Session
 }

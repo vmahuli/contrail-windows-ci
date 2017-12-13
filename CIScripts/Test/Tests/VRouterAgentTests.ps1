@@ -494,30 +494,13 @@ function Test-VRouterAgentIntegration {
         }
     }
 
-    function Initialize-ComputeNodeForFlowTests {
-        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
-
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Initialize-ComputeServices -Session $Session -TestConfiguration $TestConfiguration
-        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration `
-            -Name $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name `
-            -Network $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name `
-            -Subnet $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Subnets[0]
-        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration `
-            -Name $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name `
-            -Network $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name `
-            -Subnet $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Subnets[0]
-        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
-    }
-
     function Initialize-ComputeNode {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
                [Parameter(Mandatory = $true)] [NetworkConfiguration[]] $Networks)
 
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Initialize-ComputeServices -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-ComputeServices -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $true
         Foreach ($Network in $Networks) {
             New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration `
                 -Name $Network.Name `
@@ -797,24 +780,17 @@ function Test-VRouterAgentIntegration {
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
             Write-Host "===> Running: Test-FlowsAreInjectedOnIcmpTraffic"
 
+            $TenantConfiguration = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration
+
             Write-Host "======> Given: Contrail compute services are started"
-            Clear-TestConfiguration -Session $Session1 -TestConfiguration $TestConfiguration
-            Initialize-ComputeServices -Session $Session1 -TestConfiguration $TestConfiguration
-            Clear-TestConfiguration -Session $Session2 -TestConfiguration $TestConfiguration
-            Initialize-ComputeServices -Session $Session2 -TestConfiguration $TestConfiguration
-            New-DockerNetwork -Session $Session1 -TestConfiguration $TestConfiguration `
-                -Name $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name `
-                -Network $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name `
-                -Subnet $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Subnets[0]
-            New-DockerNetwork -Session $Session2 -TestConfiguration $TestConfiguration `
-                -Name $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name `
-                -Network $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name `
-                -Subnet $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Subnets[0]
+            Initialize-ComputeNodes -Session1 $Session1 -Session2 $Session2 `
+                -Network1 $TenantConfiguration.NetworkWithPolicy1 -Network2 $TenantConfiguration.NetworkWithPolicy2 `
+                -TestConfiguration $TestConfiguration
             Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
             Write-Host "======> When 2 containers belonging to different networks are running"
-            $Network1Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name
-            $Network2Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name
+            $Network1Name = $TenantConfiguration.NetworkWithPolicy1.Name
+            $Network2Name = $TenantConfiguration.NetworkWithPolicy2.Name
             $Container1Name = "jolly-lumberjack"
             $Container2Name = "juniper-tree"
 
@@ -1005,12 +981,17 @@ function Test-VRouterAgentIntegration {
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
             Write-Host "===> Running: Test-FlowsAreInjectedOnUdpTraffic"
 
+            $TenantConfiguration = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration
+
             Write-Host "======> Given: Contrail compute services are started"
-            Initialize-ComputeNodeForFlowTests -Session $Session -TestConfiguration $TestConfiguration
+            Initialize-ComputeNodes -Session1 $Session -Session2 $Session `
+                -Network1 $TenantConfiguration.NetworkWithPolicy1 -Network2 $TenantConfiguration.NetworkWithPolicy2 `
+                -TestConfiguration $TestConfiguration
+            Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
             Write-Host "======> When 2 containers belonging to different networks are running"
-            $Network1Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name
-            $Network2Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name
+            $Network1Name = $TenantConfiguration.NetworkWithPolicy1.Name
+            $Network2Name = $TenantConfiguration.NetworkWithPolicy2.Name
             $Container1Name = "jolly-lumberjack"
             $Container2Name = "juniper-tree"
 
@@ -1053,22 +1034,17 @@ function Test-VRouterAgentIntegration {
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
             Write-Host "===> Running: Test-MultihostUdpTraffic"
 
+            $TenantConfiguration = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration
+
             Write-Host "======> Given: Contrail compute services are started on two compute nodes"
-            Initialize-ComputeNode `
-                -Session $Session1 `
-                -TestConfiguration $TestConfiguration `
-                -Networks @($TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1)
-            Initialize-ComputeNode `
-                -Session $Session2 `
-                -TestConfiguration $TestConfiguration `
-                -Networks @($TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1)
+            Initialize-ComputeNodes -Session1 $Session1 -Session2 $Session2 `
+                -Network1 $TenantConfiguration.NetworkWithPolicy1 -Network2 $TenantConfiguration.NetworkWithPolicy2 `
+                -TestConfiguration $TestConfiguration
             Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
             Write-Host "======> When 2 containers belonging to different networks are running"
-            # TODO: Two separate networks with policies should eventually be used instead of
-            # one network without a policy.
-            $Network1Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
-            $Network2Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
+            $Network1Name = $TenantConfiguration.NetworkWithPolicy1.Name
+            $Network2Name = $TenantConfiguration.NetworkWithPolicy2.Name
 
             $Container1Name = "jolly-lumberjack"
             $Container2Name = "juniper-tree"
