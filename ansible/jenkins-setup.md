@@ -3,11 +3,6 @@ Jenkins Master setup
 
 ## Deployment and provisioning
 
-- plugins
-    - jenkins-codi
-        - install `https://wiki.jenkins.io/display/JENKINS/OpenID4Java+Plugin`
-        - install `+https://wiki.jenkins.io/display/JENKINS/Terraform+Plugin`
-
 - user: admin
 - user: jenkins-swarm-agent
 
