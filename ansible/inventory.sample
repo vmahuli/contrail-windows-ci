@@ -16,8 +16,10 @@ jenkins-server
 [ansible-worker]
 
 [drive]
+my-shared-drive
 
 [jenkins-server]
+my-jenkins-server
 
 [tester]
 
