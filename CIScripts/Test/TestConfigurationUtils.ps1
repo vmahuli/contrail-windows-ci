@@ -327,26 +327,35 @@ function Initialize-TestConfiguration {
 
     Write-Host "Initializing Test Configuration"
 
-    # DockerDriver automatically enables Extension, so there is no need to enable it manually
-    Enable-DockerDriver -Session $Session -AdapterName $TestConfiguration.AdapterName -ControllerIP $TestConfiguration.ControllerIP -Configuration $TestConfiguration.DockerDriverConfiguration -WaitTime 0
+    $NRetries = 3;
+    foreach ($i in 1..$NRetries) {
+        # DockerDriver automatically enables Extension, so there is no need to enable it manually
+        Enable-DockerDriver -Session $Session -AdapterName $TestConfiguration.AdapterName -ControllerIP $TestConfiguration.ControllerIP -Configuration $TestConfiguration.DockerDriverConfiguration -WaitTime 0
 
-    $WaitForSeconds = 600;
-    $SleepTimeBetweenChecks = 10;
-    $MaxNumberOfChecks = $WaitForSeconds / $SleepTimeBetweenChecks
+        $WaitForSeconds = $i * 600 / $NRetries;
+        $SleepTimeBetweenChecks = 10;
+        $MaxNumberOfChecks = $WaitForSeconds / $SleepTimeBetweenChecks
 
-    # Wait for DockerDriver to start
-    $Res = $false
-    for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
-        $Res = Test-IsDockerDriverEnabled -Session $Session
-        if ($Res -eq $true) {
-            break;
+        # Wait for DockerDriver to start
+        $Res = $false
+        for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
+            $Res = Test-IsDockerDriverEnabled -Session $Session
+            if ($Res -eq $true) {
+                break;
+            }
+
+            Start-Sleep -s $SleepTimeBetweenChecks
         }
 
-        Start-Sleep -s $SleepTimeBetweenChecks
-    }
-
-    if ($Res -ne $true) {
-        throw "Docker driver was not enabled."
+        if ($Res -ne $true) {
+            if ($i -eq $NRetries) {
+                throw "Docker driver was not enabled."
+            } else {
+                Write-Host "Docker driver was not enabled, retrying."
+            }
+        } else {
+            break;
+        }
     }
 
     if (!$NoNetwork) {
