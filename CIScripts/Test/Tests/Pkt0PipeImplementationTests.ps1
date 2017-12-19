@@ -35,8 +35,9 @@ function Test-Pkt0PipeImplementation {
             Assert-ExtensionIsNotRunning -Session $Session -TestConfiguration $TestConfiguration
 
             Write-Host "======> Then Agent should crash when started"
+            $TimeBeforeCrash = Invoke-Command -Session $Session -ScriptBlock { Get-Date }
             Enable-AgentService -Session $Session
-            Assert-AgentProcessCrashed -Session $Session
+            Assert-AgentProcessCrashed -Session $Session -After $TimeBeforeCrash
 
             Write-Host "======> Cleanup"
             Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
@@ -85,11 +86,12 @@ function Test-Pkt0PipeImplementation {
             Assert-IsAgentServiceEnabled -Session $Session
 
             Write-Host "======> When Extension is disabled"
+            $TimeBeforeCrash = Invoke-Command -Session $Session -ScriptBlock { Get-Date }
             Disable-VRouterExtension -Session $Session -AdapterName $TestConfiguration.AdapterName -VMSwitchName $TestConfiguration.VMSwitchName `
                 -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
 
             Write-Host "======> Then Agent should crash"
-            Assert-AgentProcessCrashed -Session $Session
+            Assert-AgentProcessCrashed -Session $Session -After $TimeBeforeCrash
 
             Write-Host "======> Cleanup"
             Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration

@@ -255,13 +255,15 @@ function Assert-IsAgentServiceDisabled {
 
 function Assert-AgentProcessCrashed {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+           [Parameter(Mandatory = $true)] [DateTime] $After,
            [Parameter(Mandatory = $false)] [Int] $TimeoutSeconds = 60)
 
     $TimeBetweenChecksInSeconds = 2
 
     foreach ($i in 0..($TimeoutSeconds / $TimeBetweenChecksInSeconds)) {
         $Res = Invoke-Command -Session $Session -ScriptBlock {
-            return $(Get-EventLog -LogName "System" -EntryType "Error" -Source "Service Control Manager" -Newest 10 | Where {$_.Message -match "The ContrailAgent service terminated unexpectedly" -AND $_.TimeGenerated -gt (Get-Date).AddSeconds(-5)})
+            Get-EventLog -LogName "System" -EntryType "Error" -Source "Service Control Manager" `
+                -Message "The ContrailAgent service terminated unexpectedly*" -After ($Using:After).addSeconds(-1)
         }
 
         if ($Res) {
