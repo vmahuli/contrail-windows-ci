@@ -1,5 +1,10 @@
 ---
 
+- name: Define templates' name and annotation
+  set_fact:
+    template_name: "Template-{{ vm_role }}-{{ '%Y%m%d%H%M' | strftime(ansible_date_time.epoch) }}"
+    template_annotation: "Template for {{ vm_role }} created on {{ '%Y-%m-%d %H:%M:%S' | strftime(ansible_date_time.epoch) }}"
+
 - name: Create Template VM for {{ vm_role }}
   register: new_vm
   vmware_guest:
@@ -12,8 +17,8 @@
     cluster: "{{ cluster_name }}"
     folder: "{{ vmware_folder }}"
 
-    name: "Template-{{ vm_role }}-{{ '%Y%m%d%H%M' | strftime(ansible_date_time.epoch) }}"
-    annotation: "Template for {{ vm_role }} created on {{ '%Y-%m-%d %H:%M:%S' | strftime(ansible_date_time.epoch) }}"
+    name: "{{ template_name }}"
+    annotation: "{{ template_annotation }}"
     template: "{{ vm_template }}"
     hardware: "{{ vm_hardware }}"
     state: poweredon
@@ -37,12 +42,24 @@
     --disk-size {{ item.size }}
   with_items: "{{ vm_hdd }}"
 
-- name: Wait for network to work properly
+- name: Wait for DHCP to work properly
   wait_for:
-    timeout: 60
+    timeout: 300
+
+- name: Get correct IP address of new {{ vm_role }}
+  register: vm
+  vmware_guest_facts:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ validate_certs }}"
+
+    datacenter: "{{ datacenter_name }}"
+
+    uuid: "{{ new_vm.instance.hw_product_uuid }}"
 
 - name: Add host to inventory
   add_host:
-    name: "{{ new_vm.instance.hw_name }}"
-    ansible_host: "{{vm_networks[0].ip}}"
+    name: "{{ vm.instance.hw_name }}"
+    ansible_host: "{{ vm.instance.hw_eth0.ipaddresses | ipv4 | first }}"
     groups: "{{ vm_role }}"

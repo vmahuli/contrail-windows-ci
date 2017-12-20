@@ -16,10 +16,10 @@ jenkins-server
 [ansible-worker]
 
 [drive]
-my-shared-drive
+SHARED_DRIVE_ADDRESS
 
 [jenkins-server]
-my-jenkins-server
+JENKINS_MASTER_ADDRESS
 
 [tester]
 
