@@ -51,7 +51,7 @@ function Stop-ProcessIfExists {
     Invoke-Command -Session $Session -ScriptBlock {
         $Proc = Get-Process $Using:ProcessName -ErrorAction SilentlyContinue
         if ($Proc) {
-            $Proc | Stop-Process -Force
+            $Proc | Stop-Process -Force -PassThru | Wait-Process -ErrorAction SilentlyContinue
         }
     }
 }
