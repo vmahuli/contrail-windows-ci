@@ -1,0 +1,4 @@
+jenkins_agent_name: "builder-{{ ansible_host.split('.')[-1] }}"
+jenkins_agent_labels: "builder windows"
+# Jenkins slave vars
+win_base_jenkins_path: 'J:\Jenkins'

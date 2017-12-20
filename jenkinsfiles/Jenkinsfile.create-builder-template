@@ -1,0 +1,48 @@
+withCredentials([usernamePassword(credentialsId: 'b5d73edd-96c2-467d-8b97-bf52c0ec946a', passwordVariable: 'VC_PASSWORD', usernameVariable: 'VC_USERNAME')]) {
+    def vmConfig = """vcenter_hostname: ci-vc.englab.juniper.net
+vcenter_user: ${VC_USERNAME}
+vcenter_password: ${VC_PASSWORD}
+validate_certs: no
+datacenter_name: CI-DC
+cluster_name: WinCI
+vmware_folder: "0. Templates/CI"
+
+vm_template: Template-Windows2016-Core
+vm_role: builder
+
+vm_hardware:
+  memory_mb: 24576
+  num_cpus: 8
+
+vm_networks:
+  - name: "VM Network"
+    type: static
+    ip: 10.84.12.252
+    netmask: 255.255.255.0
+    gateway: 10.84.12.254
+    dns_servers: 10.84.5.100
+    
+vm_hdd:
+  - type: thin
+    size: 200
+"""
+
+    def ansibleConfig = """
+[defaults]
+deprecation_warnings = False
+vault_password_file = ~/ansible-vault-key
+callback_whitelist = profile_tasks
+"""
+
+    node('ansible') {
+        stage('Prepare environment') {
+            git branch: 'ansible-juni', url: 'git@github.com:codilime/juniper-windows-internal'
+            writeFile file: 'ansible.cfg', text: ansibleConfig
+            writeFile file: 'vm.vars', text: vmConfig
+            sh 'ansible-galaxy install -r requirements.yml -f'
+        }
+        stage('Run ansible') {
+            ansiblePlaybook extras: '-e @vm.vars', inventory: 'inventory', playbook: 'vmware-create-template.yml', sudoUser: 'ubuntu' 
+        }
+    }
+}

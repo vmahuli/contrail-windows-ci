@@ -1,0 +1,9 @@
+---
+
+- hosts: localhost
+  roles:
+    - { role: vmware-template, stage: deploy }
+
+- hosts: "{{ vm_role }}"
+  roles:
+    - wurbanski.jenkins-swarm-agent

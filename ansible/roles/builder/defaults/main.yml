@@ -1,0 +1,2 @@
+dependencies_dir: 'C:\BUILD_DEPENDENCIES'
+dependencies_source: '\\{{ hostvars[groups["drive"][0]]["inventory_hostname"]}}\S$'

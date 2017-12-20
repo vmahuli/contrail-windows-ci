@@ -1,0 +1,67 @@
+---
+
+- name: Get highest VM number
+  delegate_to: localhost
+  register: get_vm_id
+  script: |
+    get_vm_id.py \
+    --host {{ vcenter_hostname }} \
+    --user {{ vcenter_user }} \
+    --password {{ vcenter_password }} \
+    --vm-name "winci-{{ vm_role }}-"
+
+- name: "Deploy VM from Template: winci-{{ vm_role}}-{{ get_vm_id.stdout.strip() }}"
+  register: new_vm
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ validate_certs }}"
+
+    datacenter: "{{ datacenter_name }}"
+    cluster: "{{ cluster_name }}"
+    folder: "{{ vmware_folder }}"
+
+    name: "winci-{{ vm_role}}-{{ get_vm_id.stdout.strip() }}"
+    annotation: "Template for {{ vm_role }} created on {{ '%Y-%m-%d %H:%M:%S' | strftime(ansible_date_time.epoch) }}"
+    template: "{{ vm_template }}"
+    hardware: "{{ vm_hardware }}"
+    state: poweredon
+    customization:
+      hostname: "winci-{{ vm_role }}-{{ get_vm_id.stdout.strip() }}"
+      password: "Contrail123!"
+
+    networks: "{{ vm_networks }}"
+
+    wait_for_ip_address: yes
+
+- name: Wait for DHCP to work properly
+  wait_for:
+    timeout: 120
+
+- name: Get correct IP address of new {{ vm_role }}
+  when: "'169.' in new_vm.instance.hw_eth0.ipaddresses|ipv4|first"
+  register: vm
+  vmware_guest_facts:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ validate_certs }}"
+
+    datacenter: "{{ datacenter_name }}"
+
+    uuid: "{{ new_vm.instance.hw_product_uuid }}"
+
+- name: Add host to inventory
+  when: vm|skipped
+  add_host:
+    name: "winci-{{ vm_role}}-{{ get_vm_id.stdout.strip() }}"
+    ansible_host: "{{ new_vm.instance.hw_eth0.ipaddresses | ipv4 | first }}"
+    groups: "{{ vm_role }}"
+
+- name: Add host to inventory
+  when: not vm|skipped
+  add_host:
+    name: "winci-{{ vm_role}}-{{ get_vm_id.stdout.strip() }}"
+    ansible_host: "{{ vm.instance.hw_eth0.ipaddresses | ipv4 | first }}"
+    groups: "{{ vm_role }}"

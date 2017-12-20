@@ -1,0 +1,48 @@
+---
+
+- name: Create Template VM for {{ vm_role }}
+  register: new_vm
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ validate_certs }}"
+
+    datacenter: "{{ datacenter_name }}"
+    cluster: "{{ cluster_name }}"
+    folder: "{{ vmware_folder }}"
+
+    name: "Template-{{ vm_role }}-{{ '%Y%m%d%H%M' | strftime(ansible_date_time.epoch) }}"
+    annotation: "Template for {{ vm_role }} created on {{ '%Y-%m-%d %H:%M:%S' | strftime(ansible_date_time.epoch) }}"
+    template: "{{ vm_template }}"
+    hardware: "{{ vm_hardware }}"
+    state: poweredon
+    customization:
+      hostname: "tmpl-{{ vm_role }}"
+      password: "Contrail123!"
+
+    networks: "{{ vm_networks }}"
+
+    wait_for_ip_address: yes
+
+- name: Add additional disks
+  when: vm_hdd is defined
+  script: |
+    add_disk_to_vm.py \
+    --host {{ vcenter_hostname }} \
+    --user {{ vcenter_user }} \
+    --password {{ vcenter_password }} \
+    --uuid "{{ new_vm.instance.hw_product_uuid }}" \
+    --disk-type {{ item.type }} \
+    --disk-size {{ item.size }}
+  with_items: "{{ vm_hdd }}"
+
+- name: Wait for network to work properly
+  wait_for:
+    timeout: 60
+
+- name: Add host to inventory
+  add_host:
+    name: "{{ new_vm.instance.hw_name }}"
+    ansible_host: "{{vm_networks[0].ip}}"
+    groups: "{{ vm_role }}"

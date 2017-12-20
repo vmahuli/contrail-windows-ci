@@ -1,0 +1,195 @@
+---
+
+- name: Prepare Jenkins partition
+  win_shell: 'Get-Disk |
+  Where partitionstyle -eq "raw" |
+  Initialize-Disk -PartitionStyle MBR -PassThru |
+  New-Partition -DriveLetter J -UseMaximumSize |
+  Format-Volume -FileSystem NTFS -NewFileSystemLabel "Jenkins" -Confirm:$false'
+
+- name: Install python 2.7.13
+  win_chocolatey:
+    name: python2
+    version: 2.7.13
+    state: present
+
+- name: Install wheel support to python
+  win_command: pip install wheel
+  args:
+    creates: C:\Python27\Scripts\wheel.exe
+
+- name: Install SCons (using pip)
+  win_command: pip install scons==2.5.1
+  args:
+    creates: C:\Python27\Scripts\scons.py
+
+- name: Install lxml
+  win_command: pip install lxml
+  args:
+    creates: C:\Python27\Lib\site-packages\lxml\__init__.py
+
+- name: Install gnuwin32-coreutils
+  win_chocolatey:
+    name: gnuwin32-coreutils.install
+    version: 5.3.0
+    state: present
+
+- name: Install make
+  win_chocolatey:
+    name: make
+    version: 3.81.4
+    state: present
+    allow_empty_checksums: yes
+
+- name: Install flex and bison
+  win_chocolatey:
+    name: winflexbison3
+    version: 2.5.10.20170725
+    state: present
+
+- name: Copy win_flex.exe to flex.exe
+  win_copy:
+    src: C:\ProgramData\chocolatey\bin\win_flex.exe
+    dest: C:\ProgramData\chocolatey\bin\flex.exe
+    remote_src: yes
+
+- name: Copy win_bison.exe to bison.exe
+  win_copy:
+    src: C:\ProgramData\chocolatey\bin\win_bison.exe
+    dest: C:\ProgramData\chocolatey\bin\bison.exe
+    remote_src: yes
+
+- name: Create BUILD_DEPENDENCIES directory
+  win_file:
+    name: '{{ dependencies_dir }}'
+    state: directory
+
+- name: Robocopy GnuWin32 to BUILD_DEPENDENCIES
+  win_robocopy:
+    src: C:\Program Files (x86)\GnuWin32
+    dest: '{{ dependencies_dir }}\GnuWin32'
+    recurse: yes
+
+- name: Add GnuWin32 to PATH
+  win_path:
+    elements:
+    - '{{ dependencies_dir }}\GnuWin32\bin'
+    state: present
+
+- name: Install ActivePerl Community Edition
+  win_chocolatey:
+    name: activeperl
+    version: 5.24.1.2402
+    state: present
+
+- name: Install .NET Framework 3.5
+  win_feature:
+    name: Net-Framework-Core
+    state: present
+
+- name: Install WiX Toolset 3.11
+  win_chocolatey:
+    name: wixtoolset
+    version: 3.11.0.20170506
+    ensure: present
+
+- name: Add WiX to PATH
+  win_path:
+    elements:
+    - 'C:\Program Files (x86)\WiX Toolset v3.11\bin\'
+    state: present
+
+- name: Install vim 8.0
+  win_chocolatey:
+    name: vim
+    version: 8.0.604
+    ensure: present
+
+- name: Install PowerShell Community Extensions (PSCX)
+  win_chocolatey:
+    name: pscx
+    state: present
+
+- name: Install protoc-3.0.0 from github (GET)
+  win_get_url:
+    url: https://github.com/google/protobuf/releases/download/v3.0.0/protoc-3.0.0-win32.zip
+    dest: '{{ dependencies_dir }}\protoc.zip'
+
+- name: Install protoc-3.0.0 from github (EXTRACT)
+  win_unzip:
+    src: '{{ dependencies_dir }}\protoc.zip'
+    dest: '{{ dependencies_dir }}\protoc-3.0.0-win32'
+    delete_archive: yes
+
+- name: Install protoc-3.0.0 from github (PATH)
+  win_path:
+    elements:
+    - '{{ dependencies_dir }}\protoc-3.0.0-win32\bin'
+    state: present
+
+- name: Sync third_party_cache
+  win_robocopy:
+    src: '{{ dependencies_source }}\third_party_cache\'
+    dest: '{{ dependencies_dir }}\third_party_cache'
+    flags: /E /MT:32
+
+- name: Install VisualCPP Build Tools
+  win_package:
+    path: '{{ dependencies_source }}\visualcppbuildtools\visualcppbuildtools_full.exe'
+    product_id: '{79750C81-714E-45F2-B5DE-42DEF00687B8}'
+    arguments: /Quiet /NoWeb /InstallSelectableItems
+
+- name: Install Windows SDK
+  win_package:
+    path: '{{ dependencies_source }}\winsdksetup\winsdksetup.exe'
+    product_id: '{484E68E1-1646-4F06-E724-45B3416B21D6}'
+    arguments: /Q /features OptionId.AvrfExternal OptionId.WindowsSoftwareLogoToolkit OptionId.MSIInstallTools OptionId.SigningTools OptionId.UWPManaged OptionId.UWPCPP OptionId.DesktopCPPx86 OptionId.DesktopCPPx64 /ceip off
+    state: present
+
+- name: Install WDK
+  win_package:
+    path: '{{ dependencies_source }}\wdksetup\wdksetup.exe'
+    product_id: '{80B4EB20-1EF0-D9C4-60E3-9A6D6C566AF0}'
+    arguments: /Q /ceip off
+    state: present
+
+# https://www.osronline.com/showthread.cfm?link=270106
+- name: Windows Kits hack
+  win_file:
+    path: 'C:\Program Files (x86)\Windows Kits\10\Include\wdf'
+    state: absent
+
+- name: Install git
+  win_chocolatey:
+    name: git
+    state: present
+
+- name: Install golang
+  win_chocolatey:
+    name: golang
+    version: 1.8.3
+    state: present
+
+- name: Install MinGW
+  win_chocolatey:
+    name: MinGW
+    version: 5.3.0
+    state: present
+
+- name: Add MinGW to PATH
+  win_path:
+    elements:
+    - 'c:\tools\mingw64\bin'
+    state: present
+
+- name: Copy aepic.dll
+  # required for: https://social.msdn.microsoft.com/Forums/en-US/cd569d5e-fd17-40d6-b98a-3adb282bb4b4/windows-server-core-wdk-apivalidation-error-a-critical-error-occured-while-retrieving-driver?forum=wdk
+  win_robocopy:
+    src: '{{ dependencies_source }}\aepic'
+    dest: '{{ dependencies_dir }}'
+
+- name: Add aepic.dll to PATH
+  win_path:
+    elements:
+    - '{{ dependencies_dir }}'
+    state: present
