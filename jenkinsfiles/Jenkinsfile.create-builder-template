@@ -14,7 +14,7 @@ pipeline {
         script {
           commonVars = evaluate readFile('jenkinsfiles/library/createCommonVars.groovy')
           ansibleConfig = evaluate readFile('jenkinsfiles/library/createAnsibleCfg.groovy')
-          vmConfig = evaluate readFile('jenkinsfiles/library/createVMConfig/deploy-builder.groovy')
+          vmConfig = evaluate readFile('jenkinsfiles/library/createVMConfig/createBuilderTemplate.groovy')
         }
 
         dir('ansible') {
