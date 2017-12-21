@@ -1,0 +1,13 @@
+---
+
+- hosts: localhost
+  roles:
+    - { role: vmware-template, stage: create }
+
+- hosts: "{{ vm_role }}"
+  roles:
+    - "{{ vm_role }}"
+
+- hosts: localhost
+  roles:
+    - { role: vmware-template, stage: template }

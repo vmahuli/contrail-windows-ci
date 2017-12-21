@@ -1,0 +1,1 @@
+jenkins_agent_master: '{{ hostvars[groups["jenkins-server"][0]]["inventory_hostname"]}}'

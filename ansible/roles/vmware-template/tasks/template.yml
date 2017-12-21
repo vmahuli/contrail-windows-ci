@@ -1,0 +1,24 @@
+---
+
+- name: Power Off Template-{{ vm_role }}
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ validate_certs }}"
+    name: "{{ new_vm.instance.hw_name }}"
+    uuid: "{{ new_vm.instance.hw_product_uuid }}"
+    state: shutdownguest
+
+- name: Give VM some time to shutdown
+  wait_for:
+    timeout: 30
+
+- name: Turn VM into a template
+  delegate_to: localhost
+  script: |
+    mark_vm_as_template.py \
+    --host {{ vcenter_hostname }} \
+    --user {{ vcenter_user }} \
+    --password {{ vcenter_password }} \
+    --uuid "{{ new_vm.instance.hw_product_uuid }}"

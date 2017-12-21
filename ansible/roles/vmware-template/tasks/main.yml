@@ -1,0 +1,4 @@
+---
+
+- name: include vm_templating task
+  include_tasks: "{{ stage }}.yml"

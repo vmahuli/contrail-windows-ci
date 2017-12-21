@@ -11,9 +11,9 @@
 #  - wurbanski.jenkins-swarm-agent
 
 # Run this before other Windows roles, since they may need the shared drive to be up
-#- hosts: drive
-#  roles:
-#  - shared-drive
+- hosts: drive
+  roles:
+  - shared-drive
 
 #- hosts: builder
 #  roles:

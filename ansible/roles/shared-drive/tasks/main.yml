@@ -1,0 +1,38 @@
+---
+
+- name: Install Windows Updates
+  win_updates:
+    category_names:
+      - SecurityUpdates
+      - CriticalUpdates
+      - UpdateRollups
+    log_path: C:\ansible_updates.log
+    state: installed
+  register: updates
+
+- name: Reboot the system after installing updates
+  win_reboot:
+  when: updates.reboot_required
+
+- name: Make shared files directory
+  win_file:
+    path: '{{ sharedfiles_dir }}'
+    state: directory
+
+- name: Add network share
+  win_share:
+    name: SharedFiles
+    description: Build dependencies
+    path: '{{ sharedfiles_dir }}'
+    list: yes
+    read: "{{ shared_drive_users }}"
+
+- name: Make third_party_cache subdir
+  win_file:
+    path: '{{ sharedfiles_dir }}\third_party_cache'
+    state: directory
+
+- name: Make artifacts subdir
+  win_file:
+    path: '{{ sharedfiles_dir }}\artifacts'
+    state: directory
