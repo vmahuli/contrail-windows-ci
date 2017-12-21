@@ -16,10 +16,8 @@ jenkins-server
 [ansible-worker]
 
 [drive]
-SHARED_DRIVE_ADDRESS
 
 [jenkins-server]
-JENKINS_MASTER_ADDRESS
 
 [tester]
 

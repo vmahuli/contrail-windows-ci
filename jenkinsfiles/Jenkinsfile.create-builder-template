@@ -1,4 +1,4 @@
-def ansibleInventory
+def commonVars
 def ansibleConfig
 def vmConfig
 
@@ -12,18 +12,19 @@ pipeline {
       }
       steps {
         script {
-          ansibleInventory = evaluate readFile('jenkinsfiles/library/createAnsibleInventory.groovy')
+          commonVars = evaluate readFile('jenkinsfiles/library/createCommonVars.groovy')
           ansibleConfig = evaluate readFile('jenkinsfiles/library/createAnsibleCfg.groovy')
           vmConfig = evaluate readFile('jenkinsfiles/library/createVMConfig/deploy-builder.groovy')
         }
 
         dir('ansible') {
           script {
-            ansibleInventory.create(env.SHARED_DRIVE_IP, env.JENKINS_MASTER_IP)
+            commonVars.create(env.SHARED_DRIVE_IP, env.JENKINS_MASTER_IP)
             ansibleConfig.create(env.ANSIBLE_VAULT_KEY_FILE)
             vmConfig.create(env.VC_HOSTNAME, env.VC_DATACENTER, env.VC_CLUSTER, env.VC_FOLDER,
                             env.VC_NETWORK, env.VC_USR, env.VC_PSW, env.VM_TEMPLATE)
           }
+          sh 'cp inventory.sample inventory'
           sh 'ansible-galaxy install -r requirements.yml -f'
         }
       }
@@ -33,7 +34,7 @@ pipeline {
       agent { label 'ansible' }
       steps {
         dir('ansible') {
-          ansiblePlaybook extras: '-e @vm.vars', \
+          ansiblePlaybook extras: '-e @vm.vars -e @common.vars', \
                           inventory: 'inventory', \
                           playbook: 'vmware-create-template.yml', \
                           sudoUser: 'ubuntu' 
