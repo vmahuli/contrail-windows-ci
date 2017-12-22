@@ -39,6 +39,8 @@ stage('Build') {
         env.MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
         env.GOPATH = pwd()
 
+        unstash "CIScripts"
+
         powershell script: './CIScripts/Build.ps1'
         stash name: "WinArt", includes: "output/**/*"
         stash name: "buildLogs", includes: "logs/**"

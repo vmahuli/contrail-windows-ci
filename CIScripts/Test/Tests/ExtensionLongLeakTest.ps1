@@ -28,7 +28,6 @@ function Test-ExtensionLongLeak {
         Write-Host "Waking up!"
 
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-
         Write-Host "===> Success!"
     })
 }

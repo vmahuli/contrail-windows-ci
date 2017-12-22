@@ -1,26 +1,13 @@
 . $PSScriptRoot\..\Common\DeferExcept.ps1
-
-class Repo {
-    [string] $Url;
-    [string] $Branch;
-    [string] $Dir;
-    [string] $DefaultBranch;
-
-    Repo ([string] $Url, [string] $Branch, [string] $Dir, [string] $DefaultBranch) {
-        $this.Url = $Url
-        $this.Branch = $Branch
-        $this.Dir = $Dir
-        $this.DefaultBranch = $DefaultBranch
-    }
-}
+. $PSScriptRoot\..\Build\Repository.ps1
 
 function Clone-Repos {
-    Param ([Parameter(Mandatory = $true, HelpMessage = "List of repos to clone")] [Repo[]] $Repos)
+    Param ([Parameter(Mandatory = $true, HelpMessage = "Map of repos to clone")] [System.Collections.Hashtable] $Repos)
 
     $Job.Step("Cloning repositories", {
         $CustomBranches = @($Repos.Where({ $_.Branch -ne $_.DefaultBranch }) |
                             Select-Object -ExpandProperty Branch -Unique)
-        $Repos.ForEach({
+        $Repos.Values.ForEach({
             # If there is only one unique custom branch provided, at first try to use it for all repos.
             # Otherwise, use branch specific for this repo.
             $CustomMultiBranch = $(if ($CustomBranches.Count -eq 1) { $CustomBranches[0] } else { $_.Branch })
@@ -100,12 +87,16 @@ function Invoke-DockerDriverBuild {
     New-Item -ItemType Directory ./bin
 
     $Job.Step("Installing dependency management tool for Go ", {
-        go get -u -v github.com/golang/dep/cmd/dep
+        DeferExcept({
+            go get -u -v github.com/golang/dep/cmd/dep
+        })
     })
 
     Push-Location $srcPath
     $Job.Step("Fetch third party packages ", {
-        & "$Env:GOPATH\bin\dep.exe" ensure -v
+        DeferExcept({
+            #& "$Env:GOPATH\bin\dep.exe" ensure -v
+        })
     })
     Pop-Location
 
