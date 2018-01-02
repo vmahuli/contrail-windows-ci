@@ -9,7 +9,7 @@ function Wait-RemoteEvent {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [String] $ContainerName,
            [Parameter(Mandatory = $true)] [String] $EventName,
-           [Parameter(Mandatory = $false)] [Int] $TimeoutSeconds = 60)
+           [Parameter(Mandatory = $false)] [Int] $TimeoutSeconds = 120)
 
     Invoke-Command -Session $Session -ScriptBlock {
         $TimeoutMilliseconds = $Using:TimeoutSeconds * 1000
@@ -17,6 +17,7 @@ function Wait-RemoteEvent {
             -f $Using:EventName, $TimeoutMilliseconds
 
         $Res = docker exec $Using:ContainerName powershell -Command $Command
+        $Res = [bool]::parse($Res)
         if (!$Res) {
             throw "Waiting for $Using:EventName on $Using:Containername timed out after $Using:TimeoutSeconds seconds"
         }
@@ -222,6 +223,7 @@ function Test-VRouterAgentIntegration {
             }
         }
 
+        Write-Host "Flow output: $Output"
         throw "There are no evicted flows. EXPECTED: Some flows had been evicted"
     }
 
@@ -239,7 +241,6 @@ function Test-VRouterAgentIntegration {
             }
         }
 
-        Write-Host "Flow output: $Output"
         Assert-FlowEvictedSomeFlows -Output $Output
         Write-Host "        Successfully removed."
     }
@@ -257,6 +258,7 @@ function Test-VRouterAgentIntegration {
                 }
             }
         }
+
         Write-Host "Flow output: $Output"
         throw $ErrorMessage
     }
@@ -275,7 +277,6 @@ function Test-VRouterAgentIntegration {
             }
         }
 
-        Write-Host "Flow output: $FlowOutput"
         Assert-FlowReturnedSomeFlows -Output $FlowOutput
         Write-Host "        Successfully created."
     }
@@ -285,10 +286,10 @@ function Test-VRouterAgentIntegration {
                [Parameter(Mandatory = $true)] [String] $Message,
                [Parameter(Mandatory = $false)] [Int] $TimeoutSeconds = 10)
 
-        Write-Host "        Sent message: $Message"
-        Write-Host "        Received message: $ReceivedMessage"
-
         if ($Message -ne $ReceivedMessage) {
+            Write-Host "        Sent message: $Message"
+            Write-Host "        Received message: $ReceivedMessage"
+
             throw "Sent and received messages do not match."
         } else {
             Write-Host "        Match!"
@@ -352,19 +353,23 @@ function Test-VRouterAgentIntegration {
         }
     }
 
-    function Stop-TcpListener {
+    function Receive-TcpListener {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
         Invoke-Command -Session $Session {
+            Wait-Job $JobListener -Timeout 60 | Out-Null
+            Receive-Job $JobListener
             Stop-Job $JobListener
             Remove-Job $JobListener
         }
     }
 
-    function Stop-TcpSender {
+    function Receive-TcpSender {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
         Invoke-Command -Session $Session {
+            Wait-Job $JobSender -Timeout 60 | Out-Null
+            Receive-Job $JobSender
             Stop-Job $JobSender
             Remove-Job $JobSender
         }
@@ -862,7 +867,6 @@ function Test-VRouterAgentIntegration {
                [Parameter(Mandatory = $false)] [NetworkConfiguration] $Network1,
                [Parameter(Mandatory = $false)] [NetworkConfiguration] $Network2,
                [Parameter(Mandatory = $false)] [Bool] $TestFlowInjection = $true,
-               [Parameter(Mandatory = $false)] [Bool] $TestCommunication = $true,
                [Parameter(Mandatory = $false)] [Bool] $TestFlowEviction = $true)
 
         if (!$Network1) {
@@ -938,34 +942,20 @@ function Test-VRouterAgentIntegration {
         Set-RemoteEvent -Session $Session1 -ContainerName $Container1Name -EventName "FlowTested"
         Set-RemoteEvent -Session $Session2 -ContainerName $Container2Name -EventName "FlowTested"
 
-        if ($TestFlowEviction -or $TestCommunication) {
-            Write-Host "======> When: The TCP connection is closed"
+        Write-Host "======> When: The TCP connection is closed"
 
-            Invoke-Command -Session $Session1 -ScriptBlock {
-                $JobSender | Wait-Job -Timeout 60 | Out-Null
-            }
+        Receive-TcpSender -Session $Session1
+        $ReceivedMessage = Receive-TcpListener -Session $Session2
 
-            $ReceivedMessage = Invoke-Command -Session $Session2 -ScriptBlock {
-                $JobListener | Wait-Job -Timeout 60 | Out-Null
-                return $JobListener | Receive-Job
-            }
+        Write-Host "======> Then: Payload should be transferred correctly"
+        Assert-ReceivedMessageMatches -Message $Message -ReceivedMessage $ReceivedMessage
 
-            if ($TestCommunication) {
-                Write-Host "======> Then: Payload should be transferred correctly"
-                Assert-ReceivedMessageMatches -Message $Message -ReceivedMessage $ReceivedMessage
-            }
-
-            if ($TestFlowEviction) {
-                Write-Host "======> Then: Flow should be removed"
-                foreach ($Session in @($Session1, $Session2) | Get-Unique) {
-                    Assert-SomeFlowsEvicted -Session $Session1 -Proto "tcp"
-                }
+        if ($TestFlowEviction) {
+            Write-Host "======> Then: Flow should be removed"
+            foreach ($Session in @($Session1, $Session2) | Get-Unique) {
+                Assert-SomeFlowsEvicted -Session $Session1 -Proto "tcp"
             }
         }
-
-        Write-Host "Stopping sender and listener jobs."
-        Stop-TcpSender -Session $Session1
-        Stop-TcpListener -Session $Session2
 
         Write-Host "Removing containers: $Container1Name and $Container2Name."
         Remove-ContainerInRemoteSession -Session $Session1 -ContainerName $Container1Name | Out-Null
@@ -1073,31 +1063,40 @@ function Test-VRouterAgentIntegration {
             $Message = "Even diamonds require polishing."
 
             Write-Host "    Setting up a listener on container $Container2Name..."
-            $JobListener = Invoke-Command -Session $Session2 -AsJob -ScriptBlock {
+            Invoke-Command -Session $Session2 -ScriptBlock {
                 $Command = (`
                     '$IpEndPoint = New-Object System.Net.IPEndPoint([System.Net.IPAddress]::Any, {0});' +`
                     '$UdpClient = New-Object System.Net.Sockets.UdpClient {0};' +`
                     '$Task = $UdpClient.ReceiveAsync();' +`
+                    '[System.Threading.EventWaitHandle]::new($False, [System.Threading.EventResetMode]::AutoReset, \"Listening\").Set() | Out-Null;' +`
                     '$Task.Wait();' +`
                     '$ReceivedMessage = [System.Text.Encoding]::UTF8.GetString($Task.Result.Buffer);' +`
                     'return $ReceivedMessage;') -f $Using:Port
 
-                & docker exec $Using:Container2Name powershell -Command $Command
+                $JobListener = Start-Job -ScriptBlock {
+                    Param ($ContainerName, $Command)
+                    & docker exec $ContainerName powershell -Command $Command
+                } -ArgumentList $Using:Container2Name, $Command
             }
 
-            Start-Sleep -Seconds 8
+            # I'm not sure if UdpClient is guaranteed to be already listening when ReceiveAsync returns,
+            # so there might be a need for additional waiting after Wait-RemoteEvent
+            # (althought testing shows that such a delay is probably not necessary).
+            Wait-RemoteEvent -Session $Session2 -ContainerName $Container2Name -EventName "Listening"
             Write-Host "    Sending a message from container $Container1Name..."
             Send-UDPPacket -Session $Session1 -ContainerName $Container1Name -IP $Container2IP -Port $Port -Message $Message
-            $JobListener | Wait-Job -Timeout 20 | Out-Null
-            $JobListener | Stop-Job | Out-Null
-            $ReceivedMessage = $JobListener | Receive-Job
+            $ReceivedMessage = Invoke-Command -Session $Session2 -ScriptBlock {
+                $JobListener | Wait-Job -Timeout 20 | Out-Null
+                $JobListener | Stop-Job | Out-Null
+                $JobListener | Receive-Job
+                $JobListener | Remove-Job
+            }
             $ReceivedMessage
 
             Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
             Write-Host "======> Then: Flow should be created for UDP protocol on the compute node of $Container1Name"
             Write-Host "        and container $Container2Name should receive the message."
-            # TODO: Flows should be checked once networks with policies are used.
-            # Assert-SomeFlowsReturned -Session $Session1 -Proto "udp"
+            Assert-SomeFlowsReturned -Session $Session1 -Proto "udp"
             Assert-ReceivedMessageMatches -Message $Message -ReceivedMessage $ReceivedMessage
 
             Write-Host "Removing containers: $Container1Name and $Container2Name."
