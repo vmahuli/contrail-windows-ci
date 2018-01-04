@@ -1,5 +1,5 @@
 library "contrailWindows@$BRANCH_NAME"
 
-prepareAndRunAnsiblePlaybook(vmConfigScript: 'jenkinsfiles/library/createVMConfig/deployBuilder.groovy',
+prepareAndRunAnsiblePlaybook(vmConfigScript: 'jenkinsfiles/library/createVMConfig/createBuilderTemplate.groovy',
                              playbook: 'vmware-create-template.yml')
 
