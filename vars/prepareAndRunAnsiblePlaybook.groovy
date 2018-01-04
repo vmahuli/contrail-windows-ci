@@ -1,7 +1,6 @@
-def call(body) {
-  def commonVars
-  def ansibleConfig
-  def vmConfig
+def call(Map params) {
+  def playbook = params.playbook
+  def prepareConfig = params.config
 
   pipeline {
     agent none
@@ -12,21 +11,15 @@ def call(body) {
           VC = credentials('vcenter')
         }
         steps {
-          script {
-            commonVars = evaluate readFile('jenkinsfiles/library/createCommonVars.groovy')
-            ansibleConfig = evaluate readFile('jenkinsfiles/library/createAnsibleCfg.groovy')
-            vmConfig = evaluate readFile(body.vmConfigScript)
-          }
-
           dir('ansible') {
-            script {
-              commonVars.create(env.SHARED_DRIVE_IP, env.JENKINS_MASTER_IP)
-              ansibleConfig.create(env.ANSIBLE_VAULT_KEY_FILE)
-              vmConfig.create(env.VC_HOSTNAME, env.VC_DATACENTER, env.VC_CLUSTER, env.VC_FOLDER,
-                              env.VC_NETWORK, env.VC_USR, env.VC_PSW, env.VM_TEMPLATE)
-            }
+            createCommonVars env.SHARED_DRIVE_IP, env.JENKINS_MASTER_IP
+            createAnsibleConfig env.ANSIBLE_VAULT_KEY_FILE
             sh 'cp inventory.sample inventory'
             sh 'ansible-galaxy install -r requirements.yml -f'
+            script {
+              prepareConfig(env.VC_HOSTNAME, env.VC_DATACENTER, env.VC_CLUSTER, env.VC_FOLDER,
+                            env.VC_NETWORK, env.VC_USR, env.VC_PSW, env.VM_TEMPLATE)
+            }
           }
         }
       }
@@ -36,7 +29,7 @@ def call(body) {
           dir('ansible') {
             ansiblePlaybook extras: '-e @vm.vars -e @common.vars', \
                             inventory: 'inventory', \
-                            playbook: body.playbook, \
+                            playbook: playbook, \
                             sudoUser: 'ubuntu'
           }
         }
