@@ -1,28 +1,4 @@
-def ansibleConfig = evaluate readTrusted('jenkinsfiles/library/createAnsibleCfg.groovy')
-def vmConfig = evaluate readTrusted('jenkinsfiles/library/createVMConfig/deploy-builder.groovy')
+library "contrailWindows@$BRANCH_NAME"
 
-pipeline {
-  agent none
-  stages {
-    stage('Prepare environment') {
-      agent { label 'ansible' }
-      environment {
-        VC = credentials('b5d73edd-96c2-467d-8b97-bf52c0ec946a')
-      }
-      steps {
-        git branch: 'ansible-juni', url: 'git@github.com:codilime/juniper-windows-internal'
-        script {
-          vmConfig.create(env.VC_USR, env.VC_PSW, env.VM_TEMPLATE)
-          ansibleConfig.create(env.ANSIBLE_VAULT_KEY_FILE)
-        }
-        sh 'ansible-galaxy install -r requirements.yml -f'
-      }
-    }
-    stage('Run ansible') {
-      agent { label 'ansible' }
-      steps {
-        ansiblePlaybook extras: '-e @vm.vars', inventory: 'inventory', playbook: 'vmware-deploy-template.yml', sudoUser: 'ubuntu' 
-      }
-    }
-  }
-}
+prepareAndRunAnsiblePlaybook(config: prepareDeployBuilder,
+                             playbook: 'vmware-deploy-template.yml')

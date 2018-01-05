@@ -37,7 +37,7 @@
 
 - name: Wait for DHCP to work properly
   wait_for:
-    timeout: 120
+    timeout: 300
 
 - name: Get correct IP address of new {{ vm_role }}
   when: "'169.' in new_vm.instance.hw_eth0.ipaddresses|ipv4|first"

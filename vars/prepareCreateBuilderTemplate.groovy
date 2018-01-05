@@ -1,10 +1,10 @@
-def create(vc_hostname, vc_datacenter, vc_cluster, vc_folder, vc_network,
-           vc_username, vc_password, vm_template,
-           file_path = 'vm.vars') {
+def call(vc_hostname, vc_datacenter, vc_cluster, vc_folder, vc_network,
+         vc_username, vc_password, vm_template,
+         file_path = 'vm.vars') {
   def vmConfig = """
 vcenter_hostname: ${vc_hostname}
-vcenter_user: ${vc_usr}
-vcenter_password: ${vc_psw}
+vcenter_user: ${vc_username}
+vcenter_password: ${vc_password}
 validate_certs: no
 datacenter_name: ${vc_datacenter}
 cluster_name: ${vc_cluster}
@@ -27,5 +27,3 @@ vm_hdd:
 """
   writeFile file: file_path, text: vmConfig
 }
-
-return this
