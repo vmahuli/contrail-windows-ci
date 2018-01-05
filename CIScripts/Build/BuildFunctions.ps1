@@ -86,16 +86,10 @@ function Invoke-DockerDriverBuild {
 
     New-Item -ItemType Directory ./bin
 
-    $Job.Step("Installing dependency management tool for Go ", {
-        DeferExcept({
-            go get -u -v github.com/golang/dep/cmd/dep
-        })
-    })
-
     Push-Location $srcPath
     $Job.Step("Fetch third party packages ", {
         DeferExcept({
-            #& "$Env:GOPATH\bin\dep.exe" ensure -v
+            #& dep ensure -v
         })
     })
     Pop-Location
@@ -110,12 +104,6 @@ function Invoke-DockerDriverBuild {
 
     Push-Location bin
 
-    $Job.Step("Installing test runner", {
-        DeferExcept({
-            go get -u -v github.com/onsi/ginkgo/ginkgo
-        })
-    })
-
     $Job.Step("Building driver", {
         DeferExcept({
             go build -v $DriverSrcPath
@@ -126,7 +114,7 @@ function Invoke-DockerDriverBuild {
         $modules = @("driver", "controller", "hns", "hnsManager")
         $modules.ForEach({
             DeferExcept({
-                .\ginkgo.exe build $srcPath/$_
+                ginkgo build $srcPath/$_
             })
             Move-Item $srcPath/$_/$_.test ./
         })
@@ -136,17 +124,11 @@ function Invoke-DockerDriverBuild {
         Copy-Item $srcPath/scripts/agent_api.py ./
     })
 
-    $Job.Step("Intalling MSI builder", {
-        DeferExcept({
-            go get -u -v github.com/mh-cbon/go-msi
-        })
-    })
-
     $Job.Step("Building MSI", {
         Push-Location $srcPath
         DeferExcept({
-            & "$GoPath/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 `
-                                        --src template --out $pwd/gomsi
+            & go-msi make --msi docker-driver.msi --arch x64 --version 0.1 `
+                          --src template --out $pwd/gomsi
         })
         Pop-Location
 
