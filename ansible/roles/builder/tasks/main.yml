@@ -183,12 +183,13 @@
 
 - name: Install ginkgo
   win_robocopy:
-    src: '{{ dependencies_source }}\ginkgo-6c46eb8\ginkgo.exe'
+    src: '{{ dependencies_source }}\ginkgo-6c46eb8'
     dest: '{{ dependencies_dir }}'
 
-- name: Add dep and ginkgo to PATH
+- name: Add go-msi, dep and ginkgo to PATH
   win_path:
     elements:
+    - 'C:\Program Files\go-msi'
     - '{{ dependencies_dir }}'
     state: present
 
