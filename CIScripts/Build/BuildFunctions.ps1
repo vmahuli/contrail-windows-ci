@@ -89,7 +89,7 @@ function Invoke-DockerDriverBuild {
     Push-Location $srcPath
     $Job.Step("Fetch third party packages ", {
         DeferExcept({
-            #& dep ensure -v
+            & dep ensure -v
         })
     })
     Pop-Location
