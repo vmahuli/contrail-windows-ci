@@ -7,10 +7,21 @@
   New-Partition -DriveLetter J -UseMaximumSize |
   Format-Volume -FileSystem NTFS -NewFileSystemLabel "Jenkins" -Confirm:$false'
 
+- name: Install .NET 3.5
+  win_feature:
+    name: NET-Framework-Core
+    state: present
+
 - name: Install python 2.7.13
   win_chocolatey:
     name: python2
     version: 2.7.13
+    state: present
+
+- name: Install VC for Python 2.7
+  win_chocolatey:
+    name: vcpython27
+    version: 9.0.0.30729
     state: present
 
 - name: Install wheel support to python
@@ -27,6 +38,16 @@
   win_command: pip install lxml
   args:
     creates: C:\Python27\Lib\site-packages\lxml\__init__.py
+
+- name: Install Zull (for zuul-cloner)
+  win_command: pip install zuul==2.6.0
+  args:
+    creates: C:\Python27\Scripts\zuul-cloner.exe
+
+- name: Install GitPython
+  win_command: pip install GitPython==2.1.8
+  args:
+    creates: C:\Python27\Lib\site-packages\git\__init__.py
 
 - name: Install gnuwin32-coreutils
   win_chocolatey:
