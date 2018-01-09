@@ -16,12 +16,8 @@ function DeferExcept([scriptblock] $block) {
             & $block
         }
 
-        if (!$?) {
-            if ($LASTEXITCODE -ne 0) {
-                throw "Command ``$block`` failed with exitcode: $LASTEXITCODE"
-            } else {
-                throw "Command ``$block`` failed"
-            }
+        if($LASTEXITCODE -ne 0) {
+            throw "Command ``$block`` failed with exitcode: $LASTEXITCODE"
         }
     }
 }
