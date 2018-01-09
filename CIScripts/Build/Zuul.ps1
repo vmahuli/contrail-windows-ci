@@ -29,11 +29,13 @@ function Clone-ZuulRepos {
         DeferExcept({
             git clone -q https://github.com/codilime/contrail-windows-docker.git src/github.com/codilime/contrail-windows-docker
         })
-        
+        Write-Host "Cloned docker driver"
+
         # TODO: Use Juniper repo
         # TODO: When contrail-windows will be on Gerrit, fetch it with zull-cloner
         DeferExcept({
             git clone -q https://github.com/codilime/contrail-windowsstubs.git windows/
         })
+        Write-Host "Cloned Windows stubs"
     })
 }
