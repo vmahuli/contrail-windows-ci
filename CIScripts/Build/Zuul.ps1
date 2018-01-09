@@ -24,16 +24,16 @@ function Clone-ZuulRepos {
             zuul-cloner.exe @ZuulClonerOptions @ProjectList
         })
         
-        # TODO: Uncomment when repo becomes accessible
+        # TODO: Use Juniper repo
         # TODO: When contrail-windows-docker-driver will be on Gerrit, fetch it with zull-cloner
-        #DeferExcept({
-            #git clone -q https://github.com/Juniper/contrail-windows-docker-driver.git src/github.com/codilime/contrail-windows-docker
-        #})
+        DeferExcept({
+            git clone -q https://github.com/codilime/contrail-windows-docker.git src/github.com/codilime/contrail-windows-docker
+        })
         
-        # TODO: Uncomment when repo becomes accessible
+        # TODO: Use Juniper repo
         # TODO: When contrail-windows will be on Gerrit, fetch it with zull-cloner
-        #DeferExcept({
-            #git clone -q https://github.com/Juniper/contrail-windows.git windows/
-        #})
+        DeferExcept({
+            git clone -q https://github.com/codilime/contrail-windowsstubs.git windows/
+        })
     })
 }
