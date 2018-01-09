@@ -28,7 +28,7 @@ stage('Build') {
         unstash "CIScripts"
 
         powershell script: './CIScripts/Build.ps1'
-        stash name: "WinArt", includes: "output/**/*"
+        //stash name: "WinArt", includes: "output/**/*"
         stash name: "buildLogs", includes: "logs/**"
     }
 }
