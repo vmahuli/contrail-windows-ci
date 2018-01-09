@@ -2,4 +2,3 @@ library "contrailWindows@$BRANCH_NAME"
 
 prepareAndRunAnsiblePlaybook(config: prepareCreateBuilderTemplate,
                              playbook: 'vmware-create-template.yml')
-
