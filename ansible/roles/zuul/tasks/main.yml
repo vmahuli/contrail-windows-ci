@@ -1,0 +1,53 @@
+- name: 'apt update && upgrade'
+  apt:
+      update_cache: yes
+      upgrade: safe
+
+
+- name: 'install apache'
+  apt:
+      name: apache2
+      state: present
+
+# TODO use new apache2-zuul.conf
+- name: 'copy apache config'
+  register: new_apache_config
+  copy:
+      src: '{{ config_dir }}/apache2.conf'
+      dest: /etc/apache2/
+
+- name: 'reload apache'
+  service:
+      name: apache2
+      state: restarted
+  when: new_apache_config.changed
+
+
+- name: 'install pip'
+  apt:
+      name: python-pip
+      state: present
+
+- name: 'install zuul using pip'
+  pip:
+      name: zuul
+      version: 2.6.0
+
+- name: 'install gearman using pip'
+  pip:
+      name: gearman
+      version: 2.0.2
+
+
+- name: 'copy zuul config files'
+  copy:
+      src: '{{ config_dir }}/zuul/'
+      dest: /etc/zuul/
+
+- name: 'copy zuul .service files'
+  copy:
+      src: '{{ config_dir }}/services/'
+      dest: /lib/systemd/system/
+
+# TODO copy ssh key for ji to /var/lib/zuul/ssh/id_rsa
+# TODO gearman server IP -- localhost?
