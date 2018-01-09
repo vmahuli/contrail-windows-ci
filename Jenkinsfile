@@ -29,7 +29,7 @@ stage('Build') {
 
         powershell script: './CIScripts/Build.ps1'
         //stash name: "WinArt", includes: "output/**/*"
-        stash name: "buildLogs", includes: "logs/**"
+        //stash name: "buildLogs", includes: "logs/**"
     }
 }
 
