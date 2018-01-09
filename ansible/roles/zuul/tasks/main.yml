@@ -49,5 +49,40 @@
       src: '{{ config_dir }}/services/'
       dest: /lib/systemd/system/
 
+- name: 'add zuul group'
+  group:
+      name: zuul
+      state: present
+
+- name: 'add zuul user'
+  user:
+      name: zuul
+      group: zuul
+
+- name: 'create /var/lib/zuul'
+  file:
+      path: /var/lib/zuul
+      state: directory
+      owner: zuul
+      group: zuul
+      recurse: yes
+
+- name: 'create /var/log/zuul'
+  file:
+      path: /var/log/zuul
+      state: directory
+      owner: zuul
+      group: zuul
+
+- name: 'enable zuul server service'
+  service:
+      name: zuul-server
+      enabled: yes
+
+- name: 'enable zuul merger service'
+  service:
+      name: zuul-merger
+      enabled: yes
+
 # TODO copy ssh key for ji to /var/lib/zuul/ssh/id_rsa
 # TODO gearman server IP -- localhost?
