@@ -2,6 +2,8 @@ function Test-VTestScenarios {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
+    . $PSScriptRoot\..\Utils\CommonTestCode.ps1
+
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         Write-Host "===> Running vtest scenarios"
 

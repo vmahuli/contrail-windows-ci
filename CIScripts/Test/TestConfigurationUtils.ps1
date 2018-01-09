@@ -322,6 +322,27 @@ function Remove-AllUnusedDockerNetworks {
     }
 }
 
+function Wait-RemoteInterfaceIP {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+           [Parameter(Mandatory = $true)] [Int] $ifIndex)
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        $WAIT_TIME_FOR_DHCP_IN_SECONDS = 60
+
+        foreach ($i in 1..$WAIT_TIME_FOR_DHCP_IN_SECONDS) {
+            $Address = Get-NetIPAddress -InterfaceIndex $Using:ifIndex -ErrorAction SilentlyContinue `
+                | ? AddressFamily -eq IPv4 `
+                | ? SuffixOrigin -eq "Dhcp"
+            if ($Address) {
+                return
+            }
+            Start-Sleep -Seconds 1
+        }
+
+        throw "Waiting for IP on interface $($Using:ifIndex) timed out after $WAIT_TIME_FOR_DHCP_IN_SECONDS seconds"
+    }
+}
+
 function Initialize-TestConfiguration {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
@@ -360,6 +381,11 @@ function Initialize-TestConfiguration {
             break;
         }
     }
+
+    $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
+            -Session $Session `
+            -AdapterName $TestConfiguration.VHostName
+    Wait-RemoteInterfaceIP -Session $Session -ifIndex $HNSTransparentAdapter.ifIndex
 
     if (!$NoNetwork) {
         New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration | Out-Null

@@ -3,6 +3,8 @@ function Test-ExtensionLongLeak {
            [Parameter(Mandatory = $true)] [int] $TestDurationHours,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
+    . $PSScriptRoot\..\Utils\CommonTestCode.ps1
+
     if ($TestDurationHours -eq 0) {
         Write-Host "===> Extension leak test skipped."
         return

@@ -3,6 +3,8 @@ function Test-MultiEnableDisableExtension {
            [Parameter(Mandatory = $true)] [int] $EnableDisableCount,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
+    . $PSScriptRoot\..\Utils\CommonTestCode.ps1
+
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         Write-Host "===> Running Multi Enable-Disable Extension Test ($EnableDisableCount times)..."
 

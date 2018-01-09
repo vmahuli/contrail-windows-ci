@@ -2,6 +2,8 @@ function Test-MultipleSubnetsSupport {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
+    . $PSScriptRoot\..\Utils\CommonTestCode.ps1
+
     function Join-ContainerNetworkNamePrefix {
         Param ([Parameter(Mandatory = $true)] [string] $Tenant,
                [Parameter(Mandatory = $true)] [string] $Network,
