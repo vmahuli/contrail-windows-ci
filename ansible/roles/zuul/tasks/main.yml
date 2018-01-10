@@ -9,12 +9,17 @@
       name: apache2
       state: present
 
-# TODO use new apache2-zuul.conf
 - name: 'copy apache config'
   register: new_apache_config
   copy:
-      src: '{{ config_dir }}/apache2.conf'
-      dest: /etc/apache2/
+      src: '{{ config_dir }}/apache2/conf-available/'
+      dest: /etc/apache2/conf-available/
+
+- name: 'enable apache config'
+  file:
+      src: ../conf-available/zuul.conf
+      dest: /etc/apache2/conf-enabled/zuul.conf
+      state: link
 
 - name: 'reload apache'
   service:
