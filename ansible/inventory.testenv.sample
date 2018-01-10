@@ -1,0 +1,7 @@
+localhost
+
+[vmware:children]
+testenv
+
+# empty testenv block
+[testenv]
