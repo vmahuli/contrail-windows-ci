@@ -1,1 +1,2 @@
-config_dir: '../zuul'
+config_dir: ../zuul
+id_rsa_path: ../zuul/id_rsa

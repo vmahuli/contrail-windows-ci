@@ -64,20 +64,21 @@
       name: zuul
       group: zuul
 
-- name: 'create /var/lib/zuul'
+- name: 'create zuul directories in /var'
   file:
-      path: /var/lib/zuul
+      path: '{{ item }}'
       state: directory
       owner: zuul
       group: zuul
-      recurse: yes
+  with_items:
+      - /var/lib/zuul
+      - /var/lib/zuul/ssh
+      - /var/log/zuul
 
-- name: 'create /var/log/zuul'
-  file:
-      path: /var/log/zuul
-      state: directory
-      owner: zuul
-      group: zuul
+- name: 'copy id_rsa'
+  copy:
+      src: '{{ id_rsa_path }}'
+      dest: /var/lib/zuul/ssh
 
 - name: 'enable zuul server service'
   service:
@@ -88,6 +89,3 @@
   service:
       name: zuul-merger
       enabled: yes
-
-# TODO copy ssh key for ji to /var/lib/zuul/ssh/id_rsa
-# TODO gearman server IP -- localhost?
