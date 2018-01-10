@@ -1,0 +1,27 @@
+---
+
+- name: "Add Contrail controller VMs to ad-hoc inventory for testenv '{{ testenv_name }}'"
+  add_host:
+    name: "{{ item.name }}"
+    groups: testenv,controller
+    type: controller
+    template: "{{ testenv_block.controller.template }}"
+  with_items:
+    "{{ testenv_block.controller.nodes }}"
+
+- name: "Add Windows testbed VMs to ad-hoc inventory for testenv '{{ testenv_name }}'"
+  add_host:
+    name: "{{ item.name }}"
+    groups: testenv,testbed
+    type: wintb
+    ip: "{{ item.ip }}"
+    netmask: "{{ testenv_block.wintb.netmask }}"
+    template: "{{ testenv_block.wintb.template }}"
+  with_items:
+    "{{ testenv_block.wintb.nodes }}"
+
+- name: Display inventory for 'testenv' group
+  debug:
+    verbosity: 1
+    msg: "{{ item }}, groups: {{ hostvars[item].group_names }}"
+  with_inventory_hostnames: testenv

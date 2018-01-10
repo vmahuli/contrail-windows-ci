@@ -1,0 +1,14 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  roles:
+  - testenv-inventory-build
+
+- hosts: testenv
+  gather_facts: no
+  strategy: free
+  roles:
+  - role: vmware-vm
+    action: destroy
