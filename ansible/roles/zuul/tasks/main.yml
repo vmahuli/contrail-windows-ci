@@ -45,6 +45,7 @@
 
 
 - name: 'copy zuul config files'
+  register: new_zuul_config
   copy:
       src: '{{ config_dir }}/zuul/'
       dest: /etc/zuul/
@@ -90,12 +91,18 @@
       src: '{{ id_rsa_path }}'
       dest: /var/lib/zuul/ssh
 
-- name: 'enable zuul server service'
+- name: 'restart zuul services (when config changed)'
   service:
-      name: zuul-server
-      enabled: yes
+      name: '{{ item }}'
+      state: restarted
+  with_items: &zuul_services
+      - zuul-server
+      - zuul-merger
+  when: new_zuul_config.changed
 
-- name: 'enable zuul merger service'
+- name: 'enable zuul services'
   service:
-      name: zuul-merger
+      name: '{{ item }}'
       enabled: yes
+      state: started
+  with_items: *zuul_services
