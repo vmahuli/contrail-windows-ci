@@ -13,7 +13,11 @@ if($IsTriggeredByZuul) {
     # Build is triggered by Zuul, when someone submits a pull
     # request to review.opencontrail.org.
 
-    Clone-ZuulRepos
+    Clone-ZuulRepos -GerritUrl $Env:GERRIT_URL `
+                    -ZuulProject $Env:ZUUL_PROJECT `
+                    -ZuulRef $Env:ZUUL_REF `
+                    -ZuulUrl $Env:ZUUL_URL `
+                    -ZuulBranch $Env:ZUUL_BRANCH
 } else {
     # Build is triggered by Jenkins GitHub plugin, when someone submits a pull
     # request to select github.com/codilime/* repos.

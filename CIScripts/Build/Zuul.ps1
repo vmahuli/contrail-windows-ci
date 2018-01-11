@@ -1,11 +1,22 @@
 . $PSScriptRoot\..\Common\DeferExcept.ps1
 
 function Clone-ZuulRepos {
+    Param (
+        [Parameter(Mandatory = $true)] [string] $GerritUrl,
+        [Parameter(Mandatory = $true)] [string] $ZuulProject,
+        [Parameter(Mandatory = $true)] [string] $ZuulRef,
+        [Parameter(Mandatory = $true)] [string] $ZuulUrl,
+        [Parameter(Mandatory = $true)] [string] $ZuulBranch
+    )
+
     $ZuulClonerOptions = @(
-        "-m",
-        "./CIScripts/clonemap.yml",
+        "--zuul-project=$ZuulProject",
+        "--zuul-ref=$ZuulRef",
+        "--zuul-url=$ZuulUrl",
+        "--zuul-branch=$ZuulBranch",
+        "--map=./CIScripts/clonemap.yml",
         "--verbose",
-        $Env:GERRIT_URL
+        $GerritUrl
     )
 
     # TODO(sodar): Get project list from clonemap.yml
