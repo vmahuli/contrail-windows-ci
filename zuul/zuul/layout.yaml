@@ -8,15 +8,6 @@ pipelines:
       gerrit:
         - event: comment-added
           comment: (?i)recheck windows$
-    start:
-      gerrit:
-        verified: 0
-    success:
-      gerrit:
-        verified: 1
-    failure:
-      gerrit:
-        verified: -1
 
 jobs:
   - name: ^.*$
@@ -34,10 +25,6 @@ projects:
     check:
       - ci-contrail-windows
 
-  - name: Juniper/contrail-packages
-    check:
-      - ci-contrail-windows
-
   - name: Juniper/contrail-third-party
     check:
       - ci-contrail-windows
@@ -47,10 +34,6 @@ projects:
       - ci-contrail-windows
 
   - name: Juniper/contrail-sandesh
-    check:
-      - ci-contrail-windows
-
-  - name: Juniper/contrail-docker
     check:
       - ci-contrail-windows
 
