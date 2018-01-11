@@ -1,5 +1,3 @@
-config_dir: ../zuul
-id_rsa_path: ../zuul/id_rsa
 gerrit_server: review2.opencontrail.org
 gerrit_port: 29418
 gerrit_user: ji

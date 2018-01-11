@@ -12,7 +12,7 @@
 - name: 'copy apache config'
   register: new_apache_config
   copy:
-      src: '{{ config_dir }}/apache2/conf-available/'
+      src: apache2/conf-available/
       dest: /etc/apache2/conf-available/
 
 - name: 'enable apache config'
@@ -47,7 +47,7 @@
 - name: 'copy zuul config files'
   register: new_zuul_config
   copy:
-      src: '{{ config_dir }}/zuul/'
+      src: zuul/
       dest: /etc/zuul/
 
 - name: 'retrieve ip address of zuul host'
@@ -56,12 +56,12 @@
 
 - name: 'generate zuul.conf from template'
   template:
-     src: '{{ config_dir }}/zuul.conf.j2'
+     src: zuul.conf.j2
      dest: /etc/zuul/zuul.conf
 
 - name: 'copy zuul .service files'
   copy:
-      src: '{{ config_dir }}/services/'
+      src: services/
       dest: /lib/systemd/system/
 
 - name: 'add zuul group'
@@ -86,10 +86,10 @@
       - /var/lib/zuul/git
       - /var/log/zuul
 
-- name: 'copy id_rsa'
-  copy:
-      src: '{{ id_rsa_path }}'
-      dest: /var/lib/zuul/ssh
+# - name: 'copy id_rsa'
+#   copy:
+#       src: '{{ id_rsa_path }}'
+#       dest: /var/lib/zuul/ssh
 
 - name: 'restart zuul services (when config changed)'
   service:
