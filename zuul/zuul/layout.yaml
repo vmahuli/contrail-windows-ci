@@ -24,36 +24,36 @@ jobs:
 projects:
   - name: Juniper/contrail-controller
     check:
-      - WinCI-Proxy
+      - ci-contrail-windows
 
   - name: Juniper/contrail-vrouter
     check:
-      - WinCI-Proxy
+      - ci-contrail-windows
 
   - name: Juniper/contrail-build
     check:
-      - WinCI-Proxy
+      - ci-contrail-windows
 
   - name: Juniper/contrail-packages
     check:
-      - WinCI-Proxy
+      - ci-contrail-windows
 
   - name: Juniper/contrail-third-party
     check:
-      - WinCI-Proxy
+      - ci-contrail-windows
 
   - name: Juniper/contrail-generateDS
     check:
-      - WinCI-Proxy
+      - ci-contrail-windows
 
   - name: Juniper/contrail-sandesh
     check:
-      - WinCI-Proxy
+      - ci-contrail-windows
 
   - name: Juniper/contrail-docker
     check:
-      - WinCI-Proxy
+      - ci-contrail-windows
 
   - name: Juniper/contrail-common
     check:
-      - WinCI-Proxy
+      - ci-contrail-windows
