@@ -49,6 +49,15 @@
       src: '{{ config_dir }}/zuul/'
       dest: /etc/zuul/
 
+- name: 'retrieve ip address of zuul host'
+  set_fact:
+     zuul_host: '{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}'
+
+- name: 'generate zuul.conf from template'
+  template:
+     src: {{ config_dir }}/zuul.conf.j2
+     dest: /etc/zuul
+
 - name: 'copy zuul .service files'
   copy:
       src: '{{ config_dir }}/services/'
@@ -73,6 +82,7 @@
   with_items:
       - /var/lib/zuul
       - /var/lib/zuul/ssh
+      - /var/lib/zuul/git
       - /var/log/zuul
 
 - name: 'copy id_rsa'
