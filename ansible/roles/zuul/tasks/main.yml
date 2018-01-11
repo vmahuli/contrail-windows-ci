@@ -51,7 +51,7 @@
 
 - name: 'retrieve ip address of zuul host'
   set_fact:
-     zuul_host: '{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}'
+     zuul_host: '{{ ansible_default_ipv4.address }}'
 
 - name: 'generate zuul.conf from template'
   template:
