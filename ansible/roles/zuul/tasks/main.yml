@@ -57,7 +57,7 @@
 - name: 'generate zuul.conf from template'
   template:
      src: '{{ config_dir }}/zuul.conf.j2'
-     dest: /etc/zuul
+     dest: /etc/zuul/zuul.conf
 
 - name: 'copy zuul .service files'
   copy:
