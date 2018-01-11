@@ -86,6 +86,15 @@
       - /var/lib/zuul/git
       - /var/log/zuul
 
+- name: 'add gerrit servers to known hosts'
+  known_hosts:
+      name: '{{ gerrit_known_hosts[item].name }}'
+      key: '{{ gerrit_known_hosts[item].key }}'
+  with_items:
+      - review2
+  become: yes
+  become_user: zuul
+
 - name: 'copy key for accessing gerrit'
   copy:
       content: '{{ gerrit_keys[gerrit_keyname] }}'
