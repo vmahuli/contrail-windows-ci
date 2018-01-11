@@ -9,14 +9,18 @@ function DeferExcept([scriptblock] $block) {
     # 
     # This wrapper will throw only if the whole command failed. It will suppress any exceptions
     # when the command is running.
+    #
+    # Note: The command has to return 0 exitcode to be considered successful.
 
     return Invoke-Command -ScriptBlock {
+        $Global:LASTEXITCODE = "none"
+
         & {
             $ErrorActionPreference = "Continue"
             & $block
         }
 
-        if($LASTEXITCODE -ne 0) {
+        if ($LASTEXITCODE -ne 0) {
             throw "Command ``$block`` failed with exitcode: $LASTEXITCODE"
         }
     }
