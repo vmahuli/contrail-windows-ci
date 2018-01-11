@@ -86,10 +86,10 @@
       - /var/lib/zuul/git
       - /var/log/zuul
 
-# - name: 'copy id_rsa'
-#   copy:
-#       src: '{{ id_rsa_path }}'
-#       dest: /var/lib/zuul/ssh
+- name: 'copy key for accessing gerrit'
+  copy:
+      content: '{{ gerrit_keys[gerrit_keyname] }}'
+      dest: /var/lib/zuul/ssh/id_rsa
 
 - name: 'restart zuul services (when config changed)'
   service:
