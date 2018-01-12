@@ -21,6 +21,16 @@
       dest: /etc/apache2/conf-enabled/zuul.conf
       state: link
 
+
+- name: 'enable necessary apache modules'
+  apache2_module:
+      state: present
+      name: '{{ item }}'
+  with_items:
+      - cgid
+      - alias
+      - env
+
 - name: 'reload apache'
   service:
       name: apache2
