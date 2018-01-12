@@ -84,6 +84,14 @@
       name: zuul
       group: zuul
 
+- name: 'create ~zuul/.ssh directory'
+  file:
+      path: /home/zuul/.ssh
+      state: directory
+      owner: zuul
+      group: zuul
+      mode: '0700'
+
 - name: 'create zuul directories in /var'
   file:
       path: '{{ item }}'
