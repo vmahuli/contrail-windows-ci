@@ -14,20 +14,6 @@ stage('Preparation') {
 
 stage('Build') {
     node('builder') {
-        env.DRIVER_REPO_URL = "https://github.com/codilime/contrail-windows-docker"
-        env.DRIVER_BRANCH = "master"
-        env.TOOLS_REPO_URL = "https://github.com/codilime/contrail-build"
-        env.TOOLS_BRANCH = "windows"
-        env.SANDESH_REPO_URL = "https://github.com/codilime/contrail-sandesh"
-        env.SANDESH_BRANCH = "windows"
-        env.GENERATEDS_REPO_URL = "https://github.com/codilime/contrail-generateDS"
-        env.GENERATEDS_BRANCH = "windows"
-        env.VROUTER_REPO_URL = "https://github.com/codilime/contrail-vrouter"
-        env.VROUTER_BRANCH = "windows"
-        env.WINDOWSSTUBS_REPO_URL = "https://github.com/codilime/contrail-windowsstubs"
-        env.WINDOWSSTUBS_BRANCH = "windows"
-        env.CONTROLLER_REPO_URL = "https://github.com/codilime/contrail-controller"
-        env.CONTROLLER_BRANCH = "windows3.1"
         env.THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
         env.DRIVER_SRC_PATH = "github.com/codilime/contrail-windows-docker"
         env.BUILD_ONLY = "1"
@@ -42,8 +28,8 @@ stage('Build') {
         unstash "CIScripts"
 
         powershell script: './CIScripts/Build.ps1'
-        stash name: "WinArt", includes: "output/**/*"
-        stash name: "buildLogs", includes: "logs/**"
+        //stash name: "WinArt", includes: "output/**/*"
+        //stash name: "buildLogs", includes: "logs/**"
     }
 }
 

@@ -4,20 +4,20 @@
 . $PSScriptRoot\Common\Job.ps1
 . $PSScriptRoot\Build\BuildFunctions.ps1
 . $PSScriptRoot\Build\StagingCI.ps1
-. $PSScriptRoot\Build\ProdCI.ps1
+. $PSScriptRoot\Build\Zuul.ps1
 
 $Job = [Job]::new("Build")
 
-$IsTriggeredByGerrit = Test-Path Env:GERRIT_CHANGE_ID
-if($IsTriggeredByGerrit) {
-    # Build is triggered by Jenkins Gerrit plugin, when someone submits a pull
+$IsTriggeredByZuul = Test-Path Env:ZUUL_PROJECT
+if($IsTriggeredByZuul) {
+    # Build is triggered by Zuul, when someone submits a pull
     # request to review.opencontrail.org.
 
-    $TriggeredProject = Get-GerritProjectName -ProjectString $ENV:GERRIT_PROJECT
-    $TriggeredBranch = $ENV:GERRIT_BRANCH
-    $Repos = Get-ProductionRepos -TriggeredProject $TriggeredProject `
-                                 -TriggeredBranch $TriggeredBranch `
-                                 -GerritHost $Env:GERRIT_HOST
+    Clone-ZuulRepos -GerritUrl $Env:GERRIT_URL `
+                    -ZuulProject $Env:ZUUL_PROJECT `
+                    -ZuulRef $Env:ZUUL_REF `
+                    -ZuulUrl $Env:ZUUL_URL `
+                    -ZuulBranch $Env:ZUUL_BRANCH
 } else {
     # Build is triggered by Jenkins GitHub plugin, when someone submits a pull
     # request to select github.com/codilime/* repos.
@@ -29,17 +29,8 @@ if($IsTriggeredByGerrit) {
                               -GenerateDSBranch $Env:GENERATEDS_BRANCH `
                               -VRouterBranch $Env:VROUTER_BRANCH `
                               -ControllerBranch $Env:CONTROLLER_BRANCH
-}
 
-Clone-Repos -Repos $Repos
-
-if($IsTriggeredByGerrit) {
-    # Gerrit is different from GitHub, because it operates on patches. We need
-    # to merge the downloaded patch with triggered repo.
-    
-    Merge-GerritPatchset -TriggeredProject $TriggeredProject `
-                         -Repos $Repos `
-                         -Refspec $Env:GERRIT_REFSPEC
+    Clone-Repos -Repos $Repos
 }
 
 $IsReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)

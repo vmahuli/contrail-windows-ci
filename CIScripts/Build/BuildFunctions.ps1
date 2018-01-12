@@ -37,7 +37,9 @@ function Clone-Repos {
 function Prepare-BuildEnvironment {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache)
     $Job.Step("Copying common third-party dependencies", {
-        New-Item -ItemType Directory .\third_party
+        if (!(Test-Path -Path .\third_party)) {
+            New-Item -ItemType Directory .\third_party
+        }
         Get-ChildItem "$ThirdPartyCache\common" -Directory |
             Where-Object{$_.Name -notlike "boost*"} |
             Copy-Item -Destination third_party\ -Recurse -Force
