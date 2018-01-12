@@ -91,6 +91,7 @@
       name: '{{ gerrit_known_hosts[item].name }}'
       key: '{{ gerrit_known_hosts[item].key }}'
   with_items:
+      - review
       - review2
   become: yes
   become_user: zuul
