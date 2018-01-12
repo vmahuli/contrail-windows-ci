@@ -55,7 +55,7 @@
 
 
 - name: 'copy zuul config files'
-  register: new_zuul_config
+  register: new_zuul_config_files
   copy:
       src: zuul/
       dest: /etc/zuul/
@@ -65,6 +65,7 @@
      zuul_host: '{{ ansible_default_ipv4.address }}'
 
 - name: 'generate zuul.conf from template'
+  register: new_zuul_config
   template:
      src: zuul.conf.j2
      dest: /etc/zuul/zuul.conf
@@ -126,7 +127,7 @@
   with_items: &zuul_services
       - zuul-server
       - zuul-merger
-  when: new_zuul_config.changed
+  when: new_zuul_config.changed or new_zuul_config_files.changed
 
 - name: 'enable zuul services'
   service:
