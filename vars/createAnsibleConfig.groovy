@@ -4,7 +4,7 @@ def call(vaultKeyFile) {
 [defaults]
 deprecation_warnings = False
 vault_password_file = ${vaultKeyFile}
-callback_whitelist = profile_tasks
+callback_whitelist = timer,profile_tasks
 """
 
   writeFile file: 'ansible.cfg', text: ansibleConfig

@@ -1,0 +1,33 @@
+---
+
+- name: Deploy controller VMs for testenv '{{ testenv_name }}'
+  delegate_to: localhost
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ validate_certs }}"
+
+    datacenter: "{{ datacenter_name }}"
+    cluster: "{{ cluster_name }}"
+    folder: "{{ testenv_folder }}"
+
+    name: "{{ inventory_hostname_short }}"
+    template: "{{ hostvars[inventory_hostname].template }}"
+    annotation: "Ansible-created for {{ testenv_name }} environment"
+    state: poweredon
+
+    networks:
+      - name: "{{ portgroup_mgmt }}"
+      - name: "{{ portgroup_contrail }}"
+
+    wait_for_ip_address: yes
+
+  register: newvm
+
+- name: Save VM info to inventory file '{{ vm_inventory_file }}'
+  delegate_to: localhost
+  lineinfile:
+    path: "{{ vm_inventory_file }}"
+    create: yes
+    line: "{{ inventory_hostname }};{{ newvm.instance.hw_eth0.ipaddresses | ipv4 }};{{ newvm.instance.hw_product_uuid }}"
