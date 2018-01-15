@@ -6,6 +6,13 @@ pipelines:
     precedence: low
     trigger:
       gerrit:
+        - event: patchset-created
+          branch: ^master$
+        - event: change-restored
+          branch: ^master$
+        - event: comment-added
+          branch: ^master$
+          comment: (?i)recheck(( (?:bug|lp)[\s#:]*(\d+))|( no bug))(\s+clean)?\s*$
         - event: comment-added
           comment: (?i)recheck windows$
 
