@@ -1,0 +1,12 @@
+[Unit]
+Description=Zuul Server Service
+After=syslog.target network.target
+ 
+[Service]
+Type=simple
+User=zuul
+Group=zuul
+ExecStart=/usr/local/bin/zuul-server -d
+
+[Install]
+WantedBy=multi-user.target

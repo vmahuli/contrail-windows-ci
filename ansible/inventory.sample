@@ -19,6 +19,8 @@ jenkins-server
 
 [jenkins-server]
 
+[zuul]
+
 [tester]
 
 [builder]

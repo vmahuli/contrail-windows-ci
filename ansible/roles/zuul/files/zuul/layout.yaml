@@ -1,0 +1,42 @@
+pipelines:
+  - name: check
+    description: Newly uploaded patchsets enter this pipeline to receive an initial +/-1 Verified vote from Windows CI.
+    failure-message: Build failed.
+    manager: IndependentPipelineManager
+    precedence: low
+    trigger:
+      gerrit:
+        - event: comment-added
+          comment: (?i)recheck windows$
+
+jobs:
+  - name: ^.*$
+
+projects:
+  - name: Juniper/contrail-controller
+    check:
+      - ci-contrail-windows
+
+  - name: Juniper/contrail-vrouter
+    check:
+      - ci-contrail-windows
+
+  - name: Juniper/contrail-build
+    check:
+      - ci-contrail-windows
+
+  - name: Juniper/contrail-third-party
+    check:
+      - ci-contrail-windows
+
+  - name: Juniper/contrail-generateDS
+    check:
+      - ci-contrail-windows
+
+  - name: Juniper/contrail-sandesh
+    check:
+      - ci-contrail-windows
+
+  - name: Juniper/contrail-common
+    check:
+      - ci-contrail-windows

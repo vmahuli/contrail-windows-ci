@@ -1,0 +1,137 @@
+- name: 'apt update && upgrade'
+  apt:
+      update_cache: yes
+      upgrade: safe
+
+
+- name: 'install apache'
+  apt:
+      name: apache2
+      state: present
+
+- name: 'copy apache config'
+  register: new_apache_config
+  copy:
+      src: apache2/conf-available/
+      dest: /etc/apache2/conf-available/
+
+- name: 'enable apache config'
+  file:
+      src: ../conf-available/zuul.conf
+      dest: /etc/apache2/conf-enabled/zuul.conf
+      state: link
+
+
+- name: 'enable necessary apache modules'
+  apache2_module:
+      state: present
+      name: '{{ item }}'
+  with_items:
+      - cgid
+      - alias
+      - env
+
+- name: 'reload apache'
+  service:
+      name: apache2
+      state: restarted
+  when: new_apache_config.changed
+
+
+- name: 'install pip'
+  apt:
+      name: python-pip
+      state: present
+
+- name: 'install zuul using pip'
+  pip:
+      name: zuul
+      version: 2.6.0
+
+- name: 'install gearman using pip'
+  pip:
+      name: gearman
+      version: 2.0.2
+
+
+- name: 'copy zuul config files'
+  register: new_zuul_config_files
+  copy:
+      src: zuul/
+      dest: /etc/zuul/
+
+- name: 'retrieve ip address of zuul host'
+  set_fact:
+     zuul_host: '{{ ansible_default_ipv4.address }}'
+
+- name: 'generate zuul.conf from template'
+  register: new_zuul_config
+  template:
+     src: zuul.conf.j2
+     dest: /etc/zuul/zuul.conf
+
+- name: 'copy zuul .service files'
+  copy:
+      src: services/
+      dest: /lib/systemd/system/
+
+- name: 'add zuul group'
+  group:
+      name: zuul
+      state: present
+
+- name: 'add zuul user'
+  user:
+      name: zuul
+      group: zuul
+
+- name: 'create ~zuul/.ssh directory'
+  file:
+      path: /home/zuul/.ssh
+      state: directory
+      owner: zuul
+      group: zuul
+      mode: '0700'
+
+- name: 'create zuul directories in /var'
+  file:
+      path: '{{ item }}'
+      state: directory
+      owner: zuul
+      group: zuul
+  with_items:
+      - /var/lib/zuul
+      - /var/lib/zuul/ssh
+      - /var/lib/zuul/git
+      - /var/log/zuul
+
+- name: 'add gerrit servers to known hosts'
+  known_hosts:
+      name: '{{ gerrit_known_hosts[item].name }}'
+      key: '{{ gerrit_known_hosts[item].key }}'
+  with_items:
+      - review
+      - review2
+  become: yes
+  become_user: zuul
+
+- name: 'copy key for accessing gerrit'
+  copy:
+      content: '{{ gerrit_keys[gerrit_keyname] }}'
+      dest: /var/lib/zuul/ssh/id_rsa
+
+- name: 'restart zuul services (when config changed)'
+  service:
+      name: '{{ item }}'
+      state: restarted
+  with_items: &zuul_services
+      - zuul-server
+      - zuul-merger
+  when: new_zuul_config.changed or new_zuul_config_files.changed
+
+- name: 'enable zuul services'
+  service:
+      name: '{{ item }}'
+      enabled: yes
+      state: started
+  with_items: *zuul_services

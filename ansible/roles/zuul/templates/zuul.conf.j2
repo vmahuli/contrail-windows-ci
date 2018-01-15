@@ -1,0 +1,31 @@
+[gearman]
+server={{ zuul_host }}
+port = 4730
+
+[gearman_server]
+listen_address=0.0.0.0
+start=true
+log_config=/etc/zuul/gearman-logging.conf
+
+[gerrit]
+server={{ gerrit_server }}
+port={{ gerrit_port }}
+user={{ gerrit_user }}
+sshkey=/var/lib/zuul/ssh/id_rsa
+
+[zuul]
+layout_config=/etc/zuul/layout.yaml
+log_config=/etc/zuul/logging.conf
+state_dir=/var/lib/zuul
+git_dir=/var/lib/zuul/git
+url_pattern=
+status_url={{ zuul_host }}
+job_name_in_report=true
+zuul_url=http://{{ zuul_host }}/merge-warrior
+
+[merger]
+git_dir=/var/lib/zuul/git
+zuul_url=http://{{ zuul_host }}/merge-warrior
+log_config=/etc/zuul/merger-logging.conf
+git_user_email=not@yet.set.com
+git_user_name=not.yet.set
