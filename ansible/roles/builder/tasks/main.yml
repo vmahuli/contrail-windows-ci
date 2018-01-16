@@ -140,7 +140,7 @@
   win_robocopy:
     src: '{{ dependencies_source }}\third_party_cache\'
     dest: '{{ dependencies_dir }}\third_party_cache'
-    flags: /E /MT:32
+    flags: /E /PURGE /MT:32
 
 - name: Install VisualCPP Build Tools
   win_package:
