@@ -1,5 +1,4 @@
 pipeline {
-    // Used only by the post stage
     agent none
 
     options {
