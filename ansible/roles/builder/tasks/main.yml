@@ -232,3 +232,39 @@
     elements:
     - '{{ dependencies_dir }}'
     state: present
+
+- name: 'create .ssh directory'
+  win_file:
+      path: '{{ system_profile_dir }}\.ssh'
+      state: directory
+  tags:
+      - ssh
+
+- name: 'copy deploy keys for Juniper repos'
+  win_copy:
+      content: '{{ deploykeys[item] }}'
+      dest: '{{ system_profile_dir }}\.ssh\{{ item }}'
+  with_items:
+      - deploykey_contrail-windows
+      - deploykey_contrail-windows-docker-driver
+  tags:
+      - ssh
+
+- name: 'copy ssh config'
+  win_copy:
+      src: 'ssh_config'
+      dest: '{{ system_profile_dir }}\.ssh\config'
+  tags:
+      - ssh
+
+- name: 'add github to known hosts'
+  win_lineinfile:
+      path: '{{ system_profile_dir }}\.ssh\known_hosts'
+      line: '{{ github_host_key }}'
+      regexp: '|1|D9woGiuXb8RPaD7YK3DE8nWh/hM=|TJ87Rd+bqWkdVT7MsSZOCI2em0U='
+      state: present
+      create: yes
+  tags:
+      - ssh
+
+...
