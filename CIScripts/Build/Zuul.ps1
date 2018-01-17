@@ -38,7 +38,7 @@ function Clone-ZuulRepos {
         # TODO: Use Juniper repo
         # TODO: When contrail-windows-docker-driver will be on Gerrit, fetch it with zull-cloner
         DeferExcept({
-            git clone -q contrail-windows-docker-driver.github.com:Juniper/contrail-windows-docker-driver.git src/github.com/codilime/contrail-windows-docker
+            git clone -q https://github.com/codilime/contrail-windows-docker.git src/github.com/codilime/contrail-windows-docker
         })
         Write-Host "Cloned docker driver"
 
