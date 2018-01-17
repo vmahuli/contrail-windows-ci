@@ -1,6 +1,6 @@
 pipeline {
     // Used only by the post stage
-    agent { label 'master' }
+    agent none
 
     options {
         timeout time: 5, unit: 'HOURS'
@@ -87,12 +87,14 @@ pipeline {
 
     post {
         always {
-            // cleanWs()
-            sh 'echo "TODO environment cleanup"'
-            // unstash "buildLogs"
-            // TODO correct flags for rsync
-            sh "echo rsync logs/ logs.opencontrail.org:${JOB_NAME}/${BUILD_ID}"
-            // cleanWS{}
+            node('master') {
+                // cleanWs()
+                sh 'echo "TODO environment cleanup"'
+                // unstash "buildLogs"
+                // TODO correct flags for rsync
+                sh "echo rsync logs/ logs.opencontrail.org:${JOB_NAME}/${BUILD_ID}"
+                // cleanWS{}
+            }
         }
     }
 }
