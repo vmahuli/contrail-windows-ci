@@ -1,79 +1,98 @@
-stage('Preparation') {
-    node('builder') {
-        deleteDir()
+pipeline {
+    // Used only by the post stage
+    agent { label 'master' }
 
-        // Use the same repo and branch as was used to checkout Jenkinsfile:
-        checkout scm
-
-        // If not using `Pipeline script from SCM`, specify the branch manually:
-        // git branch: 'master', url: 'https://github.com/codilime/contrail-windows-tools/'
-
-        stash name: "CIScripts", includes: "CIScripts/**"
+    options {
+        timeout time: 5, unit: 'HOURS'
     }
-}
 
-stage('Build') {
-    node('builder') {
-        env.THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
-        env.DRIVER_SRC_PATH = "github.com/codilime/contrail-windows-docker"
-        env.BUILD_ONLY = "1"
-        env.BUILD_IN_RELEASE_MODE = "false"
-        env.SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
-        env.CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
-        env.CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
+    stages {
+        stage('Preparation') {
+            agent { label 'builder' }
+            steps {
+                deleteDir()
 
-        env.MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
-        env.GOPATH = pwd()
+                // Use the same repo and branch as was used to checkout Jenkinsfile:
+                checkout scm
 
-        unstash "CIScripts"
+                // If not using `Pipeline script from SCM`, specify the branch manually:
+                // git branch: 'development', url: 'https://github.com/codilime/contrail-windows-ci/'
 
-        powershell script: './CIScripts/Build.ps1'
-        //stash name: "WinArt", includes: "output/**/*"
-        //stash name: "buildLogs", includes: "logs/**"
+                stash name: "CIScripts", includes: "CIScripts/**"
+            }
+        }
+
+        stage('Build') {
+            agent { label 'builder' }
+            environment {
+                THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
+                DRIVER_SRC_PATH = "github.com/codilime/contrail-windows-docker"
+                BUILD_ONLY = "1"
+                BUILD_IN_RELEASE_MODE = "false"
+                SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
+                CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
+                CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
+
+                MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
+                GOPATH = pwd()
+            }
+            steps {
+                unstash "CIScripts"
+
+                powershell script: './CIScripts/Build.ps1'
+                //stash name: "WinArt", includes: "output/**/*"
+                //stash name: "buildLogs", includes: "logs/**"
+            }
+        }
+
+        // Variables are not supported in declarative pipeline.
+        // Possible workaround: store SpawnedTestbedVMNames in stashed file.
+        // def SpawnedTestbedVMNames = ''
+
+        stage('Provision') {
+            agent { label 'ansible' }
+            steps {
+                sh 'echo "TODO use ansible for provisioning"'
+                // set $SpawnedTestbedVMNames here
+            }
+        }
+
+        stage('Deploy') {
+            agent { label 'tester' }
+            environment {
+                // TESTBED_HOSTNAMES = SpawnedTestbedVMNames
+                ARTIFACTS_DIR = "output"
+            }
+            steps {
+                deleteDir()
+                unstash "CIScripts"
+                // unstash "WinArt"
+                // powershell script: './CIScripts//Deploy.ps1'
+            }
+        }
+
+        stage('Test') {
+            agent { label 'tester' }
+            environment {
+                // TESTBED_HOSTNAMES = SpawnedTestbedVMNames
+                ARTIFACTS_DIR = "output"
+            }
+            steps {
+                deleteDir()
+                unstash "CIScripts"
+                // powershell script: './CIScripts/Test.ps1'
+            }
+        }
     }
-}
 
-def SpawnedTestbedVMNames = ''
-
-stage('Provision') {
-    node('ansible') {
-        sh 'echo "TODO use ansible for provisioning"'
-        // set $SpawnedTestbedVMNames here
-    }
-}
-
-stage('Deploy') {
-    node('tester') {
-        deleteDir()
-        unstash "CIScripts"
-        // unstash "WinArt"
-
-        env.TESTBED_HOSTNAMES = SpawnedTestbedVMNames
-        env.ARTIFACTS_DIR = "output"
-
-        // powershell script: './CIScripts//Deploy.ps1'
-    }
-}
-
-stage('Test') {
-    node('tester') {
-        deleteDir()
-        unstash "CIScripts"
-
-        // env.TESTBED_HOSTNAMES = SpawnedTestbedVMNames
-        // env.ARTIFACTS_DIR = "output"
-
-        // powershell script: './CIScripts/Test.ps1'
-    }
-}
-
-stage('Post-build') {
-    node('master') {
-        // cleanWs()
-        sh 'echo "TODO environment cleanup"'
-        // unstash "buildLogs"
-        // TODO correct flags for rsync
-        sh "echo rsync logs/ logs.opencontrail.org:${JOB_NAME}/${BUILD_ID}"
-        // cleanWS{}
+    post {
+        always {
+            // cleanWs()
+            sh 'echo "TODO environment cleanup"'
+            // unstash "buildLogs"
+            // TODO correct flags for rsync
+            sh "echo rsync logs/ logs.opencontrail.org:${JOB_NAME}/${BUILD_ID}"
+            // cleanWS{}
+        }
     }
 }
