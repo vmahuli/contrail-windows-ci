@@ -1,9 +1,8 @@
 pipelines:
-  - name: check
+  - name: production
     description: Newly uploaded patchsets enter this pipeline to receive an initial +/-1 Verified vote from Windows CI.
     failure-message: Build failed.
     manager: IndependentPipelineManager
-    precedence: low
     trigger:
       gerrit:
         - event: patchset-created
@@ -15,35 +14,47 @@ pipelines:
           comment: (?i)recheck(( (?:bug|lp)[\s#:]*(\d+))|( no bug))(\s+clean)?\s*$
         - event: comment-added
           comment: (?i)recheck windows$
+  - name: development
+    description: Pipeline used for Windows CI development. It should always work in silent mode.
+    manager: IndependentPipelineManager
+    precedence: low
+    trigger:
+      gerrit:
+        - event: comment-added
+          comment: (?i)recheck windows(?:-| )(dev|devel|development)\s*$
 
-jobs:
-  - name: ^.*$
+project-templates:
+  - name: ci-contrail-windows-template
+    production:
+      - ci-contrail-windows-production
+    development:
+      - ci-contrail-windows-development
 
 projects:
   - name: Juniper/contrail-controller
-    check:
-      - ci-contrail-windows
+    template:
+      - name: ci-contrail-windows-template
 
   - name: Juniper/contrail-vrouter
-    check:
-      - ci-contrail-windows
+    template:
+      - name: ci-contrail-windows-template
 
   - name: Juniper/contrail-build
-    check:
-      - ci-contrail-windows
+    template:
+      - name: ci-contrail-windows-template
 
   - name: Juniper/contrail-third-party
-    check:
-      - ci-contrail-windows
+    template:
+      - name: ci-contrail-windows-template
 
   - name: Juniper/contrail-generateDS
-    check:
-      - ci-contrail-windows
+    template:
+      - name: ci-contrail-windows-template
 
   - name: Juniper/contrail-sandesh
-    check:
-      - ci-contrail-windows
+    template:
+      - name: ci-contrail-windows-template
 
   - name: Juniper/contrail-common
-    check:
-      - ci-contrail-windows
+    template:
+      - name: ci-contrail-windows-template
