@@ -10,7 +10,7 @@
       state: present
 
 - name: 'copy apache config'
-  register: new_apache_config
+  register: apache_config
   copy:
       src: apache2/conf-available/
       dest: /etc/apache2/conf-available/
@@ -32,10 +32,10 @@
       - env
 
 - name: 'reload apache'
+  when: apache_config.changed
   service:
       name: apache2
       state: restarted
-  when: new_apache_config.changed
 
 
 - name: 'install pip'
@@ -55,9 +55,15 @@
 
 
 - name: 'copy zuul config files'
-  register: new_zuul_config_files
+  register: zuul_config_files
   copy:
       src: zuul/
+      dest: /etc/zuul/
+
+- name: 'copy zuul layout'
+  register: zuul_layout
+  copy:
+      src: layout.yaml
       dest: /etc/zuul/
 
 - name: 'retrieve ip address of zuul host'
@@ -65,15 +71,21 @@
      zuul_host: '{{ ansible_default_ipv4.address }}'
 
 - name: 'generate zuul.conf from template'
-  register: new_zuul_config
+  register: zuul_config_template
   template:
      src: zuul.conf.j2
      dest: /etc/zuul/zuul.conf
 
 - name: 'copy zuul .service files'
+  register: zuul_service_files
   copy:
       src: services/
       dest: /lib/systemd/system/
+
+- name: 'systemd daemon-reload'
+  when: zuul_service_files.changed
+  systemd:
+      daemon_reload: yes
 
 - name: 'add zuul group'
   group:
@@ -121,13 +133,14 @@
       dest: /var/lib/zuul/ssh/id_rsa
 
 - name: 'restart zuul services (when config changed)'
+  when: zuul_config_template.changed or zuul_config_files.changed
+  register: services_restarted
   service:
       name: '{{ item }}'
       state: restarted
   with_items: &zuul_services
       - zuul-server
       - zuul-merger
-  when: new_zuul_config.changed or new_zuul_config_files.changed
 
 - name: 'enable zuul services'
   service:
@@ -135,3 +148,9 @@
       enabled: yes
       state: started
   with_items: *zuul_services
+
+- name: 'reload zuul-server (when layout changed)'
+  when: not services_restarted.changed and zuul_layout.changed
+  service:
+      name: zuul-server
+      state: reloaded

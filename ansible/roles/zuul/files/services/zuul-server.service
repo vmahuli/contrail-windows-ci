@@ -7,6 +7,7 @@ Type=simple
 User=zuul
 Group=zuul
 ExecStart=/usr/local/bin/zuul-server -d
+ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]
 WantedBy=multi-user.target
