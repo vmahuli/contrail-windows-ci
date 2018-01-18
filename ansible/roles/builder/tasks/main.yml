@@ -1,11 +1,8 @@
 ---
 
-- name: Prepare Jenkins partition
-  win_shell: 'Get-Disk |
-  Where partitionstyle -eq "raw" |
-  Initialize-Disk -PartitionStyle MBR -PassThru |
-  New-Partition -DriveLetter J -UseMaximumSize |
-  Format-Volume -FileSystem NTFS -NewFileSystemLabel "Jenkins" -Confirm:$false'
+- name: Include jenkins-partition role
+  include_role:
+    name: jenkins-partition
 
 - name: Install .NET 3.5
   win_feature:

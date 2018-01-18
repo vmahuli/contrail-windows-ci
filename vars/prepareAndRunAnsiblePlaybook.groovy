@@ -1,7 +1,8 @@
 def call(Map params) {
+  def prepareHardwareConfig = params.config
   def playbook = params.playbook
-  def prepareConfig = params.config
-
+  def vm_role = params.vm_role
+  def vmWareConfig
   pipeline {
     agent none
     stages {
@@ -17,8 +18,8 @@ def call(Map params) {
             sh 'cp inventory.sample inventory'
             sh 'ansible-galaxy install -r requirements.yml -f'
             script {
-              prepareConfig(env.VC_HOSTNAME, env.VC_DATACENTER, env.VC_CLUSTER, env.VC_FOLDER,
-                            env.VC_NETWORK, env.VC_USR, env.VC_PSW, env.VM_TEMPLATE)
+              vmWareConfig = getVMwareConfig(vm_role)
+              prepareHardwareConfig(params)
             }
           }
         }
@@ -30,7 +31,8 @@ def call(Map params) {
             ansiblePlaybook extras: '-e @vm.vars -e @common.vars', \
                             inventory: 'inventory', \
                             playbook: playbook, \
-                            sudoUser: 'ubuntu'
+                            sudoUser: 'ubuntu', \
+                            extraVars: vmWareConfig
           }
         }
       }

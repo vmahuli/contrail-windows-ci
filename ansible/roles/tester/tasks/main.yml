@@ -1,0 +1,27 @@
+---
+
+- name: Include jenkins-partition role
+  include_role:
+    name: jenkins-partition
+
+- name: Install git with chocolatey
+  win_chocolatey:
+    name: git
+    state: present
+
+- name: Install .Net Framework 3.5
+  win_feature:
+    name: Net-Framework-Core
+    state: present
+
+- name: Remove Hyper-V PowerShell module
+  win_psmodule:
+    name: Hyper-V
+    state: absent
+  ignore_errors: yes # If windows wasn't installed with that, it won't show and will fail
+
+- name: Install PowerCLI PowerShell module
+  win_psmodule:
+    name: VMWare.PowerCLI
+    state: present
+

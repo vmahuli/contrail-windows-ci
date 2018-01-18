@@ -1,4 +1,9 @@
 library "contrailWindows@$BRANCH_NAME"
 
-prepareAndRunAnsiblePlaybook(config: prepareDeployBuilder,
-                             playbook: 'vmware-deploy-template.yml')
+prepareAndRunAnsiblePlaybook(config: deployTemplateConfig,
+                             playbook: 'vmware-deploy-template.yml',
+                             vm_role: 'builder',
+                             vm_hardware_memory_mb: '24576',
+                             vm_hardware_num_cpus: '8',
+                             vm_networks: [['name': 'VM Network', 'type': 'dhcp']])
+
