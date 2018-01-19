@@ -13,3 +13,5 @@ $Sessions = New-RemoteSessionsToTestbeds
 Deploy-Testbeds -Sessions $Sessions -ArtifactsDir $Env:ARTIFACTS_DIR
 
 $Job.Done()
+
+exit 0

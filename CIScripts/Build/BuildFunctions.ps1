@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\Common\DeferExcept.ps1
+. $PSScriptRoot\..\Common\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\Build\Repository.ps1
 
 function Clone-Repos {
@@ -17,7 +17,7 @@ function Clone-Repos {
             # We must use -q (quiet) flag here, since git clone prints to stderr and tries to do some real-time
             # command line magic (like updating cloning progress). Powershell command in Jenkinsfile
             # can't handle it and throws a Write-ErrorException.
-            DeferExcept({
+            Invoke-NativeCommand -ScriptBlock {
                 git clone -q -b $CustomMultiBranch $_.Url $_.Dir
 
                 if ($LASTEXITCODE -ne 0) {
@@ -25,11 +25,11 @@ function Clone-Repos {
                     git clone -q -b $_.Branch $_.Url $_.Dir
 
                     if ($LASTEXITCODE -ne 0) {
-                        # Write-Host instead of throw, because DeferExcept will throw anyway
+                        # Write-Host instead of throw, because Invoke-NativeCommand will throw anyway
                         Write-Host "Cloning from " + $_.Url + " failed"
                     }
                 }
-            })
+            }
         })
     })
 }
@@ -61,11 +61,8 @@ function Set-MSISignature {
            [Parameter(Mandatory = $true)] [string] $MSIPath)
     $Job.Step("Signing MSI", {
         $cerp = Get-Content $CertPasswordFilePath
-        DeferExcept({
+        Invoke-NativeCommand -ScriptBlock {
             & $SigntoolPath sign /f $CertPath /p $cerp $MSIPath
-        })
-        if ($LASTEXITCODE -ne 0) {
-            throw "Signing $MSIPath failed"
         }
     })
 }
@@ -90,34 +87,34 @@ function Invoke-DockerDriverBuild {
 
     Push-Location $srcPath
     $Job.Step("Fetch third party packages ", {
-        DeferExcept({
+        Invoke-NativeCommand -ScriptBlock {
             & dep ensure -v
-        })
+        }
     })
     Pop-Location
 
     $Job.Step("Contrail-go-api source code generation", {
-        DeferExcept({
+        Invoke-NativeCommand -ScriptBlock {
             python tools/generateds/generateDS.py -q -f `
                                                   -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
                                                   -g golang-api controller/src/schema/vnc_cfg.xsd
-        })
+        }
     })
 
     Push-Location bin
 
     $Job.Step("Building driver", {
-        DeferExcept({
+        Invoke-NativeCommand -ScriptBlock {
             go build -v $DriverSrcPath
-        })
+        }
     })
 
     $Job.Step("Precompiling tests", {
         $modules = @("driver", "controller", "hns", "hnsManager")
         $modules.ForEach({
-            DeferExcept({
+            Invoke-NativeCommand -ScriptBlock {
                 ginkgo build $srcPath/$_
-            })
+            }
             Move-Item $srcPath/$_/$_.test ./
         })
     })
@@ -128,10 +125,10 @@ function Invoke-DockerDriverBuild {
 
     $Job.Step("Building MSI", {
         Push-Location $srcPath
-        DeferExcept({
+        Invoke-NativeCommand -ScriptBlock {
             & go-msi make --msi docker-driver.msi --arch x64 --version 0.1 `
                           --src template --out $pwd/gomsi
-        })
+        }
         Pop-Location
 
         Move-Item $srcPath/docker-driver.msi ./
@@ -171,12 +168,9 @@ function Invoke-ExtensionBuild {
 
     $Job.Step("Building Extension and Utils", {
         $BuildModeOption = "--optimization=" + $BuildMode
-        DeferExcept({
+        Invoke-NativeCommand -ScriptBlock {
             $Env:cerp = Get-Content $CertPasswordFilePath
             scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsDir/vrouter_build.log
-        })
-        if ($LASTEXITCODE -ne 0) {
-            throw "Building vRouter solution failed"
         }
     })
 
@@ -226,7 +220,10 @@ function Run-Test {
     Write-Host "===> Agent tests: running $TestExecutable..."
     $Res = Invoke-Command -ScriptBlock {
         $ErrorActionPreference = "SilentlyContinue"
-        $TestOutput = Invoke-Expression $TestExecutable
+        $TestOutput = Invoke-NativeCommand -AllowNonZero $true -ScriptBlock {
+            Invoke-Expression $TestExecutable
+        }
+        $ExitCode = $TestOutput[-1]
         $TestOutput.ForEach({ Write-Host $_ })
 
         # This is a workaround for the following bug:
@@ -235,10 +232,10 @@ function Run-Test {
         # return non-zero exit code.
         # TODO: It should be removed once the bug is fixed (JW-1110).
         $SeemsLegitimate = Test-IfGTestOutputSuggestsThatAllTestsHavePassed -TestOutput $TestOutput
-        if($LASTEXITCODE -eq 0 -or $SeemsLegitimate) {
+        if ($ExitCode -eq 0 -or $SeemsLegitimate) {
             return 0
         } else {
-            return $LASTEXITCODE
+            return $ExitCode
         }
     }
 
@@ -269,11 +266,8 @@ function Invoke-AgentBuild {
     $BuildModeOption = "--optimization=" + $BuildMode
 
     $Job.Step("Building API", {
-        DeferExcept({
+        Invoke-NativeCommand -ScriptBlock {
             scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist | Tee-Object -FilePath $LogsDir/build_api.log
-        })
-        if ($LASTEXITCODE -ne 0) {
-            throw "Building API failed"
         }
     })
 
@@ -321,12 +315,8 @@ function Invoke-AgentBuild {
         }
         $AgentAndTestsBuildCommand = "scons -j 4 {0} contrail-vrouter-agent.msi {1}" `
                                      -f "$BuildModeOption", "$TestsString"
-        DeferExcept({
+        Invoke-NativeCommand -ScriptBlock {
             Invoke-Expression $AgentAndTestsBuildCommand | Tee-Object -FilePath $LogsDir/build_agent_and_tests.log
-        })
-
-        if ($LASTEXITCODE -ne 0) {
-            throw "Building Agent and tests failed"
         }
     })
 

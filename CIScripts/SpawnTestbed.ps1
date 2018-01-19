@@ -5,3 +5,5 @@
 
 . $PSScriptRoot\Provision.ps1
 . $PSScriptRoot\Deploy.ps1
+
+exit 0

@@ -82,3 +82,5 @@ if ("Agent" -In $ComponentsToBuild) {
 }
 
 $Job.Done()
+
+exit 0

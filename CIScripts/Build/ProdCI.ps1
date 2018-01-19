@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\Common\DeferExcept.ps1
+. $PSScriptRoot\..\Common\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\Build\Repository.ps1
 
 function Get-ProductionRepos {
@@ -54,20 +54,17 @@ function Merge-GerritPatchset {
 
     $Job.Step("Merging Gerrit patchset", {
         Push-Location $Repos[$TriggeredProject].Dir
-        DeferExcept({
+        Invoke-NativeCommand -ScriptBlock {
             git fetch -q origin $Refspec
-        })
-        DeferExcept({
+        }
+        Invoke-NativeCommand -ScriptBlock {
             git config user.email "you@example.com"
-        })
-        DeferExcept({
+        }
+        Invoke-NativeCommand -ScriptBlock {
             git config --global user.name "Your Name"
-        })
-        DeferExcept({
+        }
+        Invoke-NativeCommand -ScriptBlock {
             git merge FETCH_HEAD
-        })
-        if ($LastExitCode -ne 0) {
-            throw "Patchset merging failed."
         }
         Pop-Location
     })
