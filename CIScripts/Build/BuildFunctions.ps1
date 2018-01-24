@@ -90,6 +90,10 @@ function Invoke-DockerDriverBuild {
         Invoke-NativeCommand -ScriptBlock {
             & dep ensure -v
         }
+
+        Invoke-NativeCommand -ScriptBlock {
+            & dep prune -v
+        }
     })
     Pop-Location
 
