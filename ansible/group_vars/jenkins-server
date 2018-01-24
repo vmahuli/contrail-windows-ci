@@ -13,6 +13,7 @@ jenkins_plugins:
   - ghprb
   - html5-notifier-plugin
   - jobConfigHistory
+  - lockable-resources
   - pipeline-github-lib
   - powershell
   - publish-over-ssh

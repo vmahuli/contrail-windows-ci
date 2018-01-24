@@ -1,16 +1,7 @@
-def call(vcHostname, vcDatacenter, vcCluster, vcUsername, vcPassword,
-         inventoryFilePath, demoEnvName, demoEnvFolder, demoEnvVlan,
-         testbedTemplate = "IGNORED", controllerTemplate = "IGNORED",
+def call(inventoryFilePath, demoEnvName, demoEnvFolder, mgmtNetwork, dataNetwork,
+         testbedTemplate, controllerTemplate,
          configPath = 'vmware-vm.vars') {
     def configText = """
-# Common vCenter infra connection parameters
-vcenter_hostname: ${vcHostname}
-vcenter_user: ${vcUsername}
-vcenter_password: ${vcPassword}
-validate_certs: false
-datacenter_name: ${vcDatacenter}
-cluster_name: ${vcCluster}
-
 # Common testenv vars
 vm_inventory_file: ${inventoryFilePath}
 testenv_name: ${demoEnvName}
@@ -34,9 +25,8 @@ testenv_block:
             ip: 172.16.0.3
 
 # Common network parameters
-vlan_id: ${demoEnvVlan}
-portgroup_mgmt: "VM Network"
-portgroup_contrail: "{{ vlan_id }}"
+portgroup_mgmt: ${mgmtNetwork}
+portgroup_contrail: ${dataNetwork}
 netmask_mgmt: 255.255.255.0
 netmask_contrail: 255.255.0.0
 gateway_mgmt: 10.84.12.254
