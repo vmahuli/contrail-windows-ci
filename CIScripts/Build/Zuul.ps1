@@ -30,15 +30,24 @@ function Clone-ZuulRepos {
         "Juniper/contrail-common"
     )
 
-    $Job.Step("Cloning repositories", {
+    $Job.Step("Cloning zuul repositories", {
         Invoke-NativeCommand -ScriptBlock {
             zuul-cloner.exe @ZuulClonerOptions @ProjectList
         }
-        
-        # TODO: Use Juniper repo: git clone contrail-windows-docker-driver.github.com:Juniper/contrail-windows-docker-driver.git
+    })
+}
+
+function Clone-NonZuulRepos {
+    Param(
+        [Parameter(Mandatory = $true)] [string] $DriverSrcPath
+    )
+
+    $Job.Step("Cloning additional repositories", {
+        $DriverClonePath = $DriverSrcPath -replace "github.com/", "github.com:"
+
         # TODO: When contrail-windows-docker-driver will be on Gerrit, fetch it with zull-cloner
         Invoke-NativeCommand -ScriptBlock {
-            git clone -q https://github.com/codilime/contrail-windows-docker.git src/github.com/codilime/contrail-windows-docker
+            git clone -q "contrail-windows-docker-driver.$DriverClonePath.git" src/$DriverSrcPath
         }
         Write-Host "Cloned docker driver"
 

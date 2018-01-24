@@ -76,11 +76,8 @@ function Invoke-DockerDriverBuild {
            [Parameter(Mandatory = $true)] [string] $LogsPath)
 
     $Job.PushStep("Docker driver build")
-    $GoPath = $Env:GOPATH
-    if (-not $GoPath) {
-        $GoPath = pwd
-        $Env:GOPATH = $GoPath
-    }
+    $GoPath = if (Test-Path Env:GOPATH) { (pwd) + ";$Env:GOPATH" } else { pwd }
+    $Env:GOPATH = $GoPath
     $srcPath = "$GoPath/src/$DriverSrcPath"
 
     New-Item -ItemType Directory ./bin
@@ -108,8 +105,9 @@ function Invoke-DockerDriverBuild {
     Push-Location bin
 
     $Job.Step("Building driver", {
+        # TODO: Handle new name properly
         Invoke-NativeCommand -ScriptBlock {
-            go build -v $DriverSrcPath
+            go build -o contrail-windows-docker.exe -v $DriverSrcPath
         }
     })
 

@@ -25,7 +25,7 @@ pipeline {
             agent { label 'builder' }
             environment {
                 THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
-                DRIVER_SRC_PATH = "github.com/codilime/contrail-windows-docker"
+                DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
                 BUILD_ONLY = "1"
                 BUILD_IN_RELEASE_MODE = "false"
                 SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
@@ -33,7 +33,6 @@ pipeline {
                 CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
 
                 MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
-                GOPATH = pwd()
             }
             steps {
                 unstash "CIScripts"

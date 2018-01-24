@@ -18,6 +18,8 @@ if($IsTriggeredByZuul) {
                     -ZuulRef $Env:ZUUL_REF `
                     -ZuulUrl $Env:ZUUL_URL `
                     -ZuulBranch $Env:ZUUL_BRANCH
+
+    Clone-NonZuulRepos -DriverSrcPath $Env:DRIVER_SRC_PATH
 } else {
     # Build is triggered by Jenkins GitHub plugin, when someone submits a pull
     # request to select github.com/codilime/* repos.
