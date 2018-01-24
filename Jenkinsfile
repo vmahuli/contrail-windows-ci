@@ -35,6 +35,8 @@ pipeline {
                 MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
             }
             steps {
+                deleteDir()
+
                 unstash "CIScripts"
 
                 powershell script: './CIScripts/Build.ps1'
