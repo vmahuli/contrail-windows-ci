@@ -55,6 +55,11 @@ pipelines:
         - event: comment-added
           comment: (?i)recheck windows(?:-| )(dev|devel|development)\s*$
 
+jobs:
+  - name: ^ci-contrail-windows.*$
+    success-pattern: &logs_url http://logs2.opencontrail.org/winci/{build.uuid}/
+    failure-pattern: *logs_url
+
 project-templates:
   - name: ci-contrail-windows-template
     production:
