@@ -20,7 +20,7 @@ pipelines:
     failure-message: Build failed.
     footer-message: > 
                       This is a pipeline from Windows CI. For more information, see:
-                      https://github.com/codilime/contrail-windows-ci/wiki/OpenContrail-Windows-CI-FAQ
+                      https://github.com/Juniper/contrail-windows-ci/wiki/OpenContrail-Windows-CI-FAQ
     manager: IndependentPipelineManager
     trigger:
       gerrit:
