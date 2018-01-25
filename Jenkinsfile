@@ -85,14 +85,25 @@ pipeline {
         }
     }
 
+    environment {
+        LOG_SERVER = "logs2.opencontrail.org"
+        LOG_SERVER_USER = "zuul-win"
+        LOG_ROOT_DIR = "/var/www/logs/winci"
+        BUILD_SPECIFIC_DIR = "${ZUUL_UUID}"
+        JOB_SUBDIR = env.JOB_NAME.replaceAll("/", "/jobs/")
+        LOCAL_SRC_FILE = "${JENKINS_HOME}/jobs/${JOB_SUBDIR}/builds/${BUILD_ID}/log"
+        REMOTE_DST_FILE = "${LOG_ROOT_DIR}/${BUILD_SPECIFIC_DIR}/log.txt"
+    }
+
     post {
         always {
             node('master') {
                 // cleanWs()
-                sh 'echo "TODO environment cleanup"'
+                echo "TODO environment cleanup"
                 // unstash "buildLogs"
                 // TODO correct flags for rsync
-                sh "echo rsync logs/ logs.opencontrail.org:${JOB_NAME}/${BUILD_ID}"
+                sh "ssh ${LOG_SERVER_USER}@${LOG_SERVER} \"mkdir -p ${LOG_ROOT_DIR}/${BUILD_SPECIFIC_DIR}\""
+                sh "rsync ${LOCAL_SRC_FILE} ${LOG_SERVER_USER}@${LOG_SERVER}:${REMOTE_DST_FILE}"
                 // cleanWS{}
             }
         }
