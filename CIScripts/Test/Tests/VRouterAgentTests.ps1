@@ -40,7 +40,8 @@ function Set-RemoteEvent {
 function Test-VRouterAgentIntegration {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
            [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
-           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfigurationUdp)
 
     . $PSScriptRoot\..\Utils\CommonTestCode.ps1
     . $PSScriptRoot\..\Utils\ContrailUtils.ps1
@@ -742,26 +743,22 @@ function Test-VRouterAgentIntegration {
             Write-Host "===> Running: Test-ICMPoMPLSoUDP"
 
             Write-Host "======> Given Controller with MPLSoUPD configuration"
-            $TestConfigurationTemp = $TestConfiguration.ShallowCopy()
-            $TestConfigurationTemp.DockerDriverConfiguration = $TestConfiguration.DockerDriverConfiguration.ShallowCopy()
-            $TestConfigurationTemp.ControllerIP = $Env:CONTROLLER_IP_UDP
-            $TestConfigurationTemp.DockerDriverConfiguration.AuthUrl = $Env:DOCKER_DRIVER_AUTH_URL_UDP
 
-            $ContrailUrl = $TestConfigurationTemp.ControllerIP + ":" + $TestConfigurationTemp.ControllerRestPort
-            $ContrailCredentials = $TestConfigurationTemp.DockerDriverConfiguration
+            $ContrailUrl = $TestConfiguration.ControllerIP + ":" + $TestConfiguration.ControllerRestPort
+            $ContrailCredentials = $TestConfiguration.DockerDriverConfiguration
             $AuthToken = Get-AccessTokenFromKeystone -AuthUrl $ContrailCredentials.AuthUrl -TenantName $ContrailCredentials.TenantConfiguration.Name `
                 -Username $ContrailCredentials.Username -Password $ContrailCredentials.Password
             $RouterIp1 = Invoke-Command -Session $Session1 -ScriptBlock {
-                return $((Get-NetIPAddress -InterfaceAlias $Using:TestConfigurationTemp.VHostName -AddressFamily IPv4).IpAddress)
+                return $((Get-NetIPAddress -InterfaceAlias $Using:TestConfiguration.VHostName -AddressFamily IPv4).IpAddress)
             }
             $RouterIp2 = Invoke-Command -Session $Session2 -ScriptBlock {
-                return $((Get-NetIPAddress -InterfaceAlias $Using:TestConfigurationTemp.VHostName -AddressFamily IPv4).IpAddress)
+                return $((Get-NetIPAddress -InterfaceAlias $Using:TestConfiguration.VHostName -AddressFamily IPv4).IpAddress)
             }
             $RouterUuid1 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session1.ComputerName -RouterIp RouterIp1
             $RouterUuid2 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session2.ComputerName -RouterIp RouterIp2
 
             Try {
-                Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfigurationTemp -Container1Name "container1" -Container2Name "container2"
+                Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
             } Finally {
                 Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid1
                 Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid2
@@ -1115,7 +1112,7 @@ function Test-VRouterAgentIntegration {
         Test-GatewayArpIsResolvedInAgent -Session $Session1 -TestConfiguration $TestConfiguration
         Test-SingleComputeNodePing -Session $Session1 -TestConfiguration $TestConfiguration
         Test-ICMPoMPLSoGRE -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
-        Test-ICMPoMPLSoUDP -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
+        Test-ICMPoMPLSoUDP -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfigurationUdp
         Test-FlowsAreInjectedOnIcmpTraffic -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedAndEvictedOnTcpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnUdpTraffic -Session $Session1 -TestConfiguration $TestConfiguration

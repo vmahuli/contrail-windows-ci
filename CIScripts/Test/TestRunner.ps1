@@ -17,71 +17,18 @@
 . $PSScriptRoot\Tests\WindowsLinuxIntegrationTests.ps1
 
 function Run-TestScenarios {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
+        [Parameter(Mandatory = $true)] [String] $TestConfigurationFile
+    )
 
     $Job.Step("Running all integration tests", {
 
-        $SingleSubnetNetworkConfiguration = [NetworkConfiguration] @{
-            Name = $Env:SINGLE_SUBNET_NETWORK_NAME
-            Subnets = @($Env:SINGLE_SUBNET_NETWORK_SUBNET)
-        }
+        . "$TestConfigurationFile"
 
-        $MultipleSubnetsNetworkConfiguration = [NetworkConfiguration] @{
-            Name = $Env:MULTIPLE_SUBNETS_NETWORK_NAME
-            Subnets = @($Env:MULTIPLE_SUBNETS_NETWORK_SUBNET1, $Env:MULTIPLE_SUBNETS_NETWORK_SUBNET2)
-        }
+        $TestConfiguration = Get-TestConfiguration
 
-        $NetworkWithPolicy1Configuration = [NetworkConfiguration] @{
-            Name = $Env:NETWORK_WITH_POLICY_1_NAME
-            Subnets = @($Env:NETWORK_WITH_POLICY_1_SUBNET)
-        }
-
-        $NetworkWithPolicy2Configuration = [NetworkConfiguration] @{
-            Name = $Env:NETWORK_WITH_POLICY_2_NAME
-            Subnets = @($Env:NETWORK_WITH_POLICY_2_SUBNET)
-        }
-
-        $TenantConfiguration = [TenantConfiguration] @{
-            Name = $Env:DOCKER_NETWORK_TENANT_NAME;
-            DefaultNetworkName = $SingleSubnetNetworkConfiguration.Name;
-            SingleSubnetNetwork = $SingleSubnetNetworkConfiguration;
-            MultipleSubnetsNetwork = $MultipleSubnetsNetworkConfiguration;
-            NetworkWithPolicy1 = $NetworkWithPolicy1Configuration;
-            NetworkWithPolicy2 = $NetworkWithPolicy2Configuration;
-        }
-
-        $DockerDriverConfiguration = [DockerDriverConfiguration] @{
-            Username = $Env:DOCKER_DRIVER_USERNAME;
-            Password = $Env:DOCKER_DRIVER_PASSWORD;
-            AuthUrl = $Env:DOCKER_DRIVER_AUTH_URL;
-            TenantConfiguration = $TenantConfiguration;
-        }
-
-        $TestConfiguration = [TestConfiguration] @{
-            ControllerIP = $Env:CONTROLLER_IP;
-            ControllerRestPort = 8082
-            ControllerHostUsername = $Env:CONTROLLER_HOST_USERNAME;
-            ControllerHostPassword = $Env:CONTROLLER_HOST_PASSWORD;
-            AdapterName = $Env:ADAPTER_NAME;
-            VMSwitchName = "Layered " + $Env:ADAPTER_NAME;
-            VHostName = "vEthernet (HNSTransparent)"
-            ForwardingExtensionName = $Env:FORWARDING_EXTENSION_NAME;
-            AgentConfigFilePath = "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-agent.conf";
-            DockerDriverConfiguration = $DockerDriverConfiguration;
-            LinuxVirtualMachineIp = $Env:LINUX_VIRTUAL_MACHINE_IP;
-        }
-
-        $SNATConfiguration = [SNATConfiguration] @{
-            EndhostIP = $Env:SNAT_ENDHOST_IP;
-            VethIP = $Env:SNAT_VETH_IP;
-            GatewayIP = $Env:SNAT_GATEWAY_IP;
-            ContainerGatewayIP = $Env:SNAT_CONTAINER_GATEWAY_IP;
-            EndhostUsername = $Env:SNAT_ENDHOST_USERNAME;
-            EndhostPassword = $Env:SNAT_ENDHOST_PASSWORD;
-            DiskDir = $Env:SNAT_DISK_DIR;
-            DiskFileName = $Env:SNAT_DISK_FILE_NAME;
-            VMDir = $Env:SNAT_VM_DIR;
-        }
+        # $SNATConfiguration = Get-SnatConfiguration
 
         Test-AgentService -Session $Sessions[0] -TestConfiguration $TestConfiguration
         Test-ExtensionLongLeak -Session $Sessions[0] -TestDurationHours $Env:LEAK_TEST_DURATION -TestConfiguration $TestConfiguration
@@ -92,11 +39,12 @@ function Run-TestScenarios {
         Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
         # TODO: Uncomment after JW-1129
         # Test-SNAT -Session $Sessions[0] -SNATConfiguration $SNATConfiguration -TestConfiguration $TestConfiguration
-        Test-VRouterAgentIntegration -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
+        Test-VRouterAgentIntegration -Session1 $Sessions[0] -Session2 $Sessions[1] `
+            -TestConfiguration $TestConfiguration -TestConfigurationUdp (Get-TestConfigurationUdp)
         Test-ComputeControllerIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
         Test-MultipleSubnetsSupport -Session $Sessions[0] -TestConfiguration $TestConfiguration
         Test-DockerDriverMultiTenancy -Session $Sessions[0] -TestConfiguration $TestConfiguration
-        Test-WindowsLinuxIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
+        Test-WindowsLinuxIntegration -Session $Sessions[0] -TestConfiguration (Get-TestConfigurationWindowsLinux)
         Test-Pkt0PipeImplementation -Session $Sessions[0] -TestConfiguration $TestConfiguration
 
         if($Env:RUN_DRIVER_TESTS -eq "1") {
@@ -132,10 +80,13 @@ function Collect-Logs {
 }
 
 function Run-Tests {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
+        [Parameter(Mandatory = $true)] [String] $TestConfigurationFile
+    )
 
     try {
-        Run-TestScenarios -Sessions $Sessions
+        Run-TestScenarios -Sessions $Sessions -TestConfigurationFile $TestConfigurationFile
     }
     catch {
         Write-Host $_

@@ -76,6 +76,8 @@ pipeline {
             environment {
                 // TESTBED_HOSTNAMES = SpawnedTestbedVMNames
                 ARTIFACTS_DIR = "output"
+                // TODO actually create this file
+                TEST_CONFIGURATION_FILE = "GetTestConfigurationJuni.ps1"
             }
             steps {
                 deleteDir()
