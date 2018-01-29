@@ -88,7 +88,7 @@ pipeline {
     }
 
     environment {
-        LOG_SERVER = "logs2.opencontrail.org"
+        LOG_SERVER = "logs.opencontrail.org"
         LOG_SERVER_USER = "zuul-win"
         LOG_ROOT_DIR = "/var/www/logs/winci"
         BUILD_SPECIFIC_DIR = "${ZUUL_UUID}"
