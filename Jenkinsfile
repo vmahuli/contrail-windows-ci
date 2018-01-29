@@ -75,6 +75,8 @@ pipeline {
                 VC = credentials('vcenter')
 
                 // Required in 'Deploy' and 'Test' stages
+                // TODO actually create this file
+                TEST_CONFIGURATION_FILE = "GetTestConfigurationJuni.ps1"
                 // TESTBED_HOSTNAMES = SpawnedTestbedVMNames
                 ARTIFACTS_DIR = "output"
             }

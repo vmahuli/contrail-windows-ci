@@ -79,7 +79,7 @@ function Test-WindowsLinuxIntegration {
                 '$GotMessage = $ReceiveTask.Wait(5000);' +`
                 'if($GotMessage) {{$ReceivedMessage = [System.Text.Encoding]::UTF8.GetString($ReceiveTask.Result.Buffer)}};' +`
                 'return $ReceivedMessage;'
-                ) -f $TestConfigurationWinLinux.LinuxVirtualMachineIp, $Port, $Message
+                ) -f $TestConfiguration.LinuxVirtualMachineIp, $Port, $Message
             $ReceivedMessage = Invoke-Command -Session $Session -ScriptBlock {
                 return & docker exec $Using:ClientID powershell -Command $Using:Command
             }
@@ -127,13 +127,8 @@ function Test-WindowsLinuxIntegration {
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
-        $TestConfigurationWinLinux = $TestConfiguration.ShallowCopy()
-        $TestConfigurationWinLinux.DockerDriverConfiguration = $TestConfiguration.DockerDriverConfiguration.ShallowCopy()
-        $TestConfigurationWinLinux.ControllerIP = $Env:CONTROLLER_IP_LINUX_WINDOWS
-        $TestConfigurationWinLinux.DockerDriverConfiguration.AuthUrl = $Env:DOCKER_DRIVER_AUTH_URL_LINUX_WINDOWS
-
-        Test-IcmpLinuxWindowsConnectivity -Session $Session -TestConfiguration $TestConfigurationWinLinux
-        Test-UdpLinuxWindowsConnectivity -Session $Session -TestConfiguration $TestConfigurationWinLinux
-        Test-TcpLinuxWindowsConnectivity -Session $Session -TestConfiguration $TestConfigurationWinLinux
+        Test-IcmpLinuxWindowsConnectivity -Session $Session -TestConfiguration $TestConfiguration
+        Test-UdpLinuxWindowsConnectivity -Session $Session -TestConfiguration $TestConfiguration
+        Test-TcpLinuxWindowsConnectivity -Session $Session -TestConfiguration $TestConfiguration
     })
 }
