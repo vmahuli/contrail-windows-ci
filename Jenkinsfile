@@ -100,13 +100,19 @@ pipeline {
     post {
         always {
             node('master') {
-                // cleanWs()
-                echo "TODO environment cleanup"
-                // unstash "buildLogs"
-                // TODO correct flags for rsync
-                sh "ssh ${LOG_SERVER_USER}@${LOG_SERVER} \"mkdir -p ${LOG_ROOT_DIR}/${BUILD_SPECIFIC_DIR}\""
-                sh "rsync ${LOCAL_SRC_FILE} ${LOG_SERVER_USER}@${LOG_SERVER}:${REMOTE_DST_FILE}"
-                // cleanWS{}
+                script {
+                    // Job triggered by Zuul -> upload log file to public server.
+                    // Job triggered by Github CI repository (variable "ghprbPullId" exists) -> keep log "private".
+                    if (env.ghprbPullId == null) {
+                        // cleanWs()
+                        echo "TODO environment cleanup"
+                        // unstash "buildLogs"
+                        // TODO correct flags for rsync
+                        sh "ssh ${LOG_SERVER_USER}@${LOG_SERVER} \"mkdir -p ${LOG_ROOT_DIR}/${BUILD_SPECIFIC_DIR}\""
+                        sh "rsync ${LOCAL_SRC_FILE} ${LOG_SERVER_USER}@${LOG_SERVER}:${REMOTE_DST_FILE}"
+                        // cleanWS{}
+                    }
+                }
             }
         }
     }
