@@ -2,22 +2,6 @@ pipelines:
   - name: production
     description: Newly uploaded patchsets enter this pipeline to receive an initial +/-1 Verified vote from Windows CI.
     failure-message: Build failed.
-    manager: IndependentPipelineManager
-    trigger:
-      gerrit:
-        - event: patchset-created
-          branch: ^master$
-        - event: change-restored
-          branch: ^master$
-        - event: comment-added
-          branch: ^master$
-          comment: (?i)recheck(( (?:bug|lp)[\s#:]*(\d+))|( no bug))(\s+clean)?\s*$
-        - event: comment-added
-          comment: (?i)recheck windows$
-
-  - name: production-windows
-    description: Newly uploaded patchsets only from Wincontrail enter this pipeline.
-    failure-message: Build failed.
     footer-message: > 
                       This is a pipeline from Windows CI. For more information, see:
                       https://github.com/Juniper/contrail-windows-ci/wiki/OpenContrail-Windows-CI-FAQ
@@ -26,19 +10,13 @@ pipelines:
       gerrit:
         - event: patchset-created
           branch: ^master$
-          email: &win_email_whitelist
-            - ^.*?@codilime\.com$
-            - ^sagarc@juniper\.net$
         - event: change-restored
           branch: ^master$
-          email: *win_email_whitelist
         - event: comment-added
           branch: ^master$
           comment: (?i)recheck(( (?:bug|lp)[\s#:]*(\d+))|( no bug))(\s+clean)?\s*$
-          email: *win_email_whitelist
         - event: comment-added
           comment: (?i)recheck windows$
-          email: *win_email_whitelist
     start:
       gerrit: {}
     success:
@@ -57,14 +35,13 @@ pipelines:
 
 jobs:
   - name: ^ci-contrail-windows.*$
+    voting: false
     success-pattern: &logs_url http://logs.opencontrail.org/winci/{build.uuid}/
     failure-pattern: *logs_url
 
 project-templates:
   - name: ci-contrail-windows-template
     production:
-      - ci-contrail-windows-production
-    production-windows:
       - ci-contrail-windows-production
     development:
       - ci-contrail-windows-development
