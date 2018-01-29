@@ -203,6 +203,55 @@ function Invoke-ExtensionBuild {
     $Job.PopStep()
 }
 
+function Invoke-AgentBuild {
+    Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
+           [Parameter(Mandatory = $true)] [string] $SigntoolPath,
+           [Parameter(Mandatory = $true)] [string] $CertPath,
+           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
+           [Parameter(Mandatory = $true)] [string] $OutputPath,
+           [Parameter(Mandatory = $true)] [string] $LogsPath,
+           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
+
+    $Job.PushStep("Agent build")
+
+    $Job.Step("Copying Agent dependencies", {
+        Copy-Item -Recurse "$ThirdPartyCache\agent\*" third_party/
+    })
+
+    $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
+    $BuildModeOption = "--optimization=" + $BuildMode
+
+    $Job.Step("Building API", {
+        Invoke-NativeCommand -ScriptBlock {
+            scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist | Tee-Object -FilePath $LogsPath/build_api.log
+        }
+    })
+
+    $Job.Step("Building contrail-vrouter-agent.exe and .msi", {
+        $AgentBuildCommand = "scons -j 4 {0} contrail-vrouter-agent.msi" -f "$BuildModeOption"
+        Invoke-NativeCommand -ScriptBlock {
+            Invoke-Expression $AgentBuildCommand | Tee-Object -FilePath $LogsPath/build_agent.log
+        }
+    })
+
+    $agentMSI = "build\$BuildMode\vnsw\agent\contrail\contrail-vrouter-agent.msi"
+
+    Write-Host "Signing agentMSI"
+    Set-MSISignature -SigntoolPath $SigntoolPath `
+                     -CertPath $CertPath `
+                     -CertPasswordFilePath $CertPasswordFilePath `
+                     -MSIPath $agentMSI
+
+    $Job.Step("Copying artifacts to $OutputPath", {
+        $vRouterApiPath = "build\noarch\contrail-vrouter-api\dist\contrail-vrouter-api-1.0.tar.gz"
+
+        Copy-Item $vRouterApiPath $OutputPath -Recurse -Container
+        Copy-Item $agentMSI $OutputPath -Recurse -Container
+    })
+
+    $Job.PopStep()
+}
+
 function Test-IfGTestOutputSuggestsThatAllTestsHavePassed {
     Param ([Parameter(Mandatory = $true)] [Object[]] $TestOutput)
     $NumberOfTests = -1
@@ -249,31 +298,16 @@ function Run-Test {
     return $Res
 }
 
-function Invoke-AgentBuild {
-    Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
-           [Parameter(Mandatory = $true)] [string] $SigntoolPath,
-           [Parameter(Mandatory = $true)] [string] $CertPath,
-           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
-           [Parameter(Mandatory = $true)] [string] $OutputPath,
-           [Parameter(Mandatory = $true)] [string] $LogsPath,
+function Invoke-AgentTestsBuild {
+    Param ([Parameter(Mandatory = $true)] [string] $LogsPath,
            [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
 
-    $Job.PushStep("Agent build")
-
-    $Job.Step("Copying Agent dependencies", {
-        Copy-Item -Recurse "$ThirdPartyCache\agent\*" third_party/
-    })
+    $Job.PushStep("Agent Tests build")
 
     $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
     $BuildModeOption = "--optimization=" + $BuildMode
 
-    $Job.Step("Building API", {
-        Invoke-NativeCommand -ScriptBlock {
-            scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist | Tee-Object -FilePath $LogsDir/build_api.log
-        }
-    })
-
-    $Job.Step("Building contrail-vrouter-agent.exe, .msi and tests", {
+    $Job.Step("Building agent tests", {
         $Tests = @(
             "agent:test_ksync",
             "src/ksync:ksync_test",
@@ -315,16 +349,15 @@ function Invoke-AgentBuild {
         if ($Tests.count -gt 0) {
             $TestsString = $Tests -join " "
         }
-        $AgentAndTestsBuildCommand = "scons -j 4 {0} contrail-vrouter-agent.msi {1}" `
-                                     -f "$BuildModeOption", "$TestsString"
+        $TestsBuildCommand = "scons -j 4 {0} {1}" -f "$BuildModeOption", "$TestsString"
         Invoke-NativeCommand -ScriptBlock {
-            Invoke-Expression $AgentAndTestsBuildCommand | Tee-Object -FilePath $LogsDir/build_agent_and_tests.log
+            Invoke-Expression $TestsBuildCommand | Tee-Object -FilePath $LogsPath/build_agent_tests.log
         }
     })
 
     $rootBuildDir = "build\$BuildMode"
 
-    $Job.Step("Running tests", {
+    $Job.Step("Running agent tests", {
         $backupPath = $Env:Path
         $Env:Path += ";" + $(Get-Location).Path + "\build\bin"
 
@@ -356,28 +389,5 @@ function Invoke-AgentBuild {
         $Env:Path = $backupPath
     })
 
-    $agentMSI = "$rootBuildDir\vnsw\agent\contrail\contrail-vrouter-agent.msi"
-
-    Write-Host "Signing agentMSI"
-    Set-MSISignature -SigntoolPath $SigntoolPath `
-                     -CertPath $CertPath `
-                     -CertPasswordFilePath $CertPasswordFilePath `
-                     -MSIPath $agentMSI
-
-    $Job.Step("Copying artifacts to $OutputPath", {
-        $vRouterApiPath = "build\noarch\contrail-vrouter-api\dist\contrail-vrouter-api-1.0.tar.gz"
-        $testInisPath = "controller\src\vnsw\agent\test"
-        $libxmlPath = "build\bin\libxml2.dll"
-
-        Copy-Item $vRouterApiPath $OutputPath -Recurse -Container
-        Copy-Item $agentMSI $OutputPath -Recurse -Container
-        Copy-Item -Path $testInisPath -Include "*.ini" -Destination $OutputPath
-        Copy-Item $libxmlPath $OutputPath -Recurse -Container
-
-        # This copies all test executables
-        Copy-Item -Path $rootBuildDir -Recurse -Include "*.exe" -Destination $OutputPath -Container
-    })
-
     $Job.PopStep()
 }
-
