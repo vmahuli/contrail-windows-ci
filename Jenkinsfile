@@ -90,7 +90,7 @@ pipeline {
                         script {
                             vmwareConfig = getVMwareConfig()
                             inventoryFilePath = "${env.WORKSPACE}/ansible/vm.${env.BUILD_ID}"
-                            testEnvName = env.ZUUL_UUID.split('-')[0]
+                            testEnvName = generateTestEnvName()
                             testEnvFolder = env.VC_FOLDER
                         }
 
