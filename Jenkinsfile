@@ -1,3 +1,14 @@
+library "contrailWindows@$BRANCH_NAME"
+
+def mgmtNetwork
+def dataNetwork
+def vmwareConfig
+def inventoryFilePath
+def testEnvName
+def testEnvFolder
+
+def testbeds
+
 pipeline {
     agent none
 
@@ -14,10 +25,16 @@ pipeline {
                 // Use the same repo and branch as was used to checkout Jenkinsfile:
                 checkout scm
 
+                script {
+                    mgmtNetwork = env.TESTENV_MGMT_NETWORK
+                    dataNetwork = calculateTestNetwork(env.BUILD_ID as int)
+                }
+
                 // If not using `Pipeline script from SCM`, specify the branch manually:
                 // git branch: 'development', url: 'https://github.com/codilime/contrail-windows-ci/'
 
                 stash name: "CIScripts", includes: "CIScripts/**"
+                stash name: "ansible", includes: "ansible/**"
             }
         }
 
@@ -40,6 +57,7 @@ pipeline {
                 unstash "CIScripts"
 
                 powershell script: './CIScripts/Build.ps1'
+
                 //stash name: "WinArt", includes: "output/**/*"
                 //stash name: "buildLogs", includes: "logs/**"
             }
@@ -49,40 +67,69 @@ pipeline {
         // Possible workaround: store SpawnedTestbedVMNames in stashed file.
         // def SpawnedTestbedVMNames = ''
 
-        stage('Provision') {
-            agent { label 'ansible' }
-            steps {
-                sh 'echo "TODO use ansible for provisioning"'
-                // set $SpawnedTestbedVMNames here
-            }
-        }
-
-        stage('Deploy') {
-            agent { label 'tester' }
+        // NOTE: Currently nesting multiple stages in lock directive is unsupported
+        stage('Provision & Deploy & Test') {
+            agent none
             environment {
-                // TESTBED_HOSTNAMES = SpawnedTestbedVMNames
-                ARTIFACTS_DIR = "output"
-            }
-            steps {
-                deleteDir()
-                unstash "CIScripts"
-                // unstash "WinArt"
-                // powershell script: './CIScripts//Deploy.ps1'
-            }
-        }
+                // Required in 'Provision' stages
+                VC = credentials('vcenter')
 
-        stage('Test') {
-            agent { label 'tester' }
-            environment {
-                // TESTBED_HOSTNAMES = SpawnedTestbedVMNames
-                ARTIFACTS_DIR = "output"
+                // Required in 'Deploy' and 'Test' stages
                 // TODO actually create this file
                 TEST_CONFIGURATION_FILE = "GetTestConfigurationJuni.ps1"
+                // TESTBED_HOSTNAMES = SpawnedTestbedVMNames
+                ARTIFACTS_DIR = "output"
             }
             steps {
-                deleteDir()
-                unstash "CIScripts"
-                // powershell script: './CIScripts/Test.ps1'
+                lock(dataNetwork) {
+                    // 'Provision' stage
+                    node(label: 'ansible') {
+                        deleteDir()
+                        unstash 'ansible'
+
+                        script {
+                            vmwareConfig = getVMwareConfig()
+                            inventoryFilePath = "${env.WORKSPACE}/ansible/vm.${env.BUILD_ID}"
+                            testEnvName = generateTestEnvName()
+                            testEnvFolder = env.VC_FOLDER
+                        }
+
+                        prepareTestEnv(inventoryFilePath, testEnvName, testEnvFolder,
+                                       mgmtNetwork, dataNetwork,
+                                       env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
+                        provisionTestEnv(vmwareConfig)
+
+                        script {
+                            testbeds = parseTestEnvInventory(inventoryFilePath)
+                        }
+                    }
+
+                    // 'Deploy' stage
+                    node(label: 'tester') {
+                        deleteDir()
+                        unstash "CIScripts"
+
+                        powershell "Write-Host 'testbeds[0] = ${testbeds[0]}'"
+                        powershell "Write-Host 'testbeds[1] = ${testbeds[1]}'"
+                        powershell "Write-Host 'testbeds[2] = ${testbeds[2]}'"
+                        // unstash "WinArt"
+                        // powershell script: './CIScripts//Deploy.ps1'
+                    }
+
+                    // 'Test' stage
+                    node(label: 'tester') {
+                        deleteDir()
+                        unstash "CIScripts"
+                        // powershell script: './CIScripts/Test.ps1'
+                    }
+                }
+            }
+            post {
+                always {
+                    node(label: 'ansible') {
+                        destroyTestEnv(vmwareConfig)
+                    }
+                }
             }
         }
     }

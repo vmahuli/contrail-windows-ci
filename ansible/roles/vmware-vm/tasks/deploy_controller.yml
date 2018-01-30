@@ -30,4 +30,4 @@
   lineinfile:
     path: "{{ vm_inventory_file }}"
     create: yes
-    line: "{{ inventory_hostname }};{{ newvm.instance.hw_eth0.ipaddresses | ipv4 }};{{ newvm.instance.hw_product_uuid }}"
+    line: "{{ inventory_hostname }};{{ newvm.instance.hw_eth0.ipaddresses | ipv4 | join(',') }};{{ newvm.instance.hw_product_uuid }}"
