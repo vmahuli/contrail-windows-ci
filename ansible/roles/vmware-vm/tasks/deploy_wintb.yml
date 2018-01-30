@@ -33,10 +33,6 @@
 
   register: newvm
 
-- name: debug
-  debug:
-    msg: "{{ newvm.instance.hw_eth0.ipaddresses | ipv4 | join(',') }}"
-
 - name: Save VM info to inventory file '{{ vm_inventory_file }}'
   delegate_to: localhost
   lineinfile:

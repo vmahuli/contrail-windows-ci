@@ -1,4 +1,4 @@
-def call(stageFunc) {
+def call(playbookToRun) {
     def vmwareConfig
     def demoEnvName
     def demoEnvFolder
@@ -30,8 +30,11 @@ def call(stageFunc) {
             }
             stage("Run Ansible") {
                 steps {
-                    script {
-                        stageFunc(vmwareConfig)
+                    dir('ansible') {
+                        ansiblePlaybook inventory: 'inventory',
+                                        playbook: playbookToRun,
+                                        extraVars: vmwareConfig,
+                                        extras: '-e @vmware-vm.vars'
                     }
                 }
             }
