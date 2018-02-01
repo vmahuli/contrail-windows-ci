@@ -1,7 +1,7 @@
 function Invoke-NativeCommand {
     Param (
-        [Parameter(Mandatory = $true)] [ScriptBlock] $ScriptBlock,
-        [Parameter(Mandatory = $false)] [Bool] $AllowNonZero = $false
+        [Parameter(Mandatory = $false)] [Bool] $AllowNonZero = $false,
+        [Parameter(Mandatory = $true)] [ScriptBlock] $ScriptBlock
     )
     # Utility wrapper.
     # We encountered issues when trying to run non-powershell commands in a script, when it's
@@ -19,11 +19,19 @@ function Invoke-NativeCommand {
     #
     # Note: The command has to return 0 exitcode to be considered successful.
 
+    # If an executable in $ScriptBlock wouldn't be found then while checking $LastExitCode
+    # we would be checking the exit code of a previous command. To avoid this we clear $LastExitCode.
     $Global:LastExitCode = $null
 
     & {
+        # Since we're redirecting stderr to stdout we shouldn't have to set ErrorActionPreference
+        # but because of a bug in Powershell we have to.
+        # https://github.com/PowerShell/PowerShell/issues/4002
         $ErrorActionPreference = "Continue"
-        & $ScriptBlock
+
+        # We redirect stderr to stdout so nothing is added to $Error.
+        # We do this to be compliant to durable-task-plugin 1.18.
+        & $ScriptBlock 2>&1
     }
 
     if ($AllowNonZero -eq $false -and $LastExitCode -ne 0) {
@@ -34,5 +42,6 @@ function Invoke-NativeCommand {
         Write-Output $LastExitCode
     }
 
+    # We clear it to be compliant with durable-task-plugin up to 1.17
     $Global:LastExitCode = $null
 }

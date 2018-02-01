@@ -17,17 +17,15 @@ function Clone-Repos {
             # We must use -q (quiet) flag here, since git clone prints to stderr and tries to do some real-time
             # command line magic (like updating cloning progress). Powershell command in Jenkinsfile
             # can't handle it and throws a Write-ErrorException.
-            Invoke-NativeCommand -ScriptBlock {
+            $NativeCommandReturn = Invoke-NativeCommand -AllowNonZero $true -ScriptBlock {
                 git clone -q -b $CustomMultiBranch $_.Url $_.Dir
+            }
+            $ExitCode = $NativeCommandReturn[-1]
+            if ($ExitCode -ne 0) {
+                Write-Host $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
 
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Host $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
+                Invoke-NativeCommand -ScriptBlock {
                     git clone -q -b $_.Branch $_.Url $_.Dir
-
-                    if ($LASTEXITCODE -ne 0) {
-                        # Write-Host instead of throw, because Invoke-NativeCommand will throw anyway
-                        Write-Host "Cloning from " + $_.Url + " failed"
-                    }
                 }
             }
         })
@@ -170,8 +168,8 @@ function Invoke-ExtensionBuild {
 
     $Job.Step("Building Extension and Utils", {
         $BuildModeOption = "--optimization=" + $BuildMode
+        $Env:cerp = Get-Content $CertPasswordFilePath
         Invoke-NativeCommand -ScriptBlock {
-            $Env:cerp = Get-Content $CertPasswordFilePath
             scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsDir/vrouter_build.log
         }
     })
@@ -271,12 +269,11 @@ function Run-Test {
     Param ([Parameter(Mandatory = $true)] [String] $TestExecutable)
     Write-Host "===> Agent tests: running $TestExecutable..."
     $Res = Invoke-Command -ScriptBlock {
-        $ErrorActionPreference = "SilentlyContinue"
-        $TestOutput = Invoke-NativeCommand -AllowNonZero $true -ScriptBlock {
+        $NativeCommandReturn = Invoke-NativeCommand -AllowNonZero $true -ScriptBlock {
             Invoke-Expression $TestExecutable
         }
-        $ExitCode = $TestOutput[-1]
-        $TestOutput.ForEach({ Write-Host $_ })
+        $ExitCode = $NativeCommandReturn[-1]
+        $TestOutput = $NativeCommandReturn[0..($NativeCommandReturn.Length-2)]
 
         # This is a workaround for the following bug:
         # https://bugs.launchpad.net/opencontrail/+bug/1714205
