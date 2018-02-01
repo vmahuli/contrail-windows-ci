@@ -81,48 +81,56 @@ pipeline {
                 ARTIFACTS_DIR = "output"
             }
             steps {
-                lock(dataNetwork) {
-                    // 'Provision' stage
-                    node(label: 'ansible') {
-                        deleteDir()
-                        unstash 'ansible'
+                script {
+                    try {
+                        lock(dataNetwork) {
+                            // 'Provision' stage
+                            node(label: 'ansible') {
+                                deleteDir()
+                                unstash 'ansible'
 
-                        script {
-                            vmwareConfig = getVMwareConfig()
-                            inventoryFilePath = "${env.WORKSPACE}/ansible/vm.${env.BUILD_ID}"
-                            testEnvName = generateTestEnvName()
-                            testEnvFolder = env.VC_FOLDER
-                        }
+                                script {
+                                    vmwareConfig = getVMwareConfig()
+                                    inventoryFilePath = "${env.WORKSPACE}/ansible/vm.${env.BUILD_ID}"
+                                    testEnvName = generateTestEnvName()
+                                    testEnvFolder = env.VC_FOLDER
+                                }
 
-                        prepareTestEnv(inventoryFilePath, testEnvName, testEnvFolder,
-                                       mgmtNetwork, dataNetwork,
-                                       env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
-                        provisionTestEnv(vmwareConfig)
+                                prepareTestEnv(inventoryFilePath, testEnvName, testEnvFolder,
+                                               mgmtNetwork, dataNetwork,
+                                               env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
+                                provisionTestEnv(vmwareConfig)
 
-                        script {
-                            testbeds = parseTestbedAddresses(inventoryFilePath)
+                                script {
+                                    testbeds = parseTestbedAddresses(inventoryFilePath)
+                                }
+                            }
+
+                            // 'Deploy' stage
+                            node(label: 'tester') {
+                                deleteDir()
+
+                                unstash "CIScripts"
+                                unstash "WinArt"
+
+                                script {
+                                    env.TESTBED_ADDRESSES = testbeds.join(',')
+                                }
+
+                                powershell script: './CIScripts/Deploy.ps1'
+                            }
+
+                            // 'Test' stage
+                            node(label: 'tester') {
+                                deleteDir()
+                                unstash "CIScripts"
+                                // powershell script: './CIScripts/Test.ps1'
+                            }
                         }
                     }
-
-                    // 'Deploy' stage
-                    node(label: 'tester') {
-                        deleteDir()
-
-                        unstash "CIScripts"
-                        unstash "WinArt"
-
-                        script {
-                            env.TESTBED_ADDRESSES = testbeds.join(',')
-                        }
-
-                        powershell script: './CIScripts/Deploy.ps1'
-                    }
-
-                    // 'Test' stage
-                    node(label: 'tester') {
-                        deleteDir()
-                        unstash "CIScripts"
-                        // powershell script: './CIScripts/Test.ps1'
+                    catch(err) {
+                        echo "Error occured during test stage: ${err}"
+                        currentBuild.result = "SUCCESS"
                     }
                 }
             }
