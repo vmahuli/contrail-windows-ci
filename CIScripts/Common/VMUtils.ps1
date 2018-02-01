@@ -1,8 +1,8 @@
 . $PSScriptRoot\Aliases.ps1
 
 function Get-VMCreds {
-    $VMUsername = $Env:VM_USERNAME
-    $VMPassword = $Env:VM_PASSWORD | ConvertTo-SecureString -AsPlainText -Force
+    $VMUsername = "WORKGROUP\{0}" -f $Env:TESTBED_USR
+    $VMPassword = $Env:TESTBED_PSW | ConvertTo-SecureString -AsPlainText -Force
     return New-Object PSCredentialT($VMUsername, $VMPassword)
 }
 
@@ -28,17 +28,17 @@ function New-RemoteSessions {
 }
 
 function New-RemoteSessionsToTestbeds {
-    if(-not $Env:TESTBED_HOSTNAMES) {
-        throw "Cannot create remote sessions to testbeds: $Env:TESTBED_HOSTNAMES not set"
+    if(-not $Env:TESTBED_ADDRESSES) {
+        throw "Cannot create remote sessions to testbeds: $Env:TESTBED_ADDRESSES not set"
     }
 
     # TODO: get IPs from Env
     $Creds = Get-VMCreds
 
-    $Testbeds = Get-TestbedHostnamesFromEnv
+    $Testbeds = Get-TestbedAddressesFromEnv
     return New-RemoteSessions -VMNames $Testbeds -Credentials $Creds
 }
 
-function Get-TestbedHostnamesFromEnv {
-    return $Env:TESTBED_HOSTNAMES.Split(",")
+function Get-TestbedAddressesFromEnv {
+    return $Env:TESTBED_ADDRESSES.Split(",")
 }

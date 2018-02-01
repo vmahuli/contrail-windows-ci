@@ -25,3 +25,13 @@
     name: VMWare.PowerCLI
     state: present
 
+- name: Check TrustedHosts value
+  win_shell: (Get-Item WSMan:\localhost\Client\TrustedHosts).Value
+  register: trusted_hosts
+
+- name: Set Testbeds as TrustedHosts
+  win_shell: >
+    Set-Item WSMan:\localhost\Client\TrustedHosts
+    -Value "{{ (((trusted_hosts.stdout | trim()).split(',') | reject('equalto', '') | list()) + ['172.17.0.*']) | join(',') }}"
+    -Force
+  when: not (trusted_hosts.stdout | search("172.17.0.*"))

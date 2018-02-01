@@ -2,6 +2,7 @@
 
 . $PSScriptRoot\Common\Init.ps1
 . $PSScriptRoot\Common\Job.ps1
+. $PSScriptRoot\Common\Components.ps1
 . $PSScriptRoot\Build\BuildFunctions.ps1
 . $PSScriptRoot\Build\StagingCI.ps1
 . $PSScriptRoot\Build\Zuul.ps1
@@ -48,11 +49,7 @@ New-Item -ItemType directory -Path $vRouterOutputDir
 New-Item -ItemType directory -Path $AgentOutputDir
 New-Item -ItemType directory -Path $LogsDir
 
-$ComponentsToBuild = if (Test-Path Env:COMPONENTS_TO_BUILD) {
-    $Env:COMPONENTS_TO_BUILD.Split(",")
-} else {
-    @("DockerDriver", "Extension", "Agent")
-}
+$ComponentsToBuild = Get-ComponentsToBuild
 
 if ("DockerDriver" -In $ComponentsToBuild) {
     Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH `

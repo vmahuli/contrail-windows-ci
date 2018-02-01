@@ -58,7 +58,7 @@ pipeline {
 
                 powershell script: './CIScripts/Build.ps1'
 
-                //stash name: "WinArt", includes: "output/**/*"
+                stash name: "WinArt", includes: "output/**/*"
                 //stash name: "buildLogs", includes: "logs/**"
             }
         }
@@ -77,7 +77,7 @@ pipeline {
                 // Required in 'Deploy' and 'Test' stages
                 // TODO actually create this file
                 TEST_CONFIGURATION_FILE = "GetTestConfigurationJuni.ps1"
-                // TESTBED_HOSTNAMES = SpawnedTestbedVMNames
+                TESTBED = credentials('win-testbed')
                 ARTIFACTS_DIR = "output"
             }
             steps {
@@ -100,20 +100,22 @@ pipeline {
                         provisionTestEnv(vmwareConfig)
 
                         script {
-                            testbeds = parseTestEnvInventory(inventoryFilePath)
+                            testbeds = parseTestbedAddresses(inventoryFilePath)
                         }
                     }
 
                     // 'Deploy' stage
                     node(label: 'tester') {
                         deleteDir()
-                        unstash "CIScripts"
 
-                        powershell "Write-Host 'testbeds[0] = ${testbeds[0]}'"
-                        powershell "Write-Host 'testbeds[1] = ${testbeds[1]}'"
-                        powershell "Write-Host 'testbeds[2] = ${testbeds[2]}'"
-                        // unstash "WinArt"
-                        // powershell script: './CIScripts//Deploy.ps1'
+                        unstash "CIScripts"
+                        unstash "WinArt"
+
+                        script {
+                            env.TESTBED_ADDRESSES = testbeds.join(',')
+                        }
+
+                        powershell script: './CIScripts/Deploy.ps1'
                     }
 
                     // 'Test' stage

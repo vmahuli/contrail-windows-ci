@@ -178,6 +178,7 @@ function Invoke-ExtensionBuild {
 
     $vRouterRoot = "build\{0}\vrouter" -f $BuildMode
     $vRouterMSI = "$vRouterRoot\extension\vRouter.msi"
+    $vRouterCert = "$vRouterRoot\extension\vRouter.cer"
     $utilsMSI = "$vRouterRoot\utils\utils.msi"
     $vTestPath = "$vRouterRoot\utils\vtest\"
 
@@ -196,7 +197,7 @@ function Invoke-ExtensionBuild {
     $Job.Step("Copying artifacts to $OutputPath", {
         Copy-Item $utilsMSI $OutputPath -Recurse -Container
         Copy-Item $vRouterMSI $OutputPath -Recurse -Container
-        Copy-Item $CertPath $OutputPath -Recurse -Container
+        Copy-Item $vRouterCert $OutputPath -Recurse -Container
         Copy-Item $vTestPath "$OutputPath\utils\vtest" -Recurse -Container
     })
 
