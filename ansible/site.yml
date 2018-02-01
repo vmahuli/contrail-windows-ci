@@ -5,6 +5,7 @@
   - jenkins.system-setup
   - geerlingguy.jenkins
   - { role: ssh-key, username: jenkins }
+  - jenkins.keys
 
 #- hosts: ansible-worker
 #  roles:

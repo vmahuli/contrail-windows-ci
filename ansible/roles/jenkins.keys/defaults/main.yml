@@ -1,0 +1,3 @@
+logs_server: logs.opencontrail.org
+logs_user: zuul-win
+logs_keyname: logs

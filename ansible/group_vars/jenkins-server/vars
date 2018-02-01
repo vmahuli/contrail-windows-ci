@@ -27,3 +27,13 @@ jenkins_plugins:
 jenkins_repo_url: deb http://pkg.jenkins-ci.org/debian-stable binary/
 jenkins_repo_key_url: http://pkg.jenkins-ci.org/debian-stable/jenkins-ci.org.key
 jenkins_java_options: ""
+logs_known_hosts:
+  logs:
+    name: 'logs.opencontrail.org'
+    key: >
+        logs.opencontrail.org ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBK5Oz6jvxBi3WJiT+YvT5FO+dL+Dm8A7/z3dQIR07JFfSe6N7/Sv0nxQkGEGkYk8vV3xYQj6N48CIx/MPTTiG2Y=
+
+  logs2:
+    name: 'logs2.opencontrail.org'
+    key: >
+        logs2.opencontrail.org ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHMcbjG6txFeqKcdi5RAZkedU/Rir0KH4lnpY+oM2g0uwOcoPCCB4nFdWT0n8cQuWKStVaxi3je1op9BBmSLUCw=

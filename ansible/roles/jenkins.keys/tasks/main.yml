@@ -1,0 +1,34 @@
+---
+
+- name: 'create .ssh directory'
+  file:
+      path: /var/lib/jenkins/.ssh
+      state: directory
+      owner: jenkins
+      group: jenkins
+      mode: '0700'
+
+- name: 'add log servers to known hosts'
+  known_hosts:
+      name: '{{ logs_known_hosts[item].name }}'
+      key: '{{ logs_known_hosts[item].key }}'
+  with_items:
+      - logs
+      - logs2
+  become: yes
+  become_user: jenkins
+
+- name: 'copy key for accessing log server'
+  copy:
+      content: '{{ logs_keys[logs_keyname] }}'
+      dest: /var/lib/jenkins/.ssh/log-server.private_key
+      owner: jenkins
+      group: jenkins
+      mode: '0600'
+
+- name: 'install ssh config file'
+  template:
+      src: config.j2
+      dest: /var/lib/jenkins/.ssh/config
+      owner: jenkins
+      mode: '0600'
