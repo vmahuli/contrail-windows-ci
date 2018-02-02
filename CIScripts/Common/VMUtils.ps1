@@ -15,6 +15,7 @@ function New-RemoteSessions {
         $Sess = New-PSSession -ComputerName $_ -Credential $Credentials
 
         Invoke-Command -Session $Sess -ScriptBlock {
+            Set-StrictMode -Version Latest
             $ErrorActionPreference = "Stop"
 
             # Refresh PATH
@@ -32,7 +33,6 @@ function New-RemoteSessionsToTestbeds {
         throw "Cannot create remote sessions to testbeds: $Env:TESTBED_ADDRESSES not set"
     }
 
-    # TODO: get IPs from Env
     $Creds = Get-VMCreds
 
     $Testbeds = Get-TestbedAddressesFromEnv
