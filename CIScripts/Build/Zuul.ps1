@@ -39,7 +39,8 @@ function Clone-ZuulRepos {
 
 function Clone-NonZuulRepos {
     Param(
-        [Parameter(Mandatory = $true)] [string] $DriverSrcPath
+        [Parameter(Mandatory = $true)] [string] $DriverSrcPath,
+        [Parameter(Mandatory = $true)] [string] $WindowsStubsRepositoryPath
     )
 
     $Job.Step("Cloning additional repositories", {
@@ -54,7 +55,7 @@ function Clone-NonZuulRepos {
         # TODO: Use Juniper repo: git clone contrail-windows.github.com:Juniper/contrail-windows.git
         # TODO: When contrail-windows will be on Gerrit, fetch it with zull-cloner
         Invoke-NativeCommand -ScriptBlock {
-            git clone -q https://github.com/codilime/contrail-windowsstubs.git windows/
+            git clone -q $WindowsStubsRepositoryPath windows/
         }
         Write-Host "Cloned Windows stubs"
     })

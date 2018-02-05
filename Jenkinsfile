@@ -160,7 +160,11 @@ pipeline {
                 script {
                     // Job triggered by Zuul -> upload log file to public server.
                     // Job triggered by Github CI repository (variable "ghprbPullId" exists) -> keep log "private".
-                    if (env.ghprbPullId == null) {
+
+                    // TODO JUNIPER_WINDOWSSTUBS variable check is temporary and should be removed once
+                    // repository contrail-windows is accessible from Gerrit and it is main source of
+                    // windowsstubs code.
+                    if (env.ghprbPullId == null && env.JUNIPER_WINDOWSSTUBS == null) {
                         // cleanWs()
                         echo "TODO environment cleanup"
                         // unstash "buildLogs"

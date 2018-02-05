@@ -10,6 +10,17 @@
 $Job = [Job]::new("Build")
 
 $IsTriggeredByZuul = Test-Path Env:ZUUL_PROJECT
+
+# TODO This is a temporary condition to enable smooth phase in of
+# Juniper/contrail-windows repository. Once the code is actually
+# working, we should eventually switch to that repository.
+$WindowsStubsRepositoryPath = "https://github.com/codilime/contrail-windowsstubs.git"
+$WindowsStubsDefaultBranch = "windows"
+if (Test-Path Env:JUNIPER_WINDOWSSTUBS) {
+    $WindowsStubsRepositoryPath = "https://github.com/Juniper/contrail-windows.git"
+    $WindowsStubsDefaultBranch = "master"
+}
+
 if($IsTriggeredByZuul) {
     # Build is triggered by Zuul, when someone submits a pull
     # request to review.opencontrail.org.
@@ -20,12 +31,15 @@ if($IsTriggeredByZuul) {
                     -ZuulUrl $Env:ZUUL_URL `
                     -ZuulBranch $Env:ZUUL_BRANCH
 
-    Clone-NonZuulRepos -DriverSrcPath $Env:DRIVER_SRC_PATH
+    Clone-NonZuulRepos -DriverSrcPath $Env:DRIVER_SRC_PATH `
+                       -WindowsStubsRepositoryPath $WindowsStubsRepositoryPath
 } else {
     # Build is triggered by Jenkins GitHub plugin, when someone submits a pull
     # request to select github.com/codilime/* repos.
 
     $Repos = Get-StagingRepos -DriverBranch $ENV:DRIVER_BRANCH `
+                              -WindowsStubsRepositoryPath $WindowsStubsRepositoryPath `
+                              -WindowsStubsDefaultBranch $WindowsStubsDefaultBranch `
                               -WindowsstubsBranch $ENV:WINDOWSSTUBS_BRANCH `
                               -ToolsBranch $Env:TOOLS_BRANCH `
                               -SandeshBranch $Env:SANDESH_BRANCH `

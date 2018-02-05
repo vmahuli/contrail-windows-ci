@@ -2,6 +2,8 @@
 
 function Get-StagingRepos {
     Param ([Parameter(Mandatory = $true)] [string] $DriverBranch,
+           [Parameter(Mandatory = $true)] [string] $WindowsStubsRepositoryPath,
+           [Parameter(Mandatory = $true)] [string] $WindowsStubsDefaultBranch,
            [Parameter(Mandatory = $true)] [string] $WindowsstubsBranch,
            [Parameter(Mandatory = $true)] [string] $ToolsBranch,
            [Parameter(Mandatory = $true)] [string] $SandeshBranch,
@@ -12,8 +14,8 @@ function Get-StagingRepos {
     $Repos = @{
         "contrail-windows-docker" = [Repo]::new("https://github.com/CodiLime/contrail-windows-docker/",
                                                 $DriverBranch, "master", "src/github.com/codilime/contrail-windows-docker");
-        "contrail-windowsstubs" = [Repo]::new("https://github.com/CodiLime/contrail-windowsstubs/",
-                                              $WindowsstubsBranch, "windows", "windows/");
+        "contrail-windowsstubs" = [Repo]::new($WindowsStubsRepositoryPath,
+                                              $WindowsstubsBranch, $WindowsStubsDefaultBranch, "windows/");
         "contrail-build" = [Repo]::new("https://github.com/CodiLime/contrail-build",
                                        $ToolsBranch, "windows", "tools/build/");
         "contrail-sandesh" = [Repo]::new("https://github.com/CodiLime/contrail-sandesh",
