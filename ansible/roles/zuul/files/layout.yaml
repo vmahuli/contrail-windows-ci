@@ -33,6 +33,15 @@ pipelines:
         - event: comment-added
           comment: (?i)recheck windows(?:-| )(dev|devel|development)\s*$
 
+  - name: windows-contrail-phase-in
+    description: Pipeline used for Windows CI development (phase in of Juniper/windows-contrail repository). It should always work in silent mode.
+    manager: IndependentPipelineManager
+    precedence: low
+    trigger:
+      gerrit:
+        - event: comment-added
+          comment: (?i)recheck windows-contrail(?:-| )(dev|devel|development)\s*$
+
 jobs:
   - name: ^ci-contrail-windows.*$
     voting: false
@@ -45,6 +54,8 @@ project-templates:
       - ci-contrail-windows-production
     development:
       - ci-contrail-windows-development
+    windows-contrail-phase-in:
+      - ci-contrail-windows-wc-phase-in
 
 projects:
   - name: Juniper/contrail-controller
