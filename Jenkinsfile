@@ -1,3 +1,4 @@
+#!groovy
 library "contrailWindows@$BRANCH_NAME"
 
 def mgmtNetwork
@@ -70,6 +71,7 @@ pipeline {
         // NOTE: Currently nesting multiple stages in lock directive is unsupported
         stage('Provision & Deploy & Test') {
             agent none
+            when { environment name: "DONT_CREATE_TESTBEDS", value: null }
             environment {
                 // Required in 'Provision' stages
                 VC = credentials('vcenter')
