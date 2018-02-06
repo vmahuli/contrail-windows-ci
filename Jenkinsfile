@@ -156,7 +156,7 @@ pipeline {
 
     post {
         always {
-            node('master') {
+            node(label: 'linux') {
                 script {
                     // Job triggered by Zuul -> upload log file to public server.
                     // Job triggered by Github CI repository (variable "ghprbPullId" exists) -> keep log "private".
