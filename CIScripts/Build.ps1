@@ -18,8 +18,8 @@ $WindowsStubsRepositoryPath = "https://github.com/codilime/contrail-windowsstubs
 $WindowsStubsBranch = "master"
 if (Test-Path Env:JUNIPER_WINDOWSSTUBS) {
     $WindowsStubsRepositoryPath = "contrail-windows.github.com:Juniper/contrail-windows.git"
-    if (Test-Path Env:GIT_BRANCH) {
-        $WindowsStubsBranch = $Env:GIT_BRANCH
+    if (Test-Path Env:ghprbSourceBranch) {
+        $WindowsStubsBranch = $Env:ghprbSourceBranch
     }
 }
 
