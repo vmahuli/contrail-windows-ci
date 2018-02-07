@@ -111,10 +111,17 @@
     version: 8.0.604
     ensure: present
 
-- name: Install PowerShell Community Extensions (PSCX)
+- name: Install NuGet package provider (for PSCX)
   win_chocolatey:
-    name: pscx
+    name: nuget.commandline
+    version: 4.5.1
     state: present
+
+- name: Install PowerShell Community Extensions (PSCX)
+  win_psmodule:
+    name: Pscx
+    state: present
+    allow_clobber: yes
 
 - name: Install protoc-3.0.0 from github (GET)
   win_get_url:
