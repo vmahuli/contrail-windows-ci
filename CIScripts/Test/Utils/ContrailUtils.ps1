@@ -22,6 +22,24 @@ function Get-AccessTokenFromKeystone {
     return $Response.access.token.id
 }
 
+function Add-ContrailProject {
+    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
+           [Parameter(Mandatory = $true)] [string] $AuthToken,
+           [Parameter(Mandatory = $true)] [string] $ProjectName)
+
+    $Request = @{
+        "project" = @{
+            fq_name = @("default-domain", $ProjectName)
+        }
+    }
+
+    $RequestUrl = $ContrailUrl + "/projects"
+    $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} `
+        -Method Post -ContentType "application/json" -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request)
+
+    return $Response.'project'.'uuid'
+}
+
 class SubnetConfiguration {
     [string] $IpPrefix;
     [int] $IpPrefixLen;
