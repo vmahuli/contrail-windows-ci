@@ -35,7 +35,7 @@ function Invoke-NativeCommand {
     }
 
     if ($AllowNonZero -eq $false -and $LastExitCode -ne 0) {
-        throw "Command ``$block`` failed with exitcode: $LastExitCode"
+        throw "Command ``$ScriptBlock`` failed with exitcode: $LastExitCode"
     }
 
     if ($AllowNonZero) {
