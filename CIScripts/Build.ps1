@@ -15,10 +15,12 @@ $IsTriggeredByZuul = Test-Path Env:ZUUL_PROJECT
 # Juniper/contrail-windows repository. Once the code is actually
 # working, we should eventually switch to that repository.
 $WindowsStubsRepositoryPath = "https://github.com/codilime/contrail-windowsstubs.git"
-$WindowsStubsDefaultBranch = "windows"
+$WindowsStubsBranch = "master"
 if (Test-Path Env:JUNIPER_WINDOWSSTUBS) {
-    $WindowsStubsRepositoryPath = "https://github.com/Juniper/contrail-windows.git"
-    $WindowsStubsDefaultBranch = "master"
+    $WindowsStubsRepositoryPath = "contrail-windows.github.com:Juniper/contrail-windows.git"
+    if (Test-Path Env:GIT_BRANCH) {
+        $WindowsStubsBranch = $Env:GIT_BRANCH
+    }
 }
 
 if($IsTriggeredByZuul) {
@@ -32,15 +34,16 @@ if($IsTriggeredByZuul) {
                     -ZuulBranch $Env:ZUUL_BRANCH
 
     Clone-NonZuulRepos -DriverSrcPath $Env:DRIVER_SRC_PATH `
-                       -WindowsStubsRepositoryPath $WindowsStubsRepositoryPath
+                       -WindowsStubsRepositoryPath $WindowsStubsRepositoryPath `
+                       -WindowsStubsBranch $WindowsStubsBranch
 } else {
     # Build is triggered by Jenkins GitHub plugin, when someone submits a pull
     # request to select github.com/codilime/* repos.
 
     $Repos = Get-StagingRepos -DriverBranch $ENV:DRIVER_BRANCH `
                               -WindowsStubsRepositoryPath $WindowsStubsRepositoryPath `
-                              -WindowsStubsDefaultBranch $WindowsStubsDefaultBranch `
-                              -WindowsstubsBranch $ENV:WINDOWSSTUBS_BRANCH `
+                              -WindowsStubsDefaultBranch $WindowsStubsBranch `
+                              -WindowsstubsBranch $Env:WINDOWSSTUBS_BRANCH `
                               -ToolsBranch $Env:TOOLS_BRANCH `
                               -SandeshBranch $Env:SANDESH_BRANCH `
                               -GenerateDSBranch $Env:GENERATEDS_BRANCH `
