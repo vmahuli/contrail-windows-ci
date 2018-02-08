@@ -1,3 +1,5 @@
+. $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
+
 class NetworkConfiguration {
     [string] $Name;
     [string[]] $Subnets;
@@ -188,8 +190,8 @@ function Test-IsDockerDriverEnabled {
 function Enable-AgentService {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
+    Write-Host "Starting Agent"
     Invoke-Command -Session $Session -ScriptBlock {
-        Write-Host "Starting Agent"
         Start-Service ContrailAgent | Out-Null
     }
 }
@@ -197,75 +199,77 @@ function Enable-AgentService {
 function Disable-AgentService {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
+    Write-Host "Stopping Agent"
     Invoke-Command -Session $Session -ScriptBlock {
-        Write-Host "Stopping Agent"
         Stop-Service ContrailAgent -ErrorAction SilentlyContinue | Out-Null
     }
 }
 
+function Install-Agent {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+    Write-Host "Installing Agent"
+    Invoke-Command -Session $Session -ScriptBlock {
+        Start-Process msiexec.exe -ArgumentList @("/i", "C:\Artifacts\contrail-vrouter-agent.msi", "/quiet") -Wait
+
+        # Refresh Path
+        $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+    }
+}
+
+function Uninstall-Agent {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+    Write-Host "Uninstalling Agent"
+    Invoke-Command -Session $Session -ScriptBlock {
+        Start-Process msiexec.exe -ArgumentList @("/x", "C:\Artifacts\contrail-vrouter-agent.msi", "/quiet") -Wait
+
+        # Refresh Path
+        $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+    }
+}
+
+function Get-AgentServiceStatus {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    $Status = Invoke-Command -Session $Session -ScriptBlock {
+        (Get-Service "ContrailAgent").Status
+    }
+    return $Status.Value
+}
+
 function Assert-IsAgentServiceEnabled {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
-    $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS
-    $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS
-    $MaxNumberOfChecks = [Math]::Ceiling($MaxWaitTimeInSeconds / $TimeBetweenChecksInSeconds)
-
-    for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
-        $Status = Invoke-Command -Session $Session -ScriptBlock {
-            return $((Get-Service "ContrailAgent" -ErrorAction SilentlyContinue).Status)
-        }
-        if ($Status.Value -eq "Running") {
-            return
-        }
-
-        Start-Sleep -s $TimeBetweenChecksInSeconds
+    $Status = Invoke-UntilSucceeds { Get-AgentServiceStatus -Session $Session } `
+            -Interval $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS `
+            -Duration $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS
+    if ($Status -eq "Running") {
+        return
+    } else {
+        throw "Agent service is not enabled. EXPECTED: Agent service is enabled"
     }
-
-    throw "Agent service is not enabled. EXPECTED: Agent service is enabled"
 }
 
 function Assert-IsAgentServiceDisabled {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
-    $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS
-    $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS
-    $MaxNumberOfChecks = [Math]::Ceiling($MaxWaitTimeInSeconds / $TimeBetweenChecksInSeconds)
-
-    for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
-        $Status = Invoke-Command -Session $Session -ScriptBlock {
-            return $((Get-Service "ContrailAgent" -ErrorAction SilentlyContinue).Status)
-        }
-        if ($Status.Value -eq "Stopped") {
-            return
-        }
-
-        Start-Sleep -s $TimeBetweenChecksInSeconds
+    $Status = Invoke-UntilSucceeds { Get-AgentServiceStatus -Session $Session } `
+            -Interval $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS `
+            -Duration $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS
+    if ($Status -eq "Stopped") {
+        return
+    } else {
+        throw "Agent service is not disabled. EXPECTED: Agent service is disabled"
     }
-
-    throw "Agent service is not disabled. EXPECTED: Agent service is disabled"
 }
 
-function Assert-AgentProcessCrashed {
+function Read-SyslogForAgentCrash {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [DateTime] $After,
-           [Parameter(Mandatory = $false)] [Int] $TimeoutSeconds = 60)
-
-    $TimeBetweenChecksInSeconds = 2
-
-    foreach ($i in 0..($TimeoutSeconds / $TimeBetweenChecksInSeconds)) {
-        $Res = Invoke-Command -Session $Session -ScriptBlock {
-            Get-EventLog -LogName "System" -EntryType "Error" -Source "Service Control Manager" `
-                -Message "The ContrailAgent service terminated unexpectedly*" -After ($Using:After).addSeconds(-1)
-        }
-
-        if ($Res) {
-            return
-        }
-
-        Start-Sleep -s $TimeBetweenChecksInSeconds
+           [Parameter(Mandatory = $true)] [DateTime] $After)
+    Invoke-Command -Session $Session -ScriptBlock {
+        Get-EventLog -LogName "System" -EntryType "Error" `
+            -Source "Service Control Manager" `
+            -Message "The ContrailAgent service terminated unexpectedly*" `
+            -After ($Using:After).addSeconds(-1)
     }
-
-    throw "Agent process didn't crash. EXPECTED: Agent process crashed"
 }
 
 function New-DockerNetwork {
@@ -333,6 +337,12 @@ function Wait-RemoteInterfaceIP {
 
         throw "Waiting for IP on interface $($Using:ifIndex) timed out after $WAIT_TIME_FOR_DHCP_IN_SECONDS seconds"
     }
+}
+
+function Initialize-DriverAndExtension {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+    Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $true
 }
 
 function Initialize-TestConfiguration {
@@ -415,9 +425,7 @@ function New-AgentConfigFile {
     $VHostIfName = $HNSTransparentAdapter.ifName
     $VHostIfIndex = $HNSTransparentAdapter.ifIndex
 
-    # NOTE: $TEST_NETWORK_GATEWAY is not set here,
-    # so it's equivalent to $VHostGatewayIP = ""
-    # TODO: Needs fixing for JW-1262
+    $TEST_NETWORK_GATEWAY = "10.7.3.1"
     $VHostGatewayIP = $TEST_NETWORK_GATEWAY
     $PhysIfName = $PhysicalAdapter.ifName
 

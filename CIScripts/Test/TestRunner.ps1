@@ -1,6 +1,5 @@
 . $PSScriptRoot\TestConfigurationUtils.ps1
 
-. $PSScriptRoot\Tests\AgentServiceTests.ps1
 . $PSScriptRoot\Tests\ExtensionLongLeakTest.ps1
 . $PSScriptRoot\Tests\MultiEnableDisableExtensionTest.ps1
 . $PSScriptRoot\Tests\DockerDriverTest.ps1
@@ -12,7 +11,6 @@
 . $PSScriptRoot\Tests\VRouterAgentTests.ps1
 . $PSScriptRoot\Tests\ComputeControllerIntegrationTests.ps1
 . $PSScriptRoot\Tests\SubnetsTests.ps1
-. $PSScriptRoot\Tests\Pkt0PipeImplementationTests.ps1
 . $PSScriptRoot\Tests\DockerDriverMultitenancyTest.ps1
 . $PSScriptRoot\Tests\WindowsLinuxIntegrationTests.ps1
 
@@ -30,27 +28,47 @@ function Run-TestScenarios {
 
         # $SNATConfiguration = Get-SnatConfiguration
 
-        Test-AgentService -Session $Sessions[0] -TestConfiguration $TestConfiguration
-        Test-ExtensionLongLeak -Session $Sessions[0] -TestDurationHours $Env:LEAK_TEST_DURATION -TestConfiguration $TestConfiguration
-        Test-MultiEnableDisableExtension -Session $Sessions[0] -EnableDisableCount $Env:MULTI_ENABLE_DISABLE_EXTENSION_COUNT -TestConfiguration $TestConfiguration
-        Test-VTestScenarios -Session $Sessions[0] -TestConfiguration $TestConfiguration
-        Test-TCPCommunication -Session $Sessions[0] -TestConfiguration $TestConfiguration
-        Test-ICMPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
-        Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
-        # TODO: Uncomment after JW-1129
-        # Test-SNAT -Session $Sessions[0] -SNATConfiguration $SNATConfiguration -TestConfiguration $TestConfiguration
-        Test-VRouterAgentIntegration -Session1 $Sessions[0] -Session2 $Sessions[1] `
-            -TestConfiguration $TestConfiguration -TestConfigurationUdp (Get-TestConfigurationUdp)
-        Test-ComputeControllerIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
-        Test-MultipleSubnetsSupport -Session $Sessions[0] -TestConfiguration $TestConfiguration
-        Test-DockerDriverMultiTenancy -Session $Sessions[0] -TestConfiguration $TestConfiguration
-        Test-WindowsLinuxIntegration -Session $Sessions[0] -TestConfiguration (Get-TestConfigurationWindowsLinux)
-        Test-Pkt0PipeImplementation -Session $Sessions[0] -TestConfiguration $TestConfiguration
-
-        if($Env:RUN_DRIVER_TESTS -eq "1") {
-            Test-DockerDriver -Session $Sessions[0] -TestConfiguration $TestConfiguration
-        }
+        # Test-AgentService -Session $Sessions[0] -TestConfiguration $TestConfiguration
+        # Test-ExtensionLongLeak -Session $Sessions[0] -TestDurationHours $Env:LEAK_TEST_DURATION -TestConfiguration $TestConfiguration
+        # Test-MultiEnableDisableExtension -Session $Sessions[0] -EnableDisableCount $Env:MULTI_ENABLE_DISABLE_EXTENSION_COUNT -TestConfiguration $TestConfiguration
+        # Test-VTestScenarios -Session $Sessions[0] -TestConfiguration $TestConfiguration
+        # Test-TCPCommunication -Session $Sessions[0] -TestConfiguration $TestConfiguration
+        # Test-ICMPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
+        # Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
+        # # TODO: Uncomment after JW-1129
+        # # Test-SNAT -Session $Sessions[0] -SNATConfiguration $SNATConfiguration -TestConfiguration $TestConfiguration
+        # Test-VRouterAgentIntegration -Session1 $Sessions[0] -Session2 $Sessions[1] `
+        #     -TestConfiguration $TestConfiguration -TestConfigurationUdp (Get-TestConfigurationUdp)
+        # Test-ComputeControllerIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
+        # Test-MultipleSubnetsSupport -Session $Sessions[0] -TestConfiguration $TestConfiguration
+        # Test-DockerDriverMultiTenancy -Session $Sessions[0] -TestConfiguration $TestConfiguration
+        # Test-WindowsLinuxIntegration -Session $Sessions[0] -TestConfiguration (Get-TestConfigurationWindowsLinux)
+        # Test-Pkt0PipeImplementation -Session $Sessions[0] -TestConfiguration $TestConfiguration
+        
+        # if($Env:RUN_DRIVER_TESTS -eq "1") {
+        #     Test-DockerDriver -Session $Sessions[0] -TestConfiguration $TestConfiguration
+        # }
     })
+
+    $TotalFailedCount = 0
+
+    $TestPaths = Get-ChildItem -Recurse -Filter "*.Tests.ps1"
+    Foreach ($TestPath in $TestPaths) {
+        $PesterRunScript = @{
+            Path=$TestPath.FullName; 
+            Parameters= @{
+                TestbedAddr=$Sessions[0].ComputerName
+            }; 
+            Arguments=@()
+        }
+
+        $Results = Invoke-Pester -PassThru -Script $PesterRunScript
+        $TotalFailedCount += $Results.FailedCount
+    }
+    Write-Host "Num failed tests: $TotalFailedCount"
+    if ($TotalFailedCount -gt 0) {
+        throw "Some tests failed"
+    }
 }
 
 function Collect-Logs {
