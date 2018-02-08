@@ -44,7 +44,7 @@
 
 - name: Wait for DHCP to work properly
   wait_for:
-    timeout: 300
+    timeout: 900
 
 - name: Get correct IP address of new {{ vm_role }}
   register: vm
@@ -57,6 +57,9 @@
     datacenter: "{{ datacenter_name }}"
 
     uuid: "{{ new_vm.instance.hw_product_uuid }}"
+
+- debug:
+    var: vm
 
 - name: Add host to inventory
   add_host:
