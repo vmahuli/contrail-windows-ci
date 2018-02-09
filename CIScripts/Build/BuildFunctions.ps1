@@ -227,7 +227,12 @@ function Invoke-AgentBuild {
     })
 
     $Job.Step("Building contrail-vrouter-agent.exe and .msi", {
-        $AgentBuildCommand = "scons -j 4 {0} contrail-vrouter-agent.msi" -f "$BuildModeOption"
+        if(Test-Path Env:AGENT_BUILD_THREADS) {
+            $Threads = $Env:AGENT_BUILD_THREADS
+        } else {
+            $Threads = 1
+        }
+        $AgentBuildCommand = "scons -j {0} {1} contrail-vrouter-agent.msi" -f $Threads, $BuildModeOption
         Invoke-NativeCommand -ScriptBlock {
             Invoke-Expression $AgentBuildCommand | Tee-Object -FilePath $LogsPath/build_agent.log
         }
