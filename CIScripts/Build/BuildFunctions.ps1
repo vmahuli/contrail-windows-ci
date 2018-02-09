@@ -36,7 +36,7 @@ function Prepare-BuildEnvironment {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache)
     $Job.Step("Copying common third-party dependencies", {
         if (!(Test-Path -Path .\third_party)) {
-            New-Item -ItemType Directory .\third_party
+            New-Item -ItemType Directory .\third_party | Out-Null
         }
         Get-ChildItem "$ThirdPartyCache\common" -Directory |
             Where-Object{$_.Name -notlike "boost*"} |
@@ -44,7 +44,7 @@ function Prepare-BuildEnvironment {
     })
 
     $Job.Step("Symlinking boost", {
-        New-Item -Path "third_party\boost_1_62_0" -ItemType SymbolicLink -Value "$ThirdPartyCache\boost_1_62_0"
+        New-Item -Path "third_party\boost_1_62_0" -ItemType SymbolicLink -Value "$ThirdPartyCache\boost_1_62_0" | Out-Null
     })
 
     $Job.Step("Copying SConstruct from tools\build", {
@@ -78,7 +78,7 @@ function Invoke-DockerDriverBuild {
     $Env:GOPATH = $GoPath
     $srcPath = "$GoPath/src/$DriverSrcPath"
 
-    New-Item -ItemType Directory ./bin
+    New-Item -ItemType Directory ./bin | Out-Null
 
     Push-Location $srcPath
     $Job.Step("Fetch third party packages ", {

@@ -15,7 +15,6 @@ function Clone-ZuulRepos {
         "--zuul-url=$ZuulUrl",
         "--zuul-branch=$ZuulBranch",
         "--map=./CIScripts/clonemap.yml",
-        "--verbose",
         $GerritUrl
     )
 
