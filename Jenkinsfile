@@ -52,13 +52,14 @@ pipeline {
                 CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
 
                 MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
+                WINCIDEV = credentials('winci-drive')
             }
             steps {
                 deleteDir()
 
                 unstash "CIScripts"
 
-                powershell script: './CIScripts/Build.ps1'
+                powershell script: './CIScripts/BuildStage.ps1'
 
                 stash name: "WinArt", includes: "output/**/*"
                 //stash name: "buildLogs", includes: "logs/**"

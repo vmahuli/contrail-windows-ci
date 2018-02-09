@@ -1,4 +1,4 @@
-# Build builds all Windows Compute components.
+# Build builds selected Windows Compute components.
 
 . $PSScriptRoot\Common\Init.ps1
 . $PSScriptRoot\Common\Job.ps1
