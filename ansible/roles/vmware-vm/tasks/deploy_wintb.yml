@@ -1,36 +1,39 @@
 ---
 
-- name: Deploy testbed VMs for testenv '{{ testenv_name }}'
+- name: Deploy testbed VMs for testenv '{{ testenv_name }}' using API directly
+  delegate_to: localhost
+  shell: |
+    '{{ script_path.path }}/deploy_vm_from_template.py' \
+      --host {{ vcenter_hostname }} \
+      --user {{ vcenter_user }} \
+      --password {{ vcenter_password }} \
+      --datacenter {{ datacenter_name }} \
+      --build-id {{ build_id }} \
+      --template {{ hostvars[inventory_hostname].template }} \
+      --folder {{ testenv_folder }} \
+      --name {{ inventory_hostname_short }} \
+      --mgmt-network {{ portgroup_mgmt }} \
+      --data-network {{ portgroup_contrail }} \
+      --data-ip-address {{ hostvars[inventory_hostname].ip }} \
+      --data-netmask {{ hostvars[inventory_hostname].netmask }} \
+      --vm-username Administrator \
+      --vm-password Contrail123!
+
+- name: Wait for Windows sysprep to finish
+  delegate_to: localhost
+  wait_for:
+    timeout: 180
+
+- name: Get testbed VM facts from VMware
   delegate_to: localhost
   vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_user }}"
     password: "{{ vcenter_password }}"
     validate_certs: "{{ validate_certs }}"
-
     datacenter: "{{ datacenter_name }}"
-    cluster: "{{ cluster_name }}"
-    folder: "{{ testenv_folder }}"
-
+    folder: "{{ datacenter_name }}/vm/{{ testenv_folder }}"
     name: "{{ inventory_hostname_short }}"
-    template: "{{ hostvars[inventory_hostname].template }}"
-    annotation: "Ansible-created for {{ testenv_name }} environment"
-    state: poweredon
-
-    customization:
-      hostname: "{{ inventory_hostname_short }}"
-      password: "Contrail123!"
-
-    networks:
-      - name: "{{ portgroup_mgmt }}"
-        type: dhcp
-      - name: "{{ portgroup_contrail }}"
-        type: static
-        ip: "{{ hostvars[inventory_hostname].ip }}"
-        netmask: "{{ hostvars[inventory_hostname].netmask }}"
-
-    wait_for_ip_address: yes
-
   register: newvm
 
 - name: Save VM info to inventory file '{{ vm_inventory_file }}'

@@ -4,6 +4,33 @@
   roles:
   - testenv-inventory-build
 
+- hosts: localhost
+  connection: local
+  tasks:
+  - name: Create temporary directory for Python scripts
+    tempfile:
+      state: directory
+    register: script_path
+  - name: Copy scripts
+    copy:
+      src: "files/{{ item }}"
+      dest: "{{ script_path.path }}"
+      owner: jenkins
+      group: jenkins
+      mode: 0755
+      force: yes
+    with_items:
+    - vmware_api.py
+    - provision_vm.py
+
+- hosts: testenv
+  gather_facts: no
+  tasks:
+  - name: Add script_path to each host in testenv group
+    delegate_to: localhost
+    set_fact:
+      script_path: "{{ hostvars['localhost'].script_path }}"
+
 - hosts: testenv
   gather_facts: no
   strategy: free
