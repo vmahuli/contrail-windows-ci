@@ -8,7 +8,6 @@
       --user {{ vcenter_user }} \
       --password {{ vcenter_password }} \
       --datacenter {{ datacenter_name }} \
-      --build-id {{ build_id }} \
       --template {{ hostvars[inventory_hostname].template }} \
       --folder {{ testenv_folder }} \
       --name {{ inventory_hostname_short }} \
