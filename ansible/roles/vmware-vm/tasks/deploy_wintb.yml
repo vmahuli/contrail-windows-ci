@@ -3,7 +3,7 @@
 - name: Deploy testbed VMs for testenv '{{ testenv_name }}' using API directly
   delegate_to: localhost
   shell: |
-    '{{ script_path.path }}/deploy_vm_from_template.py' \
+    '{{ script_path.path }}/provision_vm.py' \
       --host {{ vcenter_hostname }} \
       --user {{ vcenter_user }} \
       --password {{ vcenter_password }} \
