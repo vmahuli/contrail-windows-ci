@@ -18,14 +18,9 @@
       --vm-username Administrator \
       --vm-password Contrail123!
 
-- name: Wait for Windows sysprep to finish
-  delegate_to: localhost
-  wait_for:
-    timeout: 180
-
 - name: Get testbed VM facts from VMware
   delegate_to: localhost
-  vmware_guest:
+  vmware_guest_facts:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_user }}"
     password: "{{ vcenter_password }}"
@@ -34,6 +29,9 @@
     folder: "{{ datacenter_name }}/vm/{{ testenv_folder }}"
     name: "{{ inventory_hostname_short }}"
   register: newvm
+  until: newvm.instance.hw_eth0.ipaddresses is not none
+  retries: 10
+  delay: 60
 
 - name: Save VM info to inventory file '{{ vm_inventory_file }}'
   delegate_to: localhost
