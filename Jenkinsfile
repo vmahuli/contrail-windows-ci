@@ -36,7 +36,6 @@ pipeline {
                 // git branch: 'development', url: 'https://github.com/codilime/contrail-windows-ci/'
 
                 stash name: "CIScripts", includes: "CIScripts/**"
-                stash name: "ansible", includes: "ansible/**"
             }
         }
 
@@ -91,7 +90,7 @@ pipeline {
                             // 'Provision' stage
                             node(label: 'ansible') {
                                 deleteDir()
-                                unstash 'ansible'
+                                checkout scm
 
                                 script {
                                     vmwareConfig = getVMwareConfig()

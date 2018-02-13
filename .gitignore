@@ -12,3 +12,6 @@ CIScripts/JenkinsTesterDSC/JenkinsTester
 *.swp
 *.swo
 *~
+
+### Python ###
+*.pyc

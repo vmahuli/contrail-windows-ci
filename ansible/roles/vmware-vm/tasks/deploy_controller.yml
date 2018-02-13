@@ -1,29 +1,35 @@
 ---
 
-- name: Deploy controller VMs for testenv '{{ testenv_name }}'
+- name: Deploy controller VMs for testenv '{{ testenv_name }}' using API directly
   delegate_to: localhost
-  vmware_guest:
+  shell: |
+    '{{ script_path.path }}/provision_vm.py' \
+      --host {{ vcenter_hostname }} \
+      --user {{ vcenter_user }} \
+      --password {{ vcenter_password }} \
+      --datacenter {{ datacenter_name }} \
+      --template {{ hostvars[inventory_hostname].template }} \
+      --folder {{ testenv_folder }} \
+      --name {{ inventory_hostname_short }} \
+      --mgmt-network {{ portgroup_mgmt }} \
+      --data-network {{ portgroup_contrail }} \
+      --data-ip-address 172.16.0.1 \
+      --data-netmask 255.255.0.0
+
+- name: Get testbed VM facts from VMware
+  delegate_to: localhost
+  vmware_guest_facts:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_user }}"
     password: "{{ vcenter_password }}"
     validate_certs: "{{ validate_certs }}"
-
     datacenter: "{{ datacenter_name }}"
-    cluster: "{{ cluster_name }}"
-    folder: "{{ testenv_folder }}"
-
+    folder: "{{ datacenter_name }}/vm/{{ testenv_folder }}"
     name: "{{ inventory_hostname_short }}"
-    template: "{{ hostvars[inventory_hostname].template }}"
-    annotation: "Ansible-created for {{ testenv_name }} environment"
-    state: poweredon
-
-    networks:
-      - name: "{{ portgroup_mgmt }}"
-      - name: "{{ portgroup_contrail }}"
-
-    wait_for_ip_address: yes
-
   register: newvm
+  until: newvm.instance.hw_eth0.ipaddresses is not none
+  retries: 10
+  delay: 60
 
 - name: Save VM info to inventory file '{{ vm_inventory_file }}'
   delegate_to: localhost
