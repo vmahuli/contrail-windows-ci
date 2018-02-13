@@ -1,6 +1,5 @@
 import os
 from pyVmomi import vim
-from pyVim.task import WaitForTask
 
 
 class ResourceNotFound(Exception):
@@ -37,11 +36,6 @@ class VmwareApi(object):
         chosen_datastore = datastores[-1]
         chosen_host = chosen_datastore.host[0].key
         return chosen_host, chosen_datastore
-
-
-    def wait_for_task(self, task):
-        # pyvmomi may throw an exception while waiting for task to complete/stop
-        WaitForTask(task)
 
 
     def _setup_common_objects(self, datacenter_name, cluster_name):

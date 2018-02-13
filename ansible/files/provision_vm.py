@@ -3,6 +3,7 @@ import argparse
 import getpass
 import ssl
 from pyVim.connect import SmartConnection
+from pyVim.task import WaitForTask
 from vmware_api import *
 
 
@@ -17,17 +18,16 @@ def get_args():
     parser.add_argument('--user',
                         required=True,
                         action='store',
-                        help='User name to use')
+                        help='Username used to connect to vSphere')
 
     parser.add_argument('--password',
                         required=False,
                         action='store',
-                        help='Password to use')
+                        help='Password used to connect to vSphere')
 
     parser.add_argument('--datacenter',
                         required=True,
-                        action='store',
-                        help='Datacenter to use')
+                        action='store')
 
     parser.add_argument('--cluster',
                         required=False,
@@ -37,7 +37,7 @@ def get_args():
     parser.add_argument('--template',
                         required=True,
                         action='store',
-                        help='Name of the template')
+                        help='VM Template used for cloning new VM')
 
     parser.add_argument('--folder',
                         required=True,
@@ -139,7 +139,7 @@ def provision_vm(api, args):
     clone_spec = get_vm_clone_spec(config_spec, customization_spec, relocate_spec)
 
     task = template.Clone(name=name, folder=folder, spec=clone_spec)
-    api.wait_for_task(task)
+    WaitForTask(task)
 
 
 def main():
