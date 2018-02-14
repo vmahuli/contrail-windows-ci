@@ -14,7 +14,11 @@ if ($Env:COMPONENTS_TO_BUILD -eq "None") {
 
     $DiskName = [Guid]::newGuid().Guid
     New-PSDrive -Name $DiskName -PSProvider "FileSystem" -Root $ArtifactsPath -Credential $Credentials
-    Copy-Item ("$DiskName" + ":\*") -Destination $OutputRootDirectory -Recurse -Container
+
+    if (-Not (Test-Path "$OutputRootDirectory")) {
+        New-Item -Name $OutputRootDirectory -ItemType directory
+    }
+    Copy-Item ("$DiskName" + ":\*") -Destination "$OutputRootDirectory\" -Recurse -Container
 
     $Job.Done()
 } else {
