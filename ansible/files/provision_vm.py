@@ -1,33 +1,13 @@
 #!/usr/bin/env python
 import argparse
 import getpass
-import ssl
 from pyVim.connect import SmartConnection
 from pyVim.task import WaitForTask
 from vmware_api import *
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Arguments for talking to vCenter')
-
-    parser.add_argument('--host',
-                        required=True,
-                        action='store',
-                        help='vSphere service to connect to')
-
-    parser.add_argument('--user',
-                        required=True,
-                        action='store',
-                        help='Username used to connect to vSphere')
-
-    parser.add_argument('--password',
-                        required=False,
-                        action='store',
-                        help='Password used to connect to vSphere')
-
-    parser.add_argument('--datacenter',
-                        required=True,
-                        action='store')
+    parser = VmwareArgumentParser()
 
     parser.add_argument('--cluster',
                         required=False,
@@ -89,22 +69,7 @@ def get_args():
     if args.vm_password and not args.vm_username:
         raise IncorrectArgument('If vm-password is provided, then you have to provide vm-username as well')
 
-    if not args.password:
-        args.password = getpass.getpass(prompt='Enter password: ')
-
     return args
-
-
-def get_connection_params(args):
-    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-    context.verify_mode = ssl.CERT_NONE
-    params = {
-        'host': args.host,
-        'user': args.user,
-        'pwd': args.password,
-        'sslContext': context
-    }
-    return params
 
 
 def provision_vm(api, args):

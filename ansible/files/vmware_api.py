@@ -1,4 +1,7 @@
 import os
+import ssl
+import getpass
+import argparse
 from pyVmomi import vim
 
 
@@ -8,6 +11,43 @@ class ResourceNotFound(Exception):
 
 class IncorrectArgument(Exception):
     pass
+
+
+class VmwareArgumentParser(object):
+    def __init__(self, description='Arguments for talking to vCenter'):
+        self.parser = argparse.ArgumentParser(description=description)
+
+        self.parser.add_argument('--host',
+                                 required=True,
+                                 action='store',
+                                 help='vSphere service to connect to')
+
+        self.parser.add_argument('--user',
+                                 required=True,
+                                 action='store',
+                                 help='Username used to connect to vSphere')
+
+        self.parser.add_argument('--password',
+                                 required=False,
+                                 action='store',
+                                 help='Password used to connect to vSphere')
+
+        self.parser.add_argument('--datacenter',
+                                 required=True,
+                                 action='store')
+
+
+    def add_argument(self, *args, **kwargs):
+        self.parser.add_argument(*args, **kwargs)
+
+
+    def parse_args(self):
+        args = self.parser.parse_args()
+
+        if not args.password:
+            args.password = getpass.getpass(prompt='Enter password: ')
+
+        return args
 
 
 class VmwareApi(object):
@@ -26,6 +66,10 @@ class VmwareApi(object):
     def get_vm_folder(self, folder_path):
         inventory_path = os.path.join(self.datacenter.name, 'vm', folder_path)
         return self.content.searchIndex.FindByInventoryPath(inventory_path)
+
+
+    def get_datacenter_networks(self):
+        return self.datacenter.network
 
 
     def select_destination_host_and_datastore_by_free_space(self):
@@ -174,3 +218,15 @@ def get_vm_clone_spec(config_spec, customization_spec, relocate_spec):
     clone_spec.customization = customization_spec
     clone_spec.location = relocate_spec
     return clone_spec
+
+
+def get_connection_params(args):
+    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    context.verify_mode = ssl.CERT_NONE
+    params = {
+        'host': args.host,
+        'user': args.user,
+        'pwd': args.password,
+        'sslContext': context
+    }
+    return params
