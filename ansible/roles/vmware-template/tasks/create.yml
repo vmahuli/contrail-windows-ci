@@ -42,10 +42,6 @@
     --disk-size {{ item.size }}
   with_items: "{{ vm_hdd }}"
 
-- name: Wait for DHCP to work properly
-  wait_for:
-    timeout: 900
-
 - name: Get correct IP address of new {{ vm_role }}
   register: vm
   vmware_guest_facts:
@@ -57,6 +53,10 @@
     datacenter: "{{ datacenter_name }}"
 
     uuid: "{{ new_vm.instance.hw_product_uuid }}"
+  retries: 60
+  delay: 15
+  until: >
+      vm.instance.hw_eth0.ipaddresses | ipv4 | reject("match", "169.254.*") | list
 
 - debug:
     var: vm

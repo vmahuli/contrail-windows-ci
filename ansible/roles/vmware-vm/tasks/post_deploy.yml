@@ -1,0 +1,32 @@
+---
+
+- name: Get testbed VM facts from VMware
+  delegate_to: localhost
+  vmware_guest_facts:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ validate_certs }}"
+    datacenter: "{{ datacenter_name }}"
+    folder: "{{ datacenter_name }}/vm/{{ testenv_folder }}"
+    name: "{{ inventory_hostname_short }}"
+  register: newvm
+  retries: 10
+  delay: 60
+  until: >
+      newvm.instance.hw_eth0.ipaddresses | ipv4 | reject("match", "169.254.*") | list
+
+- name: Set obtained IP as ansible_host
+  set_fact:
+    ansible_host: "{{ newvm.instance.hw_eth0.ipaddresses | ipv4 | first }}"
+
+- name: Show obtained IP
+  debug:
+    var: ansible_host
+
+- name: Save VM info to inventory file '{{ vm_inventory_file }}'
+  delegate_to: localhost
+  lineinfile:
+    path: "{{ vm_inventory_file }}"
+    create: yes
+    line: "{{ inventory_hostname }};{{ newvm.instance.hw_eth0.ipaddresses | ipv4 | join(',') }};{{ newvm.instance.hw_product_uuid }}"

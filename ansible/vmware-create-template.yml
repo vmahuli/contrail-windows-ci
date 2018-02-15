@@ -5,6 +5,14 @@
     - { role: vmware-template, stage: create }
 
 - hosts: "{{ vm_role }}"
+  gather_facts: no
+  tasks:
+    - name: "Wait for new {{ vm_role }} template to become reachable"
+      wait_for_connection:
+        sleep: 5
+        timeout: 900
+
+- hosts: "{{ vm_role }}"
   roles:
     - "{{ vm_role }}"
 

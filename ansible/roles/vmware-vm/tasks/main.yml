@@ -9,6 +9,10 @@
   include_tasks: "{{ action }}_{{ hostvars[inventory_hostname].type }}.yml"
   when: action == "deploy"
 
+- name: Include common post-deploy tasks
+  include_tasks: "post_deploy.yml"
+  when: action == "deploy"
+
 - name: Include 'destroy' tasks
   include_tasks: "{{ action }}.yml"
   when: action == "destroy"

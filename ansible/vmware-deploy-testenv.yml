@@ -37,3 +37,12 @@
   roles:
   - role: vmware-vm
     action: deploy
+
+# TODO wait for whole testenv, not only testbeds
+- hosts: testbed
+  gather_facts: no
+  tasks:
+  - name: "Wait for testbeds in testenv to become reachable"
+    wait_for_connection:
+      sleep: 5
+      timeout: 900

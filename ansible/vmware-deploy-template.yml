@@ -5,5 +5,13 @@
     - { role: vmware-template, stage: deploy }
 
 - hosts: "{{ vm_role }}"
+  gather_facts: no
+  tasks:
+    - name: "Wait for new {{ vm_role }} to become reachable"
+      wait_for_connection:
+        sleep: 5
+        timeout: 900
+
+- hosts: "{{ vm_role }}"
   roles:
     - wurbanski.jenkins-swarm-agent
