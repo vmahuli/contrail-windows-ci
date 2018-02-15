@@ -31,6 +31,10 @@ pipelines:
     precedence: low
     trigger:
       gerrit:
+        - event: patchset-created
+          branch: ^master$
+        - event: change-restored
+          branch: ^master$
         - event: comment-added
           comment: (?i)recheck windows(?:-| )(dev|devel|development)\s*$
 
