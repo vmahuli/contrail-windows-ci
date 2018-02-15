@@ -56,6 +56,6 @@
 
 - name: Add host to inventory
   add_host:
-    name: "winci-{{ vm_role}}-{{ get_vm_id.stdout.strip() }}"
+    name: "winci-{{ vm_role }}-{{ get_vm_id.stdout.strip() }}"
     ansible_host: "{{ vm.instance.hw_eth0.ipaddresses | ipv4 | first }}"
     groups: "{{ vm_role }}"

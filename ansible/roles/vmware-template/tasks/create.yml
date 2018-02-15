@@ -42,6 +42,21 @@
     --disk-size {{ item.size }}
   with_items: "{{ vm_hdd }}"
 
+- name: Reboot VM
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ validate_certs }}"
+
+    datacenter: "{{ datacenter_name }}"
+    cluster: "{{ cluster_name }}"
+    folder: "{{ datacenter_name }}/vm/{{ vmware_folder }}"
+    name: "{{ template_name }}"
+    state: rebootguest
+
+    wait_for_ip_address: yes
+
 - name: Get correct IP address of new {{ vm_role }}
   register: vm
   vmware_guest_facts:
