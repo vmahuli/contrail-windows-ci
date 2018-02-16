@@ -1,10 +1,9 @@
 ---
 
-- name: Prepare Jenkins partition
-  win_shell: >
-              Get-Disk |
-              Where partitionstyle -eq "raw" |
-              Initialize-Disk -PartitionStyle MBR -PassThru |
-              New-Partition -DriveLetter J -UseMaximumSize |
-              Format-Volume -FileSystem NTFS -NewFileSystemLabel "Jenkins" -Confirm:$false
+- name: Include Windows-specific task
+  include_tasks: windows.yml
+  when: ansible_os_family == "Windows"
 
+- name: Include Linux-specific task
+  include_tasks: linux.yml
+  when: ansible_os_family != "Windows"

@@ -1,0 +1,22 @@
+---
+
+- name: Add new partition
+  parted:
+    device: /dev/sdb
+    number: 1
+    state: present
+  become: true
+
+- name: Create filesystem
+  filesystem:
+    dev: /dev/sdb1
+    fstype: ext4
+  become: true
+
+- name: Mount partition
+  mount:
+    path: /var/lib/jenkins
+    src: /dev/sdb1
+    fstype: ext4
+    state: mounted
+  become: true
