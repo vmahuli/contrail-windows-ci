@@ -61,10 +61,13 @@ $vRouterOutputDir = "output/vrouter"
 $AgentOutputDir = "output/agent"
 $LogsDir = "logs"
 
-New-Item -ItemType directory -Path $DockerDriverOutputDir | Out-Null
-New-Item -ItemType directory -Path $vRouterOutputDir | Out-Null
-New-Item -ItemType directory -Path $AgentOutputDir | Out-Null
-New-Item -ItemType directory -Path $LogsDir | Out-Null
+$Directories = @("$DockerDriverOutputDir", "$vRouterOutputDir", "$AgentOutputDir", "$LogsDir")
+
+foreach ($Directory in $Directories) {
+    if (-not (Test-Path $Directory)) {
+        New-Item -ItemType directory -Path $Directory | Out-Null
+    }
+}
 
 $ComponentsToBuild = Get-ComponentsToBuild
 

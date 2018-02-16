@@ -1,11 +1,14 @@
 . $PSScriptRoot\Common\Job.ps1
+. $PSScriptRoot\Common\Aliases.ps1
 
 $OutputRootDirectory = "output"
 $Password = $Env:WINCIDEV_PSW | ConvertTo-SecureString -asPlainText -Force
-$Credentials = New-Object System.Management.Automation.PSCredential ($Env:WINCIDEV_USR, $Password)
+$Credentials = New-Object PSCredentialT ($Env:WINCIDEV_USR, $Password)
+$NothingToBuild = $Env:COMPONENTS_TO_BUILD -eq "None"
+$CopyDisabledArtifacts = Test-Path Env:COPY_DISABLED_ARTIFACTS
 
-if ($Env:COMPONENTS_TO_BUILD -eq "None") {
-    $Job = [Job]::new("Copying ready artifacts instead of building")
+if ($NothingToBuild -or $CopyDisabledArtifacts) {
+    $Job = [Job]::new("Copying ready artifacts")
 
     $ArtifactsPath = "\\$Env:SHARED_DRIVE_IP\SharedFiles\WindowsCI-Artifacts"
     if (Test-Path Env:READY_ARTIFACTS_PATH) {
@@ -21,7 +24,9 @@ if ($Env:COMPONENTS_TO_BUILD -eq "None") {
     Copy-Item ("$DiskName" + ":\*") -Destination "$OutputRootDirectory\" -Recurse -Container
 
     $Job.Done()
-} else {
+}
+
+if (-not $NothingToBuild) {
     & $PSScriptRoot\Build.ps1
 }
 
