@@ -87,19 +87,13 @@ pipeline {
 
             steps {
                 script {
-                    try {
-                        lock('vmware-lock') {
-                            deleteDir()
-                            unstash 'ansible'
+                    lock('vmware-lock') {
+                        deleteDir()
+                        unstash 'ansible'
 
-                            script {
-                                testNetwork = selectNetworkAndLock(env.VC_FIRST_TEST_NETWORK_ID, env.VC_TEST_NETWORKS_COUNT)
-                            }
+                        script {
+                            testNetwork = selectNetworkAndLock(env.VC_FIRST_TEST_NETWORK_ID, env.VC_TEST_NETWORKS_COUNT)
                         }
-                    }
-                    catch(err) {
-                        echo "Error occured during Lock stage: ${err}"
-                        currentBuild.result = "SUCCESS"
                     }
                 }
             }
@@ -109,37 +103,28 @@ pipeline {
             agent { label 'ansible' }
             when {
                 environment name: "DONT_CREATE_TESTBEDS", value: null
-                expression { return !currentBuild.result }
             }
 
             steps {
                 script {
-                    try {
-                        deleteDir()
-                        unstash 'ansible'
+                    deleteDir()
+                    unstash 'ansible'
 
-                        script {
-                            vmwareConfig = getVMwareConfig()
-                            inventoryFilePath = "${env.WORKSPACE}/ansible/vm.${env.BUILD_ID}"
-                            testEnvName = generateTestEnvName()
-                            testEnvFolder = "${env.VC_FOLDER}/${testNetwork}"
-                        }
-
-                        prepareTestEnv(inventoryFilePath, testEnvName, testEnvFolder,
-                                       mgmtNetwork, testNetwork,
-                                       env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
-                        provisionTestEnv(vmwareConfig)
-
-                        script {
-                            testbeds = parseTestbedAddresses(inventoryFilePath)
-                        }
+                    script {
+                        vmwareConfig = getVMwareConfig()
+                        inventoryFilePath = "${env.WORKSPACE}/ansible/vm.${env.BUILD_ID}"
+                        testEnvName = generateTestEnvName()
+                        testEnvFolder = "${env.VC_FOLDER}/${testNetwork}"
                     }
-                    catch(err) {
-                        echo "Error occured during Provision stage: ${err}"
-                        currentBuild.result = "SUCCESS"
-                    }
-                    finally {
-                        stash name: "ansible", includes: "ansible/**"
+
+                    prepareTestEnv(inventoryFilePath, testEnvName, testEnvFolder,
+                                   mgmtNetwork, testNetwork,
+                                   env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
+                    stash name: "ansible", includes: "ansible/**"
+                    provisionTestEnv(vmwareConfig)
+
+                    script {
+                        testbeds = parseTestbedAddresses(inventoryFilePath)
                     }
                 }
             }
@@ -149,26 +134,19 @@ pipeline {
             agent { label 'tester' }
             when {
                 environment name: "DONT_CREATE_TESTBEDS", value: null
-                expression { return !currentBuild.result }
             }
 
             steps {
                 script {
-                    try {
-                        deleteDir()
-                        unstash "CIScripts"
-                        unstash "WinArt"
+                    deleteDir()
+                    unstash "CIScripts"
+                    unstash "WinArt"
 
-                        script {
-                            env.TESTBED_ADDRESSES = testbeds.join(',')
-                        }
+                    script {
+                        env.TESTBED_ADDRESSES = testbeds.join(',')
+                    }
 
-                        powershell script: './CIScripts/Deploy.ps1'
-                    }
-                    catch(err) {
-                        echo "Error occured during Deploy stage: ${err}"
-                        currentBuild.result = "SUCCESS"
-                    }
+                    powershell script: './CIScripts/Deploy.ps1'
                 }
             }
         }
@@ -177,20 +155,13 @@ pipeline {
             agent { label 'tester' }
             when {
                 environment name: "DONT_CREATE_TESTBEDS", value: null
-                expression { return !currentBuild.result }
             }
 
             steps {
                 script {
-                    try {
-                        deleteDir()
-                        unstash "CIScripts"
-                        // powershell script: './CIScripts/Test.ps1'
-                    }
-                    catch(err) {
-                        echo "Error occured during Test stage: ${err}"
-                        currentBuild.result = "SUCCESS"
-                    }
+                    deleteDir()
+                    unstash "CIScripts"
+                    // powershell script: './CIScripts/Test.ps1'
                 }
             }
         }
