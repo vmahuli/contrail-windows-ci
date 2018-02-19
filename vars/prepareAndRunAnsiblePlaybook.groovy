@@ -5,12 +5,17 @@ def call(Map params) {
   def vmWareConfig
   pipeline {
     agent none
+
+    environment {
+      // `VC` has to be defined in outer scope to properly
+      // strip credentials from logs in all child scopes (all stages).
+      // Please do not move to `Prepare environment` stage.
+      VC = credentials('vcenter')
+    }
+
     stages {
       stage('Prepare environment') {
         agent { label 'ansible' }
-        environment {
-          VC = credentials('vcenter')
-        }
         steps {
           dir('ansible') {
             createCommonVars env.SHARED_DRIVE_IP, env.JENKINS_MASTER_IP

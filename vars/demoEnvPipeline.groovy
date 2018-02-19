@@ -9,11 +9,15 @@ def call(playbookToRun) {
     pipeline {
         agent { label "ansible" }
 
+        environment {
+            // `VC` has to be defined in outer scope to properly
+            // strip credentials from logs in all child scopes (all stages).
+            // Please do not move to `Prepare environment` stage.
+            VC = credentials("vcenter")
+        }
+
         stages {
             stage("Prepare environment") {
-                environment {
-                    VC = credentials("vcenter")
-                }
                 steps {
                     script {
                         vmwareConfig = getVMwareConfig()
