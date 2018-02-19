@@ -68,10 +68,6 @@ class VmwareApi(object):
         return self.content.searchIndex.FindByInventoryPath(inventory_path)
 
 
-    def get_datacenter_networks(self):
-        return self.datacenter.network
-
-
     def select_destination_host_and_datastore_by_free_space(self):
         datastores = [d for d in self.datacenter.datastore if 'ssd' in d.name]
         if len(datastores) == 0:

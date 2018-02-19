@@ -18,22 +18,6 @@ pipeline {
         timestamps()
     }
 
-    environment {
-        VC = credentials('vcenter')
-        // TODO actually create this file
-        TEST_CONFIGURATION_FILE = "GetTestConfigurationJuni.ps1"
-        TESTBED = credentials('win-testbed')
-        ARTIFACTS_DIR = "output"
-
-        LOG_SERVER = "logs.opencontrail.org"
-        LOG_SERVER_USER = "zuul-win"
-        LOG_ROOT_DIR = "/var/www/logs/winci"
-        BUILD_SPECIFIC_DIR = "${ZUUL_UUID}"
-        JOB_SUBPATH = env.JOB_NAME.replaceAll("/", "/job/")
-        RAW_LOG_PATH = "job/${JOB_SUBPATH}/${BUILD_ID}/timestamps/?elapsed=HH:mm:ss&appendLog"
-        REMOTE_DST_FILE = "${LOG_ROOT_DIR}/${BUILD_SPECIFIC_DIR}/log.txt"
-    }
-
     stages {
         stage('Preparation') {
             agent { label 'ansible' }
@@ -81,117 +65,91 @@ pipeline {
             }
         }
 
-        stage('Lock') {
-            agent { label 'ansible' }
+        stage('Cleanup-Provision-Deploy-Test') {
+            agent none
             when { environment name: "DONT_CREATE_TESTBEDS", value: null }
 
+            environment {
+                VC = credentials('vcenter')
+                // TODO actually create this file
+                TEST_CONFIGURATION_FILE = "GetTestConfigurationJuni.ps1"
+                TESTBED = credentials('win-testbed')
+                ARTIFACTS_DIR = "output"
+            }
+
             steps {
                 script {
-                    lock('vmware-lock') {
-                        deleteDir()
-                        unstash 'ansible'
+                    lock(label: 'testenv_pool', quantity: 1) {
+                        testNetwork = getLockedNetworkName()
+                        vmwareConfig = getVMwareConfig()
+                        testEnvName = getTestEnvName(testNetwork)
+                        testEnvFolder = env.VC_FOLDER
 
-                        script {
-                            testNetwork = selectNetworkAndLock(env.VC_FIRST_TEST_NETWORK_ID, env.VC_TEST_NETWORKS_COUNT)
+                        // 'Cleanup' stage
+                        node(label: 'ansible') {
+                            deleteDir()
+                            unstash 'ansible'
+
+                            inventoryFilePath = "${env.WORKSPACE}/ansible/vm.${env.BUILD_ID}"
+
+                            prepareTestEnv(inventoryFilePath, testEnvName, testEnvFolder,
+                                           mgmtNetwork, testNetwork,
+                                           env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
+
+                            destroyTestEnv(vmwareConfig)
+                        }
+
+                        // 'Provision' stage
+                        node(label: 'ansible') {
+                            deleteDir()
+                            unstash 'ansible'
+
+                            inventoryFilePath = "${env.WORKSPACE}/ansible/vm.${env.BUILD_ID}"
+
+                            prepareTestEnv(inventoryFilePath, testEnvName, testEnvFolder,
+                                           mgmtNetwork, testNetwork,
+                                           env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
+
+                            provisionTestEnv(vmwareConfig)
+                            testbeds = parseTestbedAddresses(inventoryFilePath)
+                        }
+
+                        // 'Deploy' stage
+                        node(label: 'tester') {
+                            deleteDir()
+
+                            unstash 'CIScripts'
+                            unstash 'WinArt'
+
+                            env.TESTBED_ADDRESSES = testbeds.join(',')
+
+                            powershell script: './CIScripts/Deploy.ps1'
+                        }
+
+                        // 'Test' stage
+                        node(label: 'tester') {
+                            deleteDir()
+                            unstash 'CIScripts'
+                            // powershell script: './CIScripts/Test.ps1'
                         }
                     }
-                }
-            }
-        }
-
-        stage('Provision') {
-            agent { label 'ansible' }
-            when {
-                environment name: "DONT_CREATE_TESTBEDS", value: null
-            }
-
-            steps {
-                script {
-                    deleteDir()
-                    unstash 'ansible'
-
-                    script {
-                        vmwareConfig = getVMwareConfig()
-                        inventoryFilePath = "${env.WORKSPACE}/ansible/vm.${env.BUILD_ID}"
-                        testEnvName = generateTestEnvName()
-                        testEnvFolder = "${env.VC_FOLDER}/${testNetwork}"
-                    }
-
-                    prepareTestEnv(inventoryFilePath, testEnvName, testEnvFolder,
-                                   mgmtNetwork, testNetwork,
-                                   env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
-                    stash name: "ansible", includes: "ansible/**"
-                    provisionTestEnv(vmwareConfig)
-
-                    script {
-                        testbeds = parseTestbedAddresses(inventoryFilePath)
-                    }
-                }
-            }
-        }
-
-        stage('Deploy') {
-            agent { label 'tester' }
-            when {
-                environment name: "DONT_CREATE_TESTBEDS", value: null
-            }
-
-            steps {
-                script {
-                    deleteDir()
-                    unstash "CIScripts"
-                    unstash "WinArt"
-
-                    script {
-                        env.TESTBED_ADDRESSES = testbeds.join(',')
-                    }
-
-                    powershell script: './CIScripts/Deploy.ps1'
-                }
-            }
-        }
-
-        stage('Test') {
-            agent { label 'tester' }
-            when {
-                environment name: "DONT_CREATE_TESTBEDS", value: null
-            }
-
-            steps {
-                script {
-                    deleteDir()
-                    unstash "CIScripts"
-                    // powershell script: './CIScripts/Test.ps1'
                 }
             }
         }
     }
 
+    environment {
+        LOG_SERVER = "logs.opencontrail.org"
+        LOG_SERVER_USER = "zuul-win"
+        LOG_ROOT_DIR = "/var/www/logs/winci"
+        BUILD_SPECIFIC_DIR = "${ZUUL_UUID}"
+        JOB_SUBPATH = env.JOB_NAME.replaceAll("/", "/job/")
+        RAW_LOG_PATH = "job/${JOB_SUBPATH}/${BUILD_ID}/timestamps/?elapsed=HH:mm:ss&appendLog"
+        REMOTE_DST_FILE = "${LOG_ROOT_DIR}/${BUILD_SPECIFIC_DIR}/log.txt"
+    }
+
     post {
         always {
-            node(label: 'ansible') {
-                deleteDir()
-                unstash 'ansible'
-
-                script {
-                    if (!env.DONT_CREATE_TESTBEDS) {
-                        try {
-                            destroyTestEnv(vmwareConfig)
-                        }
-                        catch(err) {
-                            echo "Error occured during Post stage (destroying TestEnv): ${err}"
-                        }
-
-                        try {
-                            unlockNetwork(testNetwork)
-                        }
-                        catch(err) {
-                            echo "Error occured during Post stage (unlocking TestNetwork): ${err}"
-                        }
-                    }
-                }
-            }
-
             node('master') {
                 script {
                     // Job triggered by Zuul -> upload log file to public server.
