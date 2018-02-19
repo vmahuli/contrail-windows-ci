@@ -71,10 +71,11 @@ pipeline {
 
             environment {
                 VC = credentials('vcenter')
-                // TODO actually create this file
                 TEST_CONFIGURATION_FILE = "GetTestConfigurationJuni.ps1"
                 TESTBED = credentials('win-testbed')
                 ARTIFACTS_DIR = "output"
+                TESTBED_TEMPLATE = "Template-testbed-201802130923"
+                CONTROLLER_TEMPLATE = "template-contrail-controller-3.1.1.0-45"
             }
 
             steps {
@@ -130,7 +131,7 @@ pipeline {
                         node(label: 'tester') {
                             deleteDir()
                             unstash 'CIScripts'
-                            // powershell script: './CIScripts/Test.ps1'
+                            powershell script: './CIScripts/Test.ps1'
                         }
                     }
                 }

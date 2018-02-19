@@ -1,5 +1,7 @@
+. $PSScriptRoot\..\..\Common\Aliases.ps1
+
 function Test-MultipleSubnetsSupport {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     . $PSScriptRoot\..\Utils\CommonTestCode.ps1
@@ -19,7 +21,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Get-SpecificTransparentContainerNetwork {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
                [Parameter(Mandatory = $true)] [string] $Network,
                [Parameter(Mandatory = $false)] [string] $Subnet)
@@ -62,7 +64,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Assert-NetworkExistence {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
                [Parameter(Mandatory = $true)] [string] $Name,
                [Parameter(Mandatory = $true)] [string] $Network,
@@ -96,7 +98,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Assert-NetworkExists {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
                [Parameter(Mandatory = $true)] [string] $Name,
                [Parameter(Mandatory = $true)] [string] $Network,
@@ -106,7 +108,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Assert-NetworkDoesNotExist {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
                [Parameter(Mandatory = $true)] [string] $Name,
                [Parameter(Mandatory = $true)] [string] $Network,
@@ -116,7 +118,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Assert-ContainerHasValidIPAddress {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
                [Parameter(Mandatory = $true)] [string] $ContainerName,
                [Parameter(Mandatory = $true)] [string] $Network,
@@ -140,7 +142,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Assert-NetworkCannotBeCreated {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
                [Parameter(Mandatory = $false)] [string] $NetworkName,
                [Parameter(Mandatory = $false)] [string] $Network,
@@ -159,7 +161,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Test-SingleNetworkSingleSubnetDefault {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
@@ -194,7 +196,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Test-SingleNetworkSingleSubnetExplicit {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
@@ -230,7 +232,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Test-SingleNetworkSingleSubnetInvalid {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
@@ -257,7 +259,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Test-SingleNetworkMultipleSubnetsDefault {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
@@ -283,7 +285,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Test-SingleNetworkMultipleSubnetsExplicitFirst {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
@@ -319,7 +321,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Test-SingleNetworkMultipleSubnetsExplicitSecond {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
@@ -355,7 +357,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Test-SingleNetworkMultipleSubnetsInvalid {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
@@ -382,7 +384,7 @@ function Test-MultipleSubnetsSupport {
     }
 
     function Test-MultipleNetworksMultipleSubnetsAllSimultaneously {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {

@@ -1,5 +1,7 @@
+. $PSScriptRoot\..\..\Common\Aliases.ps1
+
 function Test-ExtensionLongLeak {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [int] $TestDurationHours,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 

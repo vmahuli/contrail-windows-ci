@@ -1,6 +1,8 @@
+. $PSScriptRoot\..\..\Common\Aliases.ps1
+
 function Test-TCPoMPLSoGRE {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session1,
-           [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session2,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
+           [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     . $PSScriptRoot\..\Utils\CommonTestCode.ps1

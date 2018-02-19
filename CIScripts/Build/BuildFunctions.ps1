@@ -174,11 +174,10 @@ function Invoke-ExtensionBuild {
         }
     })
 
-    $vRouterRoot = "build\{0}\vrouter" -f $BuildMode
-    $vRouterMSI = "$vRouterRoot\extension\vRouter.msi"
-    $vRouterCert = "$vRouterRoot\extension\vRouter.cer"
-    $utilsMSI = "$vRouterRoot\utils\utils.msi"
-    $vTestPath = "$vRouterRoot\utils\vtest\"
+    $vRouterBuildRoot = "build\{0}\vrouter" -f $BuildMode
+    $vRouterMSI = "$vRouterBuildRoot\extension\vRouter.msi"
+    $vRouterCert = "$vRouterBuildRoot\extension\vRouter.cer"
+    $utilsMSI = "$vRouterBuildRoot\utils\utils.msi"
 
     Write-Host "Signing utilsMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath `
@@ -196,10 +195,19 @@ function Invoke-ExtensionBuild {
         Copy-Item $utilsMSI $OutputPath -Recurse -Container
         Copy-Item $vRouterMSI $OutputPath -Recurse -Container
         Copy-Item $vRouterCert $OutputPath -Recurse -Container
-        Copy-Item $vTestPath "$OutputPath\utils\vtest" -Recurse -Container
     })
 
     $Job.PopStep()
+}
+
+function Copy-VtestScenarios {
+    Param ([Parameter(Mandatory = $true)] [string] $OutputPath)
+
+    $Job.Step("Copying vtest scenarios to $OutputPath", {
+        $vTestSrcPath = "vrouter\utils\vtest\"
+        Copy-Item "$vTestSrcPath\tests" $OutputPath -Recurse -Filter "*.xml"
+        Copy-Item "$vTestSrcPath\*.ps1" $OutputPath
+    })
 }
 
 function Invoke-AgentBuild {
@@ -254,6 +262,16 @@ function Invoke-AgentBuild {
     })
 
     $Job.PopStep()
+}
+
+function Copy-DebugDlls {
+    Param ([Parameter(Mandatory = $true)] [string] $OutputPath)
+
+    $Job.Step("Copying dlls to $OutputPath", {
+        foreach ($Lib in @("ucrtbased.dll", "vcruntime140d.dll")) {
+            Copy-Item "C:\Windows\System32\$Lib" $OutputPath
+        }
+    })
 }
 
 function Test-IfGTestOutputSuggestsThatAllTestsHavePassed {

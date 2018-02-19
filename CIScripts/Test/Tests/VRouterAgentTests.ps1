@@ -1,5 +1,5 @@
-$Accel = [PowerShell].Assembly.GetType("System.Management.Automation.TypeAccelerators")
-$Accel::add("PSSessionT", "System.Management.Automation.Runspaces.PSSession")
+. $PSScriptRoot\..\..\Common\Aliases.ps1
+
 function New-WaitFileCommand {
     Param ([String] $Path)
     return "while (!(Test-Path $Path)) { Start-Sleep -Milliseconds 300 };"

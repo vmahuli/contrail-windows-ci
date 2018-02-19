@@ -54,7 +54,7 @@ function Install-Artifacts {
         Copy-Item -ToSession $Session -Path "vrouter\*.cer" -Destination C:\Artifacts\ # TODO: Remove after JW-798
 
         Write-Host "Copying vtest scenarios"
-        Copy-Item -ToSession $Session -Path "vrouter\utils\vtest" -Destination C:\Artifacts\ -Recurse -Force
+        Copy-Item -ToSession $Session -Path "vtest" -Destination C:\Artifacts\ -Recurse -Force
 
         Invoke-Command -Session $Session -ScriptBlock {
             Write-Host "Installing certificates"
@@ -62,6 +62,9 @@ function Install-Artifacts {
             Import-Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher\ "C:\Artifacts\vRouter.cer" | Out-Null # TODO: Remove after JW-798
         }
     }
+
+    Write-Host "Copying dlls"
+    Copy-Item -ToSession $Session -Path "dlls\*" -Destination "C:\Windows\System32\"
 
     Invoke-Command -Session $Session -ScriptBlock {
         # Refresh Path

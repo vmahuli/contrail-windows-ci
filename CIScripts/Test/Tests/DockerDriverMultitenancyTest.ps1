@@ -1,5 +1,7 @@
+. $PSScriptRoot\..\..\Common\Aliases.ps1
+
 function Test-DockerDriverMultiTenancy {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     . $PSScriptRoot\..\Utils\CommonTestCode.ps1
@@ -16,7 +18,7 @@ function Test-DockerDriverMultiTenancy {
     }
 
     function Assert-IsContainerIpEqualToExpectedValue {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $ContainerName,
                [Parameter(Mandatory = $true)] [string] $ExpectedIPAddress)
 
@@ -71,7 +73,7 @@ function Test-DockerDriverMultiTenancy {
     }
 
     function Remove-DockerContainersAndNetworks {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
                [Parameter(Mandatory = $true)] [String[]] $Containers,
                [Parameter(Mandatory = $true)] [String[]] $Networks)
@@ -86,7 +88,7 @@ function Test-DockerDriverMultiTenancy {
     }
 
     function Test-DifferentTenantsSameIp {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
                [Parameter(Mandatory = $true)] [String] $Authtoken)
 

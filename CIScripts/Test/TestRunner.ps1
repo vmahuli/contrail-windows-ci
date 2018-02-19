@@ -3,7 +3,6 @@
 . $PSScriptRoot\Tests\ExtensionLongLeakTest.ps1
 . $PSScriptRoot\Tests\MultiEnableDisableExtensionTest.ps1
 . $PSScriptRoot\Tests\DockerDriverTest.ps1
-. $PSScriptRoot\Tests\VTestScenariosTest.ps1
 . $PSScriptRoot\Tests\TCPCommunicationTest.ps1
 . $PSScriptRoot\Tests\ICMPoMPLSoGRETest.ps1
 . $PSScriptRoot\Tests\TCPoMPLSoGRETest.ps1
@@ -28,10 +27,8 @@ function Run-TestScenarios {
 
         # $SNATConfiguration = Get-SnatConfiguration
 
-        # Test-AgentService -Session $Sessions[0] -TestConfiguration $TestConfiguration
         # Test-ExtensionLongLeak -Session $Sessions[0] -TestDurationHours $Env:LEAK_TEST_DURATION -TestConfiguration $TestConfiguration
         # Test-MultiEnableDisableExtension -Session $Sessions[0] -EnableDisableCount $Env:MULTI_ENABLE_DISABLE_EXTENSION_COUNT -TestConfiguration $TestConfiguration
-        # Test-VTestScenarios -Session $Sessions[0] -TestConfiguration $TestConfiguration
         # Test-TCPCommunication -Session $Sessions[0] -TestConfiguration $TestConfiguration
         # Test-ICMPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
         # Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
@@ -43,17 +40,29 @@ function Run-TestScenarios {
         # Test-MultipleSubnetsSupport -Session $Sessions[0] -TestConfiguration $TestConfiguration
         # Test-DockerDriverMultiTenancy -Session $Sessions[0] -TestConfiguration $TestConfiguration
         # Test-WindowsLinuxIntegration -Session $Sessions[0] -TestConfiguration (Get-TestConfigurationWindowsLinux)
-        # Test-Pkt0PipeImplementation -Session $Sessions[0] -TestConfiguration $TestConfiguration
-        
+
         # if($Env:RUN_DRIVER_TESTS -eq "1") {
         #     Test-DockerDriver -Session $Sessions[0] -TestConfiguration $TestConfiguration
         # }
     })
 
+    $TestsBlacklist = @(
+        # Requires Docker Driver
+        "vRouterAgentService.Tests.ps1",
+
+        # Requires Agent
+        "vRouterAgentMSIInstaller.Tests.ps1"
+    )
+
     $TotalFailedCount = 0
 
     $TestPaths = Get-ChildItem -Recurse -Filter "*.Tests.ps1"
     Foreach ($TestPath in $TestPaths) {
+        if ($TestPath.Name -in $TestsBlacklist) {
+            Write-Host "Skipping $($TestPath.Name)"
+            continue
+        }
+
         $PesterRunScript = @{
             Path=$TestPath.FullName; 
             Parameters= @{
@@ -109,6 +118,7 @@ function Run-Tests {
     catch {
         Write-Host $_
 
+        # FIXME Store these logs in separate file
         Collect-Logs -Sessions $Sessions
 
         throw

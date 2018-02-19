@@ -1,5 +1,4 @@
-$Accel = [PowerShell].Assembly.GetType("System.Management.Automation.TypeAccelerators")
-$Accel::add("PSSessionT", "System.Management.Automation.Runspaces.PSSession")
+. $PSScriptRoot\..\..\Common\Aliases.ps1
 
 function Test-ComputeControllerIntegration {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,

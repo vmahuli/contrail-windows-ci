@@ -1,5 +1,7 @@
+. $PSScriptRoot\..\..\Common\Aliases.ps1
+
 function Test-MultiEnableDisableExtension {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [int] $EnableDisableCount,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 

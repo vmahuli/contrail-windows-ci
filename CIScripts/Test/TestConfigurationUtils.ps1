@@ -72,7 +72,14 @@ function Enable-VRouterExtension {
 
     Invoke-Command -Session $Session -ScriptBlock {
         New-ContainerNetwork -Mode Transparent -NetworkAdapterName $Using:AdapterName -Name $Using:ContainerNetworkName | Out-Null
-        Enable-VMSwitchExtension -VMSwitchName $Using:VMSwitchName -Name $Using:ForwardingExtensionName | Out-Null
+        $Extension = Get-VMSwitch | Get-VMSwitchExtension -Name $Using:ForwardingExtensionName | Where-Object Enabled
+        if ($Extension) {
+            Write-Warning "Extension already enabled on: $($Extension.SwitchName)"
+        }
+        $Extension = Enable-VMSwitchExtension -VMSwitchName $Using:VMSwitchName -Name $Using:ForwardingExtensionName
+        if ((-not $Extension.Enabled) -or (-not ($Extension.Running))) {
+            throw "Failed to enable extension (not enabled or not running)"
+        }
     }
 }
 
@@ -158,6 +165,7 @@ function Disable-DockerDriver {
     Invoke-Command -Session $Session -ScriptBlock {
         Stop-Service docker | Out-Null
         Get-NetNat | Remove-NetNat -Confirm:$false
+        Get-ContainerNetwork | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
         Get-ContainerNetwork | Remove-ContainerNetwork -Force
         Start-Service docker | Out-Null
     }
@@ -202,30 +210,6 @@ function Disable-AgentService {
     Write-Host "Stopping Agent"
     Invoke-Command -Session $Session -ScriptBlock {
         Stop-Service ContrailAgent -ErrorAction SilentlyContinue | Out-Null
-    }
-}
-
-function Install-Agent {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
-
-    Write-Host "Installing Agent"
-    Invoke-Command -Session $Session -ScriptBlock {
-        Start-Process msiexec.exe -ArgumentList @("/i", "C:\Artifacts\contrail-vrouter-agent.msi", "/quiet") -Wait
-
-        # Refresh Path
-        $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-    }
-}
-
-function Uninstall-Agent {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
-
-    Write-Host "Uninstalling Agent"
-    Invoke-Command -Session $Session -ScriptBlock {
-        Start-Process msiexec.exe -ArgumentList @("/x", "C:\Artifacts\contrail-vrouter-agent.msi", "/quiet") -Wait
-
-        # Refresh Path
-        $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
     }
 }
 

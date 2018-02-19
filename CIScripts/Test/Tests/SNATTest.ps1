@@ -1,3 +1,5 @@
+. $PSScriptRoot\..\..\Common\Aliases.ps1
+
 class SNATConfiguration {
     [string] $EndhostIP;
     [string] $VethIP;
@@ -11,14 +13,14 @@ class SNATConfiguration {
 }
 
 function Test-SNAT {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [SNATConfiguration] $SNATConfiguration,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     . $PSScriptRoot\..\Utils\CommonTestCode.ps1
 
     function New-MgmtSwitch {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $MgmtSwitchName)
 
         Write-Host "Creating MGMT switch..."
@@ -37,7 +39,7 @@ function Test-SNAT {
     }
 
     function Remove-MgmtSwitch {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $MgmtSwitchName)
 
         Write-Host "Removing MGMT switch..."
@@ -50,7 +52,7 @@ function Test-SNAT {
     }
 
     function New-RoutingInterface {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $SwitchName,
                [Parameter(Mandatory = $true)] [string] $Name,
                [Parameter(Mandatory = $true)] [ipaddress] $IPAddress)
@@ -81,7 +83,7 @@ function Test-SNAT {
     }
 
     function Remove-RoutingInterface {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $Name)
 
         Write-Host "Removing routing interface..."
@@ -97,7 +99,7 @@ function Test-SNAT {
     }
 
     function New-SNATVM {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $VmDirectory,
                [Parameter(Mandatory = $true)] [string] $DiskPath,
                [Parameter(Mandatory = $true)] [string] $MgmtSwitchName,
@@ -140,7 +142,7 @@ function Test-SNAT {
     }
 
     function Remove-SNATVM {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $DiskPath,
                [Parameter(Mandatory = $true)] [string] $GUID)
 
@@ -163,7 +165,7 @@ function Test-SNAT {
     }
 
     function Set-EndhostConfiguration {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $PhysicalMac,
                [Parameter(Mandatory = $true)] [string] $EndhostIP,
                [Parameter(Mandatory = $true)] [string] $GatewayIP,
@@ -184,7 +186,7 @@ function Test-SNAT {
     }
 
     function Set-VRouterConfiguration {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [NetAdapterInformation] $PhysicalAdapter,
                [Parameter(Mandatory = $true)] [NetAdapterInformation] $VHostAdapter,
                [Parameter(Mandatory = $true)] [ContainerNetAdapterInformation] $ContainerAdapter,
@@ -259,7 +261,7 @@ function Test-SNAT {
     }
 
     function Set-RoutingRules {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $GatewayIP,
                [Parameter(Mandatory = $true)] [string] $VethIP,
                [Parameter(Mandatory = $true)] [int] $SNATVethIfIndex)
@@ -279,7 +281,7 @@ function Test-SNAT {
     }
 
     function Set-GWVethForwarding {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [int] $SNATVethIfIndex,
                [Parameter(Mandatory = $true)] [string] $GatewayIP,
                [Parameter(Mandatory = $true)] [string] $SNATRightMacAddressWindows)
@@ -299,7 +301,7 @@ function Test-SNAT {
     }
 
     function Set-HNSTransparentForwarding {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [int] $HNSAdapterIfIndex)
 
         Write-Host "Enable forwarding on the HNSTransparent adapter..."
@@ -317,7 +319,7 @@ function Test-SNAT {
     }
 
     function Test-VMAShouldBeCleanedUp {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $VmName)
 
         Write-Host "Checking if VM was cleaned up..."
@@ -333,7 +335,7 @@ function Test-SNAT {
     }
 
     function Test-VHDXShouldBeCleanedUp {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $DiskDir,
                [Parameter(Mandatory = $true)] [string] $GUID)
 
@@ -350,7 +352,7 @@ function Test-SNAT {
     }
 
     function Test-CanPingEndhostFromContainer {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $ContainerID,
                [Parameter(Mandatory = $true)] [string] $EndhostIP)
 

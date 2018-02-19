@@ -1,3 +1,5 @@
+. $PSScriptRoot\..\..\Common\Aliases.ps1
+
 class NetAdapterMacAddresses {
     [string] $MACAddress;
     [string] $MACAddressWindows;
@@ -19,7 +21,7 @@ class VMNetAdapterInformation : NetAdapterMacAddresses {
 }
 
 function Get-RemoteNetAdapterInformation {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName)
 
     $NetAdapterInformation = Invoke-Command -Session $Session -ScriptBlock {
@@ -37,7 +39,7 @@ function Get-RemoteNetAdapterInformation {
 }
 
 function Get-RemoteVMNetAdapterInformation {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $VMName,
            [Parameter(Mandatory = $true)] [string] $AdapterName)
 
@@ -57,7 +59,7 @@ function Get-RemoteVMNetAdapterInformation {
 }
 
 function Get-RemoteContainerNetAdapterInformation {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $ContainerID)
 
     $NetAdapterInformation = Invoke-Command -Session $Session -ScriptBlock {
@@ -86,14 +88,14 @@ function Get-RemoteContainerNetAdapterInformation {
 }
 
 function Initialize-MPLSoGRE {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session1,
-           [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session2,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
+           [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
            [Parameter(Mandatory = $true)] [string] $Container1ID,
            [Parameter(Mandatory = $true)] [string] $Container2ID,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     function Initialize-VRouterStructures {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [NetAdapterInformation] $ThisVMNetInfo,
                [Parameter(Mandatory = $true)] [NetAdapterInformation] $OtherVMNetInfo,
                [Parameter(Mandatory = $true)] [NetAdapterInformation] $ThisVHostInfo,
@@ -176,7 +178,7 @@ function Assert-PingSucceeded {
 }
 
 function Ping-Container {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $ContainerName,
            [Parameter(Mandatory = $true)] [string] $IP)
     $PingOutput = Invoke-Command -Session $Session -ScriptBlock {
@@ -184,4 +186,68 @@ function Ping-Container {
     }
 
     Assert-PingSucceeded -Output $PingOutput
+}
+
+function Invoke-MsiExec {
+    Param (
+        [Switch] $Uninstall,
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [String] $Path
+    )
+
+    $Action = if ($Uninstall) { "/x" } else { "/i" }
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        $Result = Start-Process msiexec.exe -ArgumentList @($Using:Action, $Using:Path, "/quiet") -Wait -PassThru
+        if ($Result.ExitCode -ne 0) {
+            throw "Installation of $Using:Path failed with $($Result.ExitCode)"
+        }
+
+        # Refresh Path
+        $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+    }
+}
+
+function Install-Agent {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    Write-Host "Installing Agent"
+    Invoke-MsiExec -Session $Session -Path "C:\Artifacts\contrail-vrouter-agent.msi"
+}
+
+function Uninstall-Agent {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    Write-Host "Uninstalling Agent"
+    Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\contrail-vrouter-agent.msi"
+}
+
+
+function Install-Extension {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    Write-Host "Installing vRouter Extension"
+    Invoke-MsiExec -Session $Session -Path "C:\Artifacts\vRouter.msi"
+}
+
+function Uninstall-Extension {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    Write-Host "Uninstalling vRouter extension"
+    Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\vRouter.msi"
+}
+
+
+function Install-Utils {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    Write-Host "Installing vRouter utilities"
+    Invoke-MsiExec -Session $Session -Path "C:\Artifacts\utils.msi"
+}
+
+function Uninstall-Utils {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    Write-Host "Uninstalling vRouter utilities"
+    Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\utils.msi"
 }
