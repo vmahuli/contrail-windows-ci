@@ -121,20 +121,43 @@ def _get_vm_network_interfaces(vm):
             if isinstance(d, vim.vm.device.VirtualEthernetCard)]
 
 
-def _get_network_device_change_spec(api, old_device, network_name):
-    pg_obj = api.get_vc_object(vim.dvs.DistributedVirtualPortgroup, network_name)
-    if not pg_obj:
-        raise ResourceNotFound("Couldn't find the port group with provided name "
-                               "'{}'".format(network_name))
+def _get_backing_device_for_distributed(network):
     dvs_port_connection = vim.dvs.PortConnection()
-    dvs_port_connection.portgroupKey = pg_obj.key
-    dvs_port_connection.switchUuid = pg_obj.config.distributedVirtualSwitch.uuid
+    dvs_port_connection.portgroupKey = network.key
+    dvs_port_connection.switchUuid = network.config.distributedVirtualSwitch.uuid
+
+    backing = vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo()
+    backing.port = dvs_port_connection
+
+    return backing
+
+
+def _get_backing_device_for_standard(network):
+    backing = vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
+    backing.network = network
+    backing.deviceName = network.name
+    return backing
+
+
+def _get_backing_device(network):
+    backing = None
+    if isinstance(network, vim.DistributedVirtualPortgroup):
+        backing = _get_backing_device_for_distributed(network)
+    else:
+        backing = _get_backing_device_for_standard(network)
+    return backing
+
+
+def _get_network_device_change_spec(api, old_device, network_name):
+    network = api.get_vc_object(vim.Network, network_name)
+    if not network:
+        raise ResourceNotFound("Couldn't find the network with provided name "
+                               "'{}'".format(network_name))
 
     spec = vim.vm.device.VirtualDeviceSpec()
     spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
     spec.device = old_device
-    spec.device.backing = vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo()
-    spec.device.backing.port = dvs_port_connection
+    spec.device.backing = _get_backing_device(network)
 
     return spec
 
