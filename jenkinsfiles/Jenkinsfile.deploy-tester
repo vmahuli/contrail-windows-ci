@@ -5,6 +5,6 @@ prepareAndRunAnsiblePlaybook(config: deployTemplateConfig,
                              vm_role: 'tester',
                              vm_hardware_memory_mb: '8192',
                              vm_hardware_num_cpus: '2',
-                             vm_networks: [['name': 'VM Network', 'type': 'dhcp'],
+                             vm_networks: [['name': 'VM-Network', 'type': 'dhcp'],
                                           ['name': 'VLAN_501_Management', 'type': 'dhcp']])
 
