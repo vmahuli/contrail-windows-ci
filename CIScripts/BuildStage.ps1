@@ -3,8 +3,9 @@
 . $PSScriptRoot\Common\Aliases.ps1
 
 $OutputRootDirectory = "output"
+$Username = "WORKGROUP\{0}" -f $Env:WINCIDEV_USR
 $Password = $Env:WINCIDEV_PSW | ConvertTo-SecureString -asPlainText -Force
-$Credentials = New-Object PSCredentialT ($Env:WINCIDEV_USR, $Password)
+$Credentials = New-Object PSCredentialT ($Username, $Password)
 $NothingToBuild = $Env:COMPONENTS_TO_BUILD -eq "None"
 $CopyDisabledArtifacts = Test-Path Env:COPY_DISABLED_ARTIFACTS
 
