@@ -1,3 +1,4 @@
+. $PSScriptRoot\Common\Init.ps1
 . $PSScriptRoot\Common\Job.ps1
 . $PSScriptRoot\Common\Aliases.ps1
 
