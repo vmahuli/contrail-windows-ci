@@ -145,8 +145,7 @@ pipeline {
         LOG_ROOT_DIR = "/var/www/logs/winci"
         BUILD_SPECIFIC_DIR = "${ZUUL_UUID}"
         JOB_SUBPATH = env.JOB_NAME.replaceAll("/", "/job/")
-        RAW_LOG_PATH = "job/${JOB_SUBPATH}/${BUILD_ID}/timestamps/?elapsed=HH:mm:ss&appendLog"
-        REMOTE_DST_FILE = "${LOG_ROOT_DIR}/${BUILD_SPECIFIC_DIR}/log.txt"
+        REMOTE_DST_FILE = "${LOG_ROOT_DIR}/${BUILD_SPECIFIC_DIR}/log.txt.gz"
     }
 
     post {
@@ -163,10 +162,9 @@ pipeline {
                         // unstash "buildLogs"
                         // TODO correct flags for rsync
                         sh "ssh ${LOG_SERVER_USER}@${LOG_SERVER} \"mkdir -p ${LOG_ROOT_DIR}/${BUILD_SPECIFIC_DIR}\""
-                        // The timestamps are not stored on disk as raw text, but in some encoded form,
-                        // so the easiest way to decode them is to use http path provided by the timestamper plugin.
-                        sh "curl --silent 'http://localhost:8080/$RAW_LOG_PATH' --output clean_log.txt"
-                        sh "rsync clean_log.txt ${LOG_SERVER_USER}@${LOG_SERVER}:${REMOTE_DST_FILE}"
+                        def tmpLogFilename = "clean_log.txt.gz"
+                        obtainLogFile(env.JOB_NAME, env.BUILD_ID, tmpLogFilename)
+                        sh "rsync $tmpLogFilename ${LOG_SERVER_USER}@${LOG_SERVER}:${REMOTE_DST_FILE}"
                         deleteDir()
                     }
                 }
