@@ -58,7 +58,6 @@ pipelines:
 
 jobs:
   - name: ^ci-contrail-windows.*$
-    voting: false
     success-pattern: &logs_url http://logs.opencontrail.org/winci/{build.uuid}/
     failure-pattern: *logs_url
 
