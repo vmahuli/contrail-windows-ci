@@ -51,8 +51,7 @@ pipeline {
         }
 
         stage('Static analysis') {
-            // TODO: 'scriptanalyzer' is feature flag label; change to 'builder' after rollout done
-            agent { label 'scriptanalyzer' }
+            agent { label 'builder' }
             steps {
                 deleteDir()
                 unstash "StaticAnalysis"
