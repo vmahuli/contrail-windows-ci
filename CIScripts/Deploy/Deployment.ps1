@@ -17,15 +17,18 @@ function Install-Artifacts {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $ArtifactsDir)
 
+    function Test-NonemptyDir {
+        Param ([Parameter(Mandatory = $true)] [string] $Path)
+        [bool](Get-ChildItem $Path -ErrorAction SilentlyContinue)
+    }
+
     Push-Location $ArtifactsDir
 
     Invoke-Command -Session $Session -ScriptBlock {
         New-Item -ItemType Directory -Force C:\Artifacts | Out-Null
     }
 
-    $ComponentsToBuild = Get-ComponentsToBuild
-
-    if ("DockerDriver" -In $ComponentsToBuild) {
+    if (Test-NonemptyDir "docker_driver") {
         Write-Host "Copying Docker driver installer"
         Copy-Item -ToSession $Session -Path "docker_driver\docker-driver.msi" -Destination C:\Artifacts\
 
@@ -36,7 +39,7 @@ function Install-Artifacts {
         })
     }
 
-    if ("Agent" -In $ComponentsToBuild) {
+    if (Test-NonemptyDir "agent") {
         Write-Host "Copying Agent and Contrail vRouter API"
         Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-agent.msi" -Destination C:\Artifacts\
         Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-api-1.0.tar.gz" -Destination C:\Artifacts\
@@ -47,7 +50,7 @@ function Install-Artifacts {
         }
     }
 
-    if ("Extension" -In $ComponentsToBuild) {
+    if (Test-NonemptyDir "vrouter") {
         Write-Host "Copying vRouter and Utils MSIs"
         Copy-Item -ToSession $Session -Path "vrouter\vRouter.msi" -Destination C:\Artifacts\
         Copy-Item -ToSession $Session -Path "vrouter\utils.msi" -Destination C:\Artifacts\
