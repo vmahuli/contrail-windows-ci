@@ -46,8 +46,6 @@ function Test-VRouterAgentIntegration {
     . $PSScriptRoot\..\Utils\CommonTestCode.ps1
     . $PSScriptRoot\..\Utils\ContrailUtils.ps1
 
-    $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS = 60
-    $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS = 5
     $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS = 15
     $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS = 5
 
@@ -316,6 +314,9 @@ function Test-VRouterAgentIntegration {
         )
 
         Invoke-Command -Session $Session -ScriptBlock {
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments", "",
+                Justification="Issue #804 from PSScriptAnalyzer GitHub")]
             $JobListener = Start-Job -ScriptBlock {
                 param($ContainerName, $Command)
                 $Output = & docker exec $ContainerName powershell -Command $Command
@@ -344,6 +345,9 @@ function Test-VRouterAgentIntegration {
         )
 
         Invoke-Command -Session $Session -ScriptBlock {
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments", "",
+                Justification="Issue #804 from PSScriptAnalyzer GitHub")]
             $JobSender = Start-Job -ScriptBlock {
                 param($ContainerName, $Command)
                 $Output = & docker exec $ContainerName powershell -Command $Command
@@ -374,7 +378,7 @@ function Test-VRouterAgentIntegration {
         }
     }
 
-    function Create-ContainerInRemoteSession {
+    function New-ContainerInRemoteSession {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $NetworkName,
                [Parameter(Mandatory = $true)] [string] $ContainerName,
@@ -470,11 +474,11 @@ function Test-VRouterAgentIntegration {
         Write-Host "======> When 2 containers belonging to the same network are running"
         $NetworkName = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
 
-        $CreateContainer1Success = Create-ContainerInRemoteSession `
+        $CreateContainer1Success = New-ContainerInRemoteSession `
             -Session $Session1 `
             -NetworkName $NetworkName `
             -ContainerName $Container1Name
-        $CreateContainer2Success = Create-ContainerInRemoteSession `
+        $CreateContainer2Success = New-ContainerInRemoteSession `
             -Session $Session2 `
             -NetworkName $NetworkName `
             -ContainerName $Container2Name
@@ -752,8 +756,8 @@ function Test-VRouterAgentIntegration {
             $RouterIp2 = Invoke-Command -Session $Session2 -ScriptBlock {
                 return $((Get-NetIPAddress -InterfaceAlias $Using:TestConfiguration.VHostName -AddressFamily IPv4).IpAddress)
             }
-            $RouterUuid1 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session1.ComputerName -RouterIp RouterIp1
-            $RouterUuid2 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session2.ComputerName -RouterIp RouterIp2
+            $RouterUuid1 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session1.ComputerName -RouterIp $RouterIp1
+            $RouterUuid2 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session2.ComputerName -RouterIp $RouterIp2
 
             Try {
                 Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
@@ -794,11 +798,11 @@ function Test-VRouterAgentIntegration {
             $Container1Name = "jolly-lumberjack"
             $Container2Name = "juniper-tree"
 
-            $CreateContainer1Success = Create-ContainerInRemoteSession `
+            $CreateContainer1Success = New-ContainerInRemoteSession `
                 -Session $Session1 `
                 -NetworkName $Network1Name `
                 -ContainerName $Container1Name
-            $CreateContainer2Success = Create-ContainerInRemoteSession `
+            $CreateContainer2Success = New-ContainerInRemoteSession `
                 -Session $Session2 `
                 -NetworkName $Network2Name `
                 -ContainerName $Container2Name
@@ -890,12 +894,12 @@ function Test-VRouterAgentIntegration {
         $Container1Name = "jolly-lumberjack"
         $Container2Name = "juniper-tree"
 
-        $CreateContainer1Success = Create-ContainerInRemoteSession `
+        $CreateContainer1Success = New-ContainerInRemoteSession `
             -Session $Session1 `
             -NetworkName $Network1.Name `
             -ContainerName $Container1Name `
             -DockerImage 'microsoft/windowsservercore'
-        $CreateContainer2Success = Create-ContainerInRemoteSession `
+        $CreateContainer2Success = New-ContainerInRemoteSession `
             -Session $Session2 `
             -NetworkName $Network2.Name `
             -ContainerName $Container2Name `
@@ -980,11 +984,11 @@ function Test-VRouterAgentIntegration {
             $Container1Name = "jolly-lumberjack"
             $Container2Name = "juniper-tree"
 
-            $CreateContainer1Success = Create-ContainerInRemoteSession `
+            $CreateContainer1Success = New-ContainerInRemoteSession `
                 -Session $Session `
                 -NetworkName $Network1Name `
                 -ContainerName $Container1Name
-            $CreateContainer2Success = Create-ContainerInRemoteSession `
+            $CreateContainer2Success = New-ContainerInRemoteSession `
                 -Session $Session `
                 -NetworkName $Network2Name `
                 -ContainerName $Container2Name
@@ -1034,12 +1038,12 @@ function Test-VRouterAgentIntegration {
             $Container1Name = "jolly-lumberjack"
             $Container2Name = "juniper-tree"
 
-            $CreateContainer1Success = Create-ContainerInRemoteSession `
+            $CreateContainer1Success = New-ContainerInRemoteSession `
                 -Session $Session1 `
                 -NetworkName $Network1Name `
                 -ContainerName $Container1Name `
                 -DockerImage "microsoft/windowsservercore"
-            $CreateContainer2Success = Create-ContainerInRemoteSession `
+            $CreateContainer2Success = New-ContainerInRemoteSession `
                 -Session $Session2 `
                 -NetworkName $Network2Name `
                 -ContainerName $Container2Name `
@@ -1068,6 +1072,9 @@ function Test-VRouterAgentIntegration {
                     '$ReceivedMessage = [System.Text.Encoding]::UTF8.GetString($Task.Result.Buffer);' +`
                     'return $ReceivedMessage;') -f $Using:Port
 
+                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                    "PSUseDeclaredVarsMoreThanAssignments", "",
+                    Justification="Issue #804 from PSScriptAnalyzer GitHub")]
                 $JobListener = Start-Job -ScriptBlock {
                     Param ($ContainerName, $Command)
                     & docker exec $ContainerName powershell -Command $Command

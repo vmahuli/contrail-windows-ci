@@ -1,7 +1,7 @@
 . $PSScriptRoot\..\Common\Aliases.ps1
 . $PSScriptRoot\..\Common\Components.ps1
 
-function Deploy-Testbeds {
+function Copy-ArtifactsToTestbeds {
     Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
            [Parameter(Mandatory = $true)] [string] $ArtifactsDir)
     $Job.Step("Deploying testbeds", {

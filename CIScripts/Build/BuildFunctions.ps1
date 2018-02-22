@@ -1,38 +1,7 @@
 . $PSScriptRoot\..\Common\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\Build\Repository.ps1
 
-function Clone-Repos {
-    Param ([Parameter(Mandatory = $true, HelpMessage = "Map of repos to clone")] [System.Collections.Hashtable] $Repos)
-
-    $Job.Step("Cloning repositories", {
-        $CustomBranches = @($Repos.Where({ $_.Branch -ne $_.DefaultBranch }) |
-                            Select-Object -ExpandProperty Branch -Unique)
-        $Repos.Values.ForEach({
-            # If there is only one unique custom branch provided, at first try to use it for all repos.
-            # Otherwise, use branch specific for this repo.
-            $CustomMultiBranch = $(if ($CustomBranches.Count -eq 1) { $CustomBranches[0] } else { $_.Branch })
-
-            Write-Host $("Cloning " +  $_.Url + " from branch: " + $CustomMultiBranch)
-
-            # We must use -q (quiet) flag here, since git clone prints to stderr and tries to do some real-time
-            # command line magic (like updating cloning progress). Powershell command in Jenkinsfile
-            # can't handle it and throws a Write-ErrorException.
-            $NativeCommandReturn = Invoke-NativeCommand -AllowNonZero $true -ScriptBlock {
-                git clone -q -b $CustomMultiBranch $_.Url $_.Dir
-            }
-            $ExitCode = $NativeCommandReturn[-1]
-            if ($ExitCode -ne 0) {
-                Write-Host $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
-
-                Invoke-NativeCommand -ScriptBlock {
-                    git clone -q -b $_.Branch $_.Url $_.Dir
-                }
-            }
-        })
-    })
-}
-
-function Prepare-BuildEnvironment {
+function Initialize-BuildEnvironment {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache)
     $Job.Step("Copying common third-party dependencies", {
         if (!(Test-Path -Path .\third_party)) {
@@ -53,6 +22,8 @@ function Prepare-BuildEnvironment {
 }
 
 function Set-MSISignature {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
+        "CertPasswordFilePath", Justification="It's filepath, not password.")]
     Param ([Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
@@ -66,6 +37,8 @@ function Set-MSISignature {
 }
 
 function Invoke-DockerDriverBuild {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
+        "CertPasswordFilePath", Justification="It's filepath, not password.")]
     Param ([Parameter(Mandatory = $true)] [string] $DriverSrcPath,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
@@ -74,7 +47,10 @@ function Invoke-DockerDriverBuild {
            [Parameter(Mandatory = $true)] [string] $LogsPath)
 
     $Job.PushStep("Docker driver build")
-    $GoPath = if (Test-Path Env:GOPATH) { (pwd) + ";$Env:GOPATH" } else { pwd }
+    $GoPath = Get-Location
+    if (Test-Path Env:GOPATH) {
+        $GoPath +=  ";$Env:GOPATH"
+    }
     $Env:GOPATH = $GoPath
     $srcPath = "$GoPath/src/$DriverSrcPath"
 
@@ -149,6 +125,8 @@ function Invoke-DockerDriverBuild {
 }
 
 function Invoke-ExtensionBuild {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
+        "CertPasswordFilePath", Justification="It's filepath, not password.")]
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
@@ -168,7 +146,11 @@ function Invoke-ExtensionBuild {
 
     $Job.Step("Building Extension and Utils", {
         $BuildModeOption = "--optimization=" + $BuildMode
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "", Justification="Cerp env variable required by vRouter build.")]
         $Env:cerp = Get-Content $CertPasswordFilePath
+
         Invoke-NativeCommand -ScriptBlock {
             scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsDir/vrouter_build.log
         }
@@ -211,6 +193,8 @@ function Copy-VtestScenarios {
 }
 
 function Invoke-AgentBuild {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
+        "CertPasswordFilePath", Justification="It's filepath, not password.")]
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
@@ -288,7 +272,7 @@ function Test-IfGTestOutputSuggestsThatAllTestsHavePassed {
     return $False
 }
 
-function Run-Test {
+function Invoke-AgentUnitTestRunner {
     Param ([Parameter(Mandatory = $true)] [String] $TestExecutable)
     Write-Host "===> Agent tests: running $TestExecutable..."
     $Res = Invoke-Command -ScriptBlock {
@@ -382,9 +366,14 @@ function Invoke-AgentTestsBuild {
         $backupPath = $Env:Path
         $Env:Path += ";" + $(Get-Location).Path + "\build\bin"
 
-        # Those env vars are used by agent tests for determining timeout's threshold
-        # They were copied from Linux unit test job
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "", Justification="TASK_UTIL_WAIT_TIME is used agent tests for determining timeout's " +
+            "threshold. They were copied from Linux unit test job.")]
         $Env:TASK_UTIL_WAIT_TIME = 10000
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "", Justification="TASK_UTIL_RETRY_COUNT is used agent tests for determining " +
+            "timeout's threshold. They were copied from Linux unit test job.")]
         $Env:TASK_UTIL_RETRY_COUNT = 6000
 
         $TestsFolders = @(
@@ -397,11 +386,11 @@ function Invoke-AgentTestsBuild {
             "vnsw\agent\test",
             "xml\test",
             "xmpp\test"
-        ) | % { "$rootBuildDir\$_" }
+        ) | ForEach-Object { "$rootBuildDir\$_" }
 
         $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*\.exe$'}
         Foreach ($TestExecutable in $AgentExecutables) {
-            $TestRes = Run-Test -TestExecutable $TestExecutable.FullName
+            $TestRes = Invoke-AgentUnitTestRunner -TestExecutable $TestExecutable.FullName
             if ($TestRes -ne 0) {
                 throw "Running agent tests failed"
             }

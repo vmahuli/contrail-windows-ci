@@ -8,7 +8,7 @@
 $Job = [Job]::new("Deploy")
 
 $Sessions = New-RemoteSessionsToTestbeds
-Deploy-Testbeds -Sessions $Sessions -ArtifactsDir $Env:ARTIFACTS_DIR
+Copy-ArtifactsToTestbeds -Sessions $Sessions -ArtifactsDir $Env:ARTIFACTS_DIR
 
 $Job.Done()
 

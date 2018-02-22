@@ -123,6 +123,11 @@
     state: present
     allow_clobber: yes
 
+- name: Install PSScriptAnalyzer
+  win_psmodule:
+    name: PSScriptAnalyzer
+    state: present
+
 - name: Install protoc-3.0.0 from github (GET)
   win_get_url:
     url: https://github.com/google/protobuf/releases/download/v3.0.0/protoc-3.0.0-win32.zip

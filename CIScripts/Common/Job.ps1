@@ -59,6 +59,7 @@
 # =======================================================
 # ```
 
+   
 class JobStep {
     [string] $Name
     [DateTime] $Start
@@ -76,7 +77,11 @@ class JobStep {
 
     Print([int] $IndentLevel) {
         $msg = ""
-        1..($IndentLevel) | ForEach-Object{ $msg += " " }
+        1..($IndentLevel) | ForEach-Object {
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
+            $msg += " "
+        }
         $msg += "- [" + ($this.GetResult()) + "]: " + $this.Name
         Write-Host $msg
 

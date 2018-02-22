@@ -31,11 +31,34 @@ pipeline {
                     mgmtNetwork = env.TESTENV_MGMT_NETWORK
                 }
 
-                // If not using `Pipeline script from SCM`, specify the branch manually:
-                // git branch: 'development', url: 'https://github.com/codilime/contrail-windows-ci/'
-
                 stash name: "CIScripts", includes: "CIScripts/**"
-                stash name: "ansible", includes: "ansible/**"
+                stash name: "StaticAnalysis", includes: "StaticAnalysis/**"
+                stash name: "Ansible", includes: "ansible/**"
+            }
+        }
+
+        stage ('Checkout projects') {
+            agent { label 'builder' }
+            environment {
+                DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
+            }
+            steps {
+                deleteDir()
+                unstash "CIScripts"
+                powershell script: './CIScripts/Checkout.ps1'
+                stash name: "SourceCode", excludes: "CIScripts"
+            }
+        }
+
+        stage('Static analysis') {
+            // TODO: 'scriptanalyzer' is feature flag label; change to 'builder' after rollout done
+            agent { label 'scriptanalyzer' }
+            steps {
+                deleteDir()
+                unstash "StaticAnalysis"
+                unstash "SourceCode"
+                unstash "CIScripts"
+                powershell script: "./StaticAnalysis/Invoke-StaticAnalysisTools.ps1 -RootDir . -Config ${pwd()}/StaticAnalysis"
             }
         }
 
@@ -57,11 +80,11 @@ pipeline {
                 deleteDir()
 
                 unstash "CIScripts"
+                unstash "SourceCode"
 
                 powershell script: './CIScripts/BuildStage.ps1'
 
-                stash name: "WinArt", includes: "output/**/*"
-                //stash name: "buildLogs", includes: "logs/**"
+                stash name: "Artifacts", includes: "output/**/*"
             }
         }
 
@@ -89,7 +112,7 @@ pipeline {
                         // 'Cleanup' stage
                         node(label: 'ansible') {
                             deleteDir()
-                            unstash 'ansible'
+                            unstash 'Ansible'
 
                             inventoryFilePath = "${env.WORKSPACE}/ansible/vm.${env.BUILD_ID}"
 
@@ -103,7 +126,7 @@ pipeline {
                         // 'Provision' stage
                         node(label: 'ansible') {
                             deleteDir()
-                            unstash 'ansible'
+                            unstash 'Ansible'
 
                             inventoryFilePath = "${env.WORKSPACE}/ansible/vm.${env.BUILD_ID}"
 
@@ -120,7 +143,7 @@ pipeline {
                             deleteDir()
 
                             unstash 'CIScripts'
-                            unstash 'WinArt'
+                            unstash 'Artifacts'
 
                             env.TESTBED_ADDRESSES = testbeds.join(',')
 

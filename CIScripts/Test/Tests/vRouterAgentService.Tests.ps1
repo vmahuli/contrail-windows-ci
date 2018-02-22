@@ -10,7 +10,7 @@ Param (
 
 . $PSScriptRoot\..\GetTestConfigurationCodiLegacy.ps1
 $TestConf = Get-TestConfiguration
-$Session = New-PSSession -ComputerName $TestbedAddr -Credential (Get-VMCreds)
+$Session = New-PSSession -ComputerName $TestbedAddr -Credential (Get-TestbedCredential)
 
 Describe "vRouter Agent service" {
     Context "enabling" {
@@ -55,6 +55,8 @@ Describe "vRouter Agent service" {
                 -AdapterName $TestConf.AdapterName `
                 -VMSwitchName $TestConf.VMSwitchName `
                 -ForwardingExtensionName $TestConf.ForwardingExtensionName
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
             $BeforeCrash = Invoke-Command -Session $Session -ScriptBlock { Get-Date }
             Enable-AgentService -Session $Session
         }
@@ -81,6 +83,8 @@ Describe "vRouter Agent service" {
 
         BeforeEach {
             Enable-AgentService -Session $Session
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
             $BeforeCrash = Invoke-Command -Session $Session -ScriptBlock { Get-Date }
             Disable-VRouterExtension -Session $Session `
                 -AdapterName $TestConf.AdapterName `
