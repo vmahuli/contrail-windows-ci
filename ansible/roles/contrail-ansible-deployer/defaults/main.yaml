@@ -1,0 +1,6 @@
+docker_provision_dir: "/tmp/contrail-ansible-deployer"
+cloud_orchestrator: openstack
+openstack_version: "ocata"
+contrail_version: "5.0.0-132"
+physical_interface: "ens224"
+docker_registry: "satellite.englab.juniper.net:5443"
