@@ -9,6 +9,10 @@ $OutputRootDirectory = "output"
 $NothingToBuild = $Env:COMPONENTS_TO_BUILD -eq "None"
 $CopyDisabledArtifacts = Test-Path Env:COPY_DISABLED_ARTIFACTS
 
+if (-not $NothingToBuild) {
+    & $PSScriptRoot\Build.ps1
+}
+
 if ($NothingToBuild -or $CopyDisabledArtifacts) {
     $Job = [Job]::new("Copying ready artifacts")
 
@@ -23,13 +27,21 @@ if ($NothingToBuild -or $CopyDisabledArtifacts) {
     if (-Not (Test-Path "$OutputRootDirectory")) {
         New-Item -Name $OutputRootDirectory -ItemType directory
     }
-    Copy-Item ("$DiskName" + ":\*") -Destination "$OutputRootDirectory\" -Recurse -Container
+
+    foreach ($Item in Get-ChildItem "${DiskName}:\") {
+        $OutputItem = "$OutputRootDirectory\$($Item.Name)"
+        $IsFileOrNonemptyDir = [bool](Get-ChildItem $OutputItem -ErrorAction SilentlyContinue)
+
+        if ($IsFileOrNonemptyDir) {
+            continue
+        }
+
+        $Job.StepQuiet("Copying $($Item.Name)", {
+            Copy-Item $Item.FullName -Destination "$OutputRootDirectory\" -Recurse -Container -Force
+        })
+    }
 
     $Job.Done()
-}
-
-if (-not $NothingToBuild) {
-    & $PSScriptRoot\Build.ps1
 }
 
 if (Test-Path Env:UPLOAD_ARTIFACTS) {
