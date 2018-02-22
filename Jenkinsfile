@@ -190,6 +190,11 @@ pipeline {
                         deleteDir()
                     }
                 }
+
+                build job: 'WinContrail/gather-build-stats',
+                      parameters: [string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
+                                   string(name: 'MONITORED_JOB_NAME', value: env.JOB_NAME),
+                                   string(name: 'MONITORED_BUILD_URL', value: env.BUILD_URL),]
             }
         }
     }
