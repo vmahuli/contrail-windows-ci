@@ -34,6 +34,7 @@ pipeline {
                 stash name: "CIScripts", includes: "CIScripts/**"
                 stash name: "StaticAnalysis", includes: "StaticAnalysis/**"
                 stash name: "Ansible", includes: "ansible/**"
+                stash name: "Monitoring", includes: "monitoring/**"
             }
         }
 
@@ -58,6 +59,20 @@ pipeline {
                 unstash "SourceCode"
                 unstash "CIScripts"
                 powershell script: "./StaticAnalysis/Invoke-StaticAnalysisTools.ps1 -RootDir . -Config ${pwd()}/StaticAnalysis"
+            }
+        }
+
+        stage('Linux-test') {
+            when { expression { env.ghprbPullId } }
+            agent { label 'linux' }
+            options {
+                timeout time: 5, unit: 'MINUTES'
+            }
+            steps {
+                unstash "Monitoring"
+                dir("monitoring") {
+                    sh "./test_stats.py"
+                }
             }
         }
 

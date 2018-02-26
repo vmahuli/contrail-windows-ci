@@ -1,0 +1,32 @@
+---
+
+- name: Install system dependencies for monitoring
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - libpython3-dev
+    - libmysqlclient-dev
+    - python3-pip
+
+- name: Copy requirements.txt (create file)
+  register: monitoring_requirements
+  tempfile:
+
+- name: Copy requirements.txt (copy data)
+  copy:
+    src: ../monitoring/requirements.txt
+    dest: "{{ monitoring_requirements.path }}"
+    force: yes
+
+- name: Install python dependencies for monitoring using pip
+  pip:
+    executable: pip3
+    requirements: "{{ monitoring_requirements.path }}"
+
+- name: Delete tmp file
+  file:
+    path: "{{ monitoring_requirements.path }}"
+    state: absent
+
+...
