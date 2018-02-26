@@ -105,6 +105,10 @@ projects:
 
 # AUTOMATICALLY GENERATED NOOPs BELOW - DO NOT MODIFY THESE LINES MANUALLY
 
+  - name: Juniper/contrail
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
   - name: Juniper/contrail-analytics
     template:
       - name: ci-contrail-windows-other-projects-template
@@ -210,6 +214,10 @@ projects:
       - name: ci-contrail-windows-other-projects-template
 
   - name: Juniper/contrail-vcenter-plugin
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
+  - name: Juniper/contrail-vnc
     template:
       - name: ci-contrail-windows-other-projects-template
 
