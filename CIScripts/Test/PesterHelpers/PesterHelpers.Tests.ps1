@@ -10,15 +10,6 @@ Describe "PesterHelpers" {
             { Consistently { $true | Should Not Be $true } -Duration 3 } | Should Throw
         }
 
-        It "works with inner exceptions" {
-            { Consistently { {} | Should Not Throw } -Duration 3 } | Should Not Throw
-            { Consistently { {} | Should Throw } -Duration 3 } | Should Throw
-            { Consistently { { throw "a" } | Should Not Throw } -Duration 3 } | Should Throw
-            # Looks like there is a bug in Pester: this assertion fails, even though
-            # in manual tests it's fine.
-            # Consistently { { throw "a" } | Should Throw } | Should Not Throw
-        }
-
         It "calls assert multiple times until duration is reached" {
             $Script:Counter = 0
             Consistently { $Script:Counter += 1 } -Interval 1 -Duration 3
@@ -71,15 +62,6 @@ Describe "PesterHelpers" {
             { Eventually { $true | Should Not Be $false } -Duration 3 } | Should Not Throw
             { Eventually { $true | Should Not Be $true } -Duration 3 } | Should Throw
         }
-
-        It "works with inner exceptions" {
-            { Eventually { {} | Should Not Throw } -Duration 3 } | Should Not Throw
-            { Eventually { {} | Should Throw } -Duration 3 } | Should Throw
-            { Eventually { { throw "a" } | Should Not Throw } -Duration 3 } | Should Throw
-            # Looks like there is a bug in Pester: this assertion fails, even though
-            # in manual tests it's fine.
-            # Eventually { { throw "a" } | Should Throw } | Should Not Throw
-        }
         
         It "calls assert multiple times until it is true" {
             $Script:Counter = 0
@@ -120,15 +102,6 @@ Describe "PesterHelpers" {
             } catch {
                 $_.Exception.InnerException.Message | `
                     Should Be "Expected: value was {True}, but should not have been the same"
-            }
-        }
-
-        It "rethrows the last Pester exception in Throw assert" {
-            try {
-                Eventually { {} | Should Throw } -Duration 3
-            } catch {
-                $_.Exception.InnerException.Message | `
-                    Should Be "Expected: the expression to throw an exception"
             }
         }
     }

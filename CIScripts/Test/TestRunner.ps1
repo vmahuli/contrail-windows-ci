@@ -42,11 +42,8 @@ function Invoke-TestScenarios {
     })
 
     $TestsBlacklist = @(
-        # Requires Docker Driver
-        "vRouterAgentService.Tests.ps1",
-
-        # Requires Agent
-        "vRouterAgentMSIInstaller.Tests.ps1"
+        # Put filenames of blacklisted tests here.
+        "vRouterAgentService.Tests.ps1"
     )
 
     $TotalFailedCount = 0
@@ -61,7 +58,8 @@ function Invoke-TestScenarios {
         $PesterRunScript = @{
             Path=$TestPath.FullName; 
             Parameters= @{
-                TestbedAddr=$Sessions[0].ComputerName
+                TestbedAddr=$Sessions[0].ComputerName;
+                ConfigFile=$TestConfigurationFile
             }; 
             Arguments=@()
         }
