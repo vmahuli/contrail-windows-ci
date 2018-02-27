@@ -1,4 +1,4 @@
-ansible==2.4.0.0
+ansible==2.4.2.0
 
 # For management of windows nodes
 pywinrm>=0.2.2
