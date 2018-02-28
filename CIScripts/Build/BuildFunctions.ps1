@@ -73,6 +73,10 @@ function Invoke-DockerDriverBuild {
             python tools/generateds/generateDS.py -q -f `
                                                   -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
                                                   -g golang-api controller/src/schema/vnc_cfg.xsd
+
+            # Workaround on https://github.com/golang/go/issues/18468
+            Copy-Item -Path $srcPath/vendor/* -Destination $GoPath/src -Force -Container -Recurse
+            Remove-Item -Path $srcPath/vendor -Force -Recurse
         }
     })
 
