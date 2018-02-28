@@ -1,6 +1,6 @@
 function Get-TestConfiguration {
     [TestConfiguration] @{
-        ControllerIP = "10.84.12.187";
+        ControllerIP = "172.16.0.1";
         ControllerRestPort = 8082;
         ControllerHostUsername = "ubuntu";
         ControllerHostPassword = "ubuntu";
@@ -13,7 +13,7 @@ function Get-TestConfiguration {
         DockerDriverConfiguration = [DockerDriverConfiguration] @{
             Username = "admin";
             Password = "c0ntrail123";
-            AuthUrl = "http://10.84.12.187:5000/v2.0";
+            AuthUrl = "http://172.16.0.1:5000/v2.0";
             TenantConfiguration = [TenantConfiguration] @{
                 Name = "admin";
                 DefaultNetworkName = "testnet1";
