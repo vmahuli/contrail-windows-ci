@@ -32,14 +32,14 @@
 
 - name: Add additional disks
   when: vm_hdd is defined
-  script: |
-    add_disk_to_vm.py \
-    --host {{ vcenter_hostname }} \
-    --user {{ vcenter_user }} \
-    --password {{ vcenter_password }} \
-    --uuid "{{ new_vm.instance.hw_product_uuid }}" \
-    --disk-type {{ item.type }} \
-    --disk-size {{ item.size }}
+  script: >
+    add_disk_to_vm.py
+    --host '{{ vcenter_hostname }}'
+    --user '{{ vcenter_user }}'
+    --password '{{ vcenter_password }}'
+    --uuid "{{ new_vm.instance.hw_product_uuid }}"
+    --disk-type '{{ item.type }}'
+    --disk-size '{{ item.size }}'
   with_items: "{{ vm_hdd }}"
 
 - name: Reboot VM

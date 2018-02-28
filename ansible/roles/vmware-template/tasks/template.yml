@@ -16,9 +16,9 @@
 
 - name: Turn VM into a template
   delegate_to: localhost
-  script: |
-    mark_vm_as_template.py \
-    --host {{ vcenter_hostname }} \
-    --user {{ vcenter_user }} \
-    --password {{ vcenter_password }} \
+  script: >
+    mark_vm_as_template.py
+    --host '{{ vcenter_hostname }}'
+    --user '{{ vcenter_user }}'
+    --password '{{ vcenter_password }}'
     --uuid "{{ new_vm.instance.hw_product_uuid }}"

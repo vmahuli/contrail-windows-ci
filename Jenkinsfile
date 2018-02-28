@@ -73,6 +73,7 @@ pipeline {
                 dir("monitoring") {
                     sh "./test_stats.py"
                 }
+                runHelpersTests()
             }
         }
 

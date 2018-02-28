@@ -1,7 +1,5 @@
 library "contrailWindows@$BRANCH_NAME"
 
-def cmd
-
 pipeline {
     agent none
     stages {
@@ -14,20 +12,16 @@ pipeline {
                 deleteDir()
                 checkout scm
 
-                script {
-                    cmd = [
-                        'python3', './collect_and_push_build_stats.py',
+                dir('monitoring') {
+                    shellCommand('python3', [
+                        './collect_and_push_build_stats.py',
                         '--job-name', env.MONITORED_JOB_NAME,
                         '--build-url', env.MONITORED_BUILD_URL,
                         '--mysql-host', env.MYSQL_HOST,
                         '--mysql-database', env.MYSQL_DATABASE,
                         '--mysql-username', env.MYSQL_USR,
                         '--mysql-password', env.MYSQL_PSW,
-                    ]
-                }
-
-                dir('monitoring') {
-                    sh cmd.join(' ')
+                    ])
                 }
             }
         }

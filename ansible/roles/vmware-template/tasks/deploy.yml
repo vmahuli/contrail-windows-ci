@@ -3,11 +3,11 @@
 - name: Get highest VM number
   delegate_to: localhost
   register: get_vm_id
-  script: |
-    get_vm_id.py \
-    --host {{ vcenter_hostname }} \
-    --user {{ vcenter_user }} \
-    --password {{ vcenter_password }} \
+  script: >
+    get_vm_id.py
+    --host '{{ vcenter_hostname }}'
+    --user '{{ vcenter_user }}'
+    --password '{{ vcenter_password }}'
     --vm-name "winci-{{ vm_role }}-"
 
 - name: "Deploy VM from Template: winci-{{ vm_role}}-{{ get_vm_id.stdout.strip() }}"
