@@ -113,7 +113,7 @@ pipeline {
                 TESTBED = credentials('win-testbed')
                 ARTIFACTS_DIR = "output"
                 TESTBED_TEMPLATE = "Template-testbed-201802130923"
-                CONTROLLER_TEMPLATE = "template-contrail-controller-3.1.1.0-45"
+                CONTROLLER_TEMPLATE = "Template-CentOS-7.4"
             }
 
             steps {

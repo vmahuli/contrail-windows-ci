@@ -9,7 +9,7 @@ contrail_configuration:
   LINUX_DISTR: centos7
   CONTAINER_REGISTRY: "{{ docker_registry }}"
   PHYSICAL_INTERFACE: "{{ physical_interface }}"
-  VROUTER_GATEWAY: 172.16.0.1
+  VROUTER_GATEWAY: "{{ ansible_default_ipv4.gateway }}"
 {% if cloud_orchestrator == 'openstack' %}
   AUTH_MODE: keystone
   KEYSTONE_AUTH_ADMIN_PASSWORD: c0ntrail123

@@ -1,0 +1,1 @@
+docker_bridge_network: "172.26.0.1/16"

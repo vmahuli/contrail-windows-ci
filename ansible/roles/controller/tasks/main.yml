@@ -16,6 +16,16 @@
     - python2-requests
     - git
 
+- name: Create docker configuration directory
+  file:
+    path: /etc/docker/
+    state: directory
+
+- name: Set up docker bridge network
+  template:
+    src: docker/daemon.json.j2
+    dest: /etc/docker/daemon.json
+
 - name: Provision OpenContrail using contrail-ansible-deployer role
   include_role:
     name: contrail-ansible-deployer

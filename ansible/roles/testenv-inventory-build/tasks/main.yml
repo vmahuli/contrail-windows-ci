@@ -3,7 +3,7 @@
 - name: "Add Contrail controller VMs to ad-hoc inventory for testenv '{{ testenv_name }}'"
   add_host:
     name: "{{ item.name }}"
-    groups: testenv,controller,linux
+    groups: testenv,controller
     type: controller
     template: "{{ testenv_block.controller.template }}"
   with_items:

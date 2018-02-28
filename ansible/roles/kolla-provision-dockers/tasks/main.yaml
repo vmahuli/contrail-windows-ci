@@ -67,6 +67,10 @@
     ANSIBLE_STDOUT_CALLBACK: debug
   args:
     chdir: "{{ kolla_provision_dir }}/ansible"
+  retries: 3
+  delay: 1
+  register: result
+  until: result.rc == 0
 
 - name: Show the list of running containers
   command: docker ps -a

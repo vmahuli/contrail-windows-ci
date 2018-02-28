@@ -21,7 +21,6 @@ def call(Map params) {
             createCommonVars env.SHARED_DRIVE_IP, env.JENKINS_MASTER_IP
             createAnsibleConfig env.ANSIBLE_VAULT_KEY_FILE
             sh 'cp inventory.sample inventory'
-            sh 'ansible-galaxy install -r requirements.yml -f'
             script {
               vmWareConfig = getVMwareConfig(vm_role)
               prepareHardwareConfig(params)
