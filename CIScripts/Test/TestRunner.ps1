@@ -1,4 +1,5 @@
 . $PSScriptRoot\TestConfigurationUtils.ps1
+. $PSScriptRoot\Utils\ContrailUtils.ps1
 
 . $PSScriptRoot\Tests\ExtensionLongLeakTest.ps1
 . $PSScriptRoot\Tests\MultiEnableDisableExtensionTest.ps1
@@ -21,12 +22,32 @@ function Invoke-TestScenarios {
         [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
 
+    # Temporary (remove after pesterizing tests)
+    . $TestConfigurationFile
+    $TestConf = Get-TestConfiguration
+    $DDConf = $TestConf.DockerDriverConfiguration
+    $TenantConf = $DDConf.TenantConfiguration
+
+    $AuthToken = Get-AccessTokenFromKeystone `
+        -AuthUrl $DDConf.AuthUrl `
+        -Username $DDConf.Username `
+        -Password $DDConf.Password `
+        -TenantName $TenantConf.Name
+
+    Add-ContrailVirtualNetwork `
+        -ContrailUrl "http://$( $TestConf.ControllerIP ):$( $TestConf.ControllerRestPort )" `
+        -AuthToken $AuthToken `
+        -TenantName $TenantConf.Name `
+        -NetworkName $TenantConf.DefaultNetworkName
+
+    $TestConfiguration = $TestConf
+
     $Job.Step("Running all integration tests", {
         # $SNATConfiguration = Get-SnatConfiguration
 
         # Test-ExtensionLongLeak -Session $Sessions[0] -TestDurationHours $Env:LEAK_TEST_DURATION -TestConfiguration $TestConfiguration
         # Test-MultiEnableDisableExtension -Session $Sessions[0] -EnableDisableCount $Env:MULTI_ENABLE_DISABLE_EXTENSION_COUNT -TestConfiguration $TestConfiguration
-        # Test-TCPCommunication -Session $Sessions[0] -TestConfiguration $TestConfiguration
+        Test-TCPCommunication -Session $Sessions[0] -TestConfiguration $TestConfiguration
         # Test-ICMPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
         # Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
         # # TODO: Uncomment after JW-1129
