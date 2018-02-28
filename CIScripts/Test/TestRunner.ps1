@@ -1,4 +1,5 @@
 . $PSScriptRoot\TestConfigurationUtils.ps1
+. $PSScriptRoot\Utils\ContrailUtils.ps1
 
 function Invoke-TestScenarios {
     Param (
@@ -7,6 +8,28 @@ function Invoke-TestScenarios {
         [Parameter(Mandatory = $true)] [String] $TestConfigurationFile,
         [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
+
+    # Temporary (remove after pesterizing tests)
+    . $TestConfigurationFile
+    $TestConf = Get-TestConfiguration
+    $DDConf = $TestConf.DockerDriverConfiguration
+    $TenantConf = $DDConf.TenantConfiguration
+
+    $AuthToken = Get-AccessTokenFromKeystone `
+        -AuthUrl $DDConf.AuthUrl `
+        -Username $DDConf.Username `
+        -Password $DDConf.Password `
+        -TenantName $TenantConf.Name
+
+    Add-ContrailVirtualNetwork `
+        -ContrailUrl "http://$( $TestConf.ControllerIP ):$( $TestConf.ControllerRestPort )" `
+        -AuthToken $AuthToken `
+        -TenantName $TenantConf.Name `
+        -NetworkName $TenantConf.DefaultNetworkName
+
+    $TestConfiguration = $TestConf
+
+    Test-TCPCommunication -Session $Sessions[0] -TestConfiguration $TestConfiguration
 
     $TestsBlacklist = @(
         # Put filenames of blacklisted tests here.
