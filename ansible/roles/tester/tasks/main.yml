@@ -35,3 +35,7 @@
     -Value "{{ (((trusted_hosts.stdout | trim()).split(',') | reject('equalto', '') | list()) + ['172.17.0.*']) | join(',') }}"
     -Force
   when: not (trusted_hosts.stdout | search("172.17.0.*"))
+
+- name: Fail on purpose, so the template is left as a VM.
+  fail:
+    msg: Bye, bye
