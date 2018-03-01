@@ -1,4 +1,9 @@
 ---
+
+- name: Prepare yum mirror repo files
+  include_role:
+    name: yum-repos-prepare
+
 - name: Install openstack build dependencies
   package:
     name: "{{ item }}"

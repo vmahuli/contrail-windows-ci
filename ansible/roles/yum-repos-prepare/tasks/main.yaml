@@ -1,0 +1,51 @@
+---
+
+- name: Remove the upstream yum repos
+  yum_repository:
+    name: "{{ item.name }}"
+    file: "{{ item.file }}"
+    state: absent
+  with_items:
+    - { name: base, file: CentOS-Base }
+    - { name: updates, file: CentOS-Base }
+    - { name: extras, file: CentOS-Base }
+    - { name: epel, file: epel }
+  become: yes
+  become_user: root
+
+- name: Prepare local base yum mirror repo file
+  yum_repository:
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    file: CentOS-Base
+    baseurl: "http://{{ site_pulp.fqdn }}/pulp/repos/{{ item.repo }}/"
+    enabled: yes
+    gpgcheck: no
+  with_items:
+    - { name: updates-mirror, repo: centos74-updates, description: CentOS updates mirror }
+    - { name: extras-mirror, repo: centos74-extras, description: CentOS extras mirror }
+    - { name: base-mirror, repo: centos74, description: CentOS base mirror }
+  become: yes
+  become_user: root
+
+- name: Prepare epel mirror repo file
+  yum_repository:
+    name: epel-mirror
+    description: CentOS epel mirror
+    file: epel
+    baseurl: "http://{{ site_pulp.fqdn }}/pulp/repos/centos74-epel/"
+    enabled: yes
+    gpgcheck: no
+  become: yes
+  become_user: root
+
+- name: Prepare third party cache yum repo file
+  yum_repository:
+    name: contrail-tpc
+    description: Contrail third-party dependencies
+    file: contrail-tpc
+    baseurl: "http://{{ site_pulp.fqdn }}/pulp/repos/opencontrail-tpc/"
+    enabled: yes
+    gpgcheck: no
+  become: yes
+  become_user: root

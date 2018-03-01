@@ -1,1 +1,4 @@
 docker_bridge_network: "172.26.0.1/16"
+site_pulp:
+  fqdn: ci-repo.englab.juniper.net
+
