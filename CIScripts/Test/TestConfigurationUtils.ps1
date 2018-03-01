@@ -316,7 +316,7 @@ function Wait-RemoteInterfaceIP {
         foreach ($i in 1..$WAIT_TIME_FOR_DHCP_IN_SECONDS) {
             $Address = Get-NetIPAddress -InterfaceIndex $Using:ifIndex -ErrorAction SilentlyContinue `
                 | Where-Object AddressFamily -eq IPv4 `
-                | Where-Object SuffixOrigin -eq "Dhcp"
+                | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") }
             if ($Address) {
                 return
             }
