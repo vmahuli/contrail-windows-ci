@@ -1,6 +1,8 @@
 . $PSScriptRoot\TestConfigurationUtils.ps1
 . $PSScriptRoot\Utils\ContrailUtils.ps1
 
+. $PSScriptRoot\Tests\ICMPCommunicationTest.ps1
+
 function Invoke-TestScenarios {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
@@ -29,7 +31,7 @@ function Invoke-TestScenarios {
 
     $TestConfiguration = $TestConf
 
-    Test-TCPCommunication -Session $Sessions[0] -TestConfiguration $TestConfiguration
+    Test-ICMPCommunication -Session $Sessions[0] -TestConfiguration $TestConfiguration
 
     $TestsBlacklist = @(
         # Put filenames of blacklisted tests here.
