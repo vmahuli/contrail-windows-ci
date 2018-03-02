@@ -143,9 +143,20 @@ function Enable-DockerDriver {
         Start-Job -ScriptBlock {
             Param ($Cfg, $ControllerIP, $Tenant, $Adapter)
 
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "", Justification="The env variable is read by contrail-windows-docker.exe")]
             $Env:OS_USERNAME = $Cfg.Username
+
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "", Justification="The env variable is read by contrail-windows-docker.exe")]
             $Env:OS_PASSWORD = $Cfg.Password
+
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "", Justification="The env variable is read by contrail-windows-docker.exe")]
             $Env:OS_AUTH_URL = $Cfg.AuthUrl
+
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "", Justification="The env variable is read by contrail-windows-docker.exe")]
             $Env:OS_TENANT_NAME = $Tenant
 
             & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" -forceAsInteractive -controllerIP $ControllerIP -adapter "$Adapter" -vswitchName "Layered <adapter>" -logLevel "Debug"
