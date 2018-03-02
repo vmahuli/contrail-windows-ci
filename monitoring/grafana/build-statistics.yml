@@ -1,0 +1,91 @@
+dashboard:
+  title: Build statistics v2
+  time:
+    from: now-7d
+    to: now
+  templating:
+    - name: Job
+      type: query
+      includeAll: true
+      multi: true
+      datasource: 'mysql:monitoring_test'
+      query: SELECT DISTINCT job_name FROM builds
+      refresh: true
+    - name: Status
+      type: query
+      includeAll: true
+      multi: true
+      datasource: 'mysql:monitoring_test'
+      query: SELECT DISTINCT status FROM builds
+      refresh: true
+  rows:
+    - title: Build statistics
+      height: 300px
+      panels:
+        - title: Number of successes / failures
+          type: graph
+          span: 4
+          datasource: 'mysql:monitoring_test'
+          stack: true
+          targets:
+            - target:
+              format: time_series
+              rawSql: |
+                SELECT
+                  min(finished_at_secs - $__unixEpochFrom())
+                      - CAST(mod(min(finished_at_secs - $__unixEpochFrom()), ($__unixEpochTo()-$__unixEpochFrom())/7) as unsigned)
+                      + $__unixEpochFrom() as time_sec,
+                  count(build_id) as value,
+                  status as metric
+                FROM builds
+                WHERE finished_at_secs >= $__unixEpochFrom() && finished_at_secs <= $__unixEpochTo()
+                  AND job_name in ($Job)
+                  AND status in ($Status)
+                GROUP BY status, (finished_at_secs - $__unixEpochFrom()) DIV (($__unixEpochTo()-$__unixEpochFrom())/7)
+                ORDER BY finished_at_secs ASC
+        - title: Job length
+          type: graph
+          span: 4
+          datasource: 'mysql:monitoring_test'
+          yaxes:
+            - format: ms
+            - format: short
+          targets:
+            - target:
+              format: time_series
+              rawSql: |
+                SELECT
+                  finished_at_secs as time_sec,
+                  duration_millis as value,
+                  'all' as metric
+                FROM builds
+                WHERE
+                  finished_at_secs >= $__unixEpochFrom()
+                  AND finished_at_secs <= $__unixEpochTo()
+                  AND job_name in ($Job)
+                  AND status in ($Status)
+                ORDER BY finished_at_secs ASC
+        - title: Stages
+          type: graph
+          span: 4
+          datasource: 'mysql:monitoring_test'
+          yaxes:
+            - format: ms
+            - format: short
+          stack: true
+          targets:
+            - target:
+              format: time_series
+              rawSql: |
+                SELECT
+                  finished_at_secs as time_sec,
+                  stages.duration_millis as value,
+                  stages.name as metric
+                FROM builds
+                JOIN stages ON stages.build_id = builds.id
+                WHERE
+                  finished_at_secs >= $__unixEpochFrom()
+                  AND finished_at_secs <= $__unixEpochTo()
+                  AND job_name in ($Job)
+                  AND builds.status in ($Status)
+                ORDER BY finished_at_secs ASC, stages.id ASC
