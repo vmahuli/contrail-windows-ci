@@ -10,6 +10,7 @@ Describe "Testenv" {
             $Controller.OS_credentials.Port | Should Be "5000"
             $Controller.OS_credentials.Username | Should Be "AzureDiamond"
             $Controller.OS_credentials.Password | Should Be "hunter2"
+            $Controller.OS_credentials.Project | Should Be "admin"
 
             $Controller.Rest_API.Address | Should Be "1.2.3.1"
             $Controller.Rest_API.Port | Should Be "8082"
@@ -33,6 +34,7 @@ controller:
   os_credentials:
     username: AzureDiamond
     password: hunter2
+    project: admin
     address: 1.2.3.1
     port: 5000
 

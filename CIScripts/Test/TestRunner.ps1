@@ -6,7 +6,6 @@
 . $PSScriptRoot\Tests\MultiEnableDisableExtensionTest.ps1
 . $PSScriptRoot\Tests\DockerDriverTest.ps1
 . $PSScriptRoot\Tests\TCPCommunicationTest.ps1
-. $PSScriptRoot\Tests\ICMPCommunicationTest.ps1
 . $PSScriptRoot\Tests\ICMPoMPLSoGRETest.ps1
 . $PSScriptRoot\Tests\TCPoMPLSoGRETest.ps1
 . $PSScriptRoot\Tests\SNATTest.ps1
@@ -24,30 +23,18 @@ function Invoke-TestScenarios {
         [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
 
-    # Temporary (remove after pesterizing tests)
     . $TestConfigurationFile
+    $TestConfiguration = Get-TestConfiguration
     $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-    $TestConf = Get-TestConfiguration
-    $DDConf = $TestConf.DockerDriverConfiguration
-    $TenantConf = $DDConf.TenantConfiguration
-    $NetName = $TenantConf.DefaultNetworkName
-
-    $ContrailNM = [ContrailNetworkManager]::new($TestConf)
 
     $ContrailNM = [ContrailNetworkManager]::new($ControllerConfig)
     $ContrailNM.AddProject($null)
-
-    $Subnet = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", "10.0.0.100", "10.0.0.200")
-    $ContrailNet = $ContrailNM.AddNetwork($null, $NetName, $Subnet)
-
-    $TestConfiguration = $TestConf
 
     $Job.Step("Running all integration tests", {
         # $SNATConfiguration = Get-SnatConfiguration
 
         # Test-ExtensionLongLeak -Session $Sessions[0] -TestDurationHours $Env:LEAK_TEST_DURATION -TestConfiguration $TestConfiguration
         # Test-MultiEnableDisableExtension -Session $Sessions[0] -EnableDisableCount $Env:MULTI_ENABLE_DISABLE_EXTENSION_COUNT -TestConfiguration $TestConfiguration
-        Test-ICMPCommunication -Session $Sessions[0] -TestConfiguration $TestConfiguration
         # Test-TCPCommunication -Session $Sessions[0] -TestConfiguration $TestConfiguration
         # Test-ICMPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
         # Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
@@ -91,8 +78,6 @@ function Invoke-TestScenarios {
     if ($Results.FailedCount -gt 0) {
         throw "Some tests failed"
     }
-
-    $ContrailNM.RemoveNetwork($ContrailNet)
 }
 
 function Get-Logs {

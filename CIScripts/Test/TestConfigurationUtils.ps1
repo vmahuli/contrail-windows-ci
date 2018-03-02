@@ -112,13 +112,13 @@ function Test-IsVRouterExtensionEnabled {
 function Enable-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName,
-           [Parameter(Mandatory = $true)] [string] $ControllerIP,
-           [Parameter(Mandatory = $true)] [DockerDriverConfiguration] $Configuration,
+           [Parameter(Mandatory = $true)] [Hashtable] $ControllerConfig,
            [Parameter(Mandatory = $false)] [int] $WaitTime = 60)
 
     Write-Host "Enabling Docker Driver"
 
-    $TenantName = $Configuration.TenantConfiguration.Name
+    $OSCreds = $ControllerConfig.OS_Credentials
+    $ControllerIP = $ControllerConfig.Rest_API.Address
 
     Invoke-Command -Session $Session -ScriptBlock {
 
@@ -135,32 +135,33 @@ function Enable-DockerDriver {
         }
 
         # Nested ScriptBlock variable passing workaround
+        $OSCreds = $Using:OSCreds
         $AdapterName = $Using:AdapterName
         $ControllerIP = $Using:ControllerIP
-        $Configuration = $Using:Configuration
-        $TenantName = $Using:TenantName
 
         Start-Job -ScriptBlock {
-            Param ($Cfg, $ControllerIP, $Tenant, $Adapter)
+            Param ($OSCreds, $ControllerIP, $Adapter)
+
+            $AuthUrl = "http://$( $OSCreds.Address ):$( $OSCreds.Port )/v2.0"
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="The env variable is read by contrail-windows-docker.exe")]
-            $Env:OS_USERNAME = $Cfg.Username
+            $Env:OS_USERNAME = $OSCreds.Username
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="The env variable is read by contrail-windows-docker.exe")]
-            $Env:OS_PASSWORD = $Cfg.Password
+            $Env:OS_PASSWORD = $OSCreds.Password
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="The env variable is read by contrail-windows-docker.exe")]
-            $Env:OS_AUTH_URL = $Cfg.AuthUrl
+            $Env:OS_AUTH_URL = $AuthUrl
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="The env variable is read by contrail-windows-docker.exe")]
-            $Env:OS_TENANT_NAME = $Tenant
+            $Env:OS_TENANT_NAME = $OSCreds.Project
 
             & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" -forceAsInteractive -controllerIP $ControllerIP -adapter "$Adapter" -vswitchName "Layered <adapter>" -logLevel "Debug"
-        } -ArgumentList $Configuration, $ControllerIP, $TenantName, $AdapterName | Out-Null
+        } -ArgumentList $OSCreds, $ControllerIP, $AdapterName | Out-Null
     }
 
     Start-Sleep -s $WaitTime
@@ -339,22 +340,34 @@ function Wait-RemoteInterfaceIP {
 }
 
 function Initialize-DriverAndExtension {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
-    Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $true
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+        [Parameter(Mandatory = $true)] [Hashtable] $ControllerConfig
+    )
+
+    Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration `
+        -ControllerConfig $ControllerConfig -NoNetwork $true
 }
 
 function Initialize-TestConfiguration {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
-           [Parameter(Mandatory = $false)] [bool] $NoNetwork = $false)
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+        [Parameter(Mandatory = $true)] [Hashtable] $ControllerConfig,
+        [Parameter(Mandatory = $false)] [bool] $NoNetwork = $false
+    )
 
     Write-Host "Initializing Test Configuration"
 
     $NRetries = 3;
     foreach ($i in 1..$NRetries) {
         # DockerDriver automatically enables Extension, so there is no need to enable it manually
-        Enable-DockerDriver -Session $Session -AdapterName $TestConfiguration.AdapterName -ControllerIP $TestConfiguration.ControllerIP -Configuration $TestConfiguration.DockerDriverConfiguration -WaitTime 0
+
+        Enable-DockerDriver -Session $Session `
+            -AdapterName $TestConfiguration.AdapterName `
+            -ControllerConfig $ControllerConfig `
+            -WaitTime 0
 
         $WaitForSeconds = $i * 600 / $NRetries;
         $SleepTimeBetweenChecks = 10;
@@ -389,7 +402,7 @@ function Initialize-TestConfiguration {
     Wait-RemoteInterfaceIP -Session $Session -ifIndex $HNSTransparentAdapter.ifIndex
 
     if (!$NoNetwork) {
-        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration | Out-Null
+        throw "Creating network in Initialize-TestConfiguration is deprecated"
     }
 }
 

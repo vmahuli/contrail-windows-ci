@@ -16,6 +16,8 @@ $TestConf = Get-TestConfiguration
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
 
+$ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+
 Describe "vRouter Agent service" {
     Context "enabling" {
         It "is enabled" {
@@ -98,7 +100,8 @@ Describe "vRouter Agent service" {
     }
 
     BeforeEach {
-        Initialize-DriverAndExtension -Session $Session -TestConfiguration $TestConf
+        Initialize-DriverAndExtension -Session $Session -TestConfiguration $TestConf `
+            -ControllerConfig $ControllerConfig
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConf
     }
 

@@ -20,7 +20,7 @@ class ContrailNetworkManager {
             -AuthUrl $AuthUrl `
             -Username $OSCreds.Username `
             -Password $OSCreds.Password `
-            -Tenant 'admin'
+            -Tenant $OsCreds.Project
     }
 
     [String] AddProject([String] $TenantName) {
