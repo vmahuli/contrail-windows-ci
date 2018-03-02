@@ -114,24 +114,29 @@ function Remove-ContrailVirtualNetwork {
     $NetworkUrl = $ContrailUrl + "/virtual-network/" + $NetworkUuid
     $Network = Invoke-RestMethod -Method Get -Uri $NetworkUrl -Headers @{"X-Auth-Token" = $AuthToken}
 
-    $VirtualMachines = $Network.'virtual-network'.virtual_machine_interface_back_refs
-    $IpInstances = $Network.'virtual-network'.instance_ip_back_refs
+    if ($Force) {
+        # TODO remove this outer if, this is only a quick workaround,
+        # because sometimes the fields below are empty,
+        # and that's a failure in strict mode (I guess).
+        $VirtualMachines = $Network.'virtual-network'.virtual_machine_interface_back_refs
+        $IpInstances = $Network.'virtual-network'.instance_ip_back_refs
 
-    if ($VirtualMachines -or $IpInstances) {
-        if (!$Force) {
-            Write-Error "Couldn't remove network. Resources are still referred. Use force mode"
-            return
-        }
+        if ($VirtualMachines -or $IpInstances) {
+            if (!$Force) {
+                Write-Error "Couldn't remove network. Resources are still referred. Use force mode"
+                return
+            }
 
-        # First we have to remove resources referred by network instance in correct order:
-        #   - Instance IPs
-        #   - Virtual machines
-        ForEach ($IpInstance in $IpInstances) {
-            Invoke-RestMethod -Uri $IpInstance.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
-        }
+            # First we have to remove resources referred by network instance in correct order:
+            #   - Instance IPs
+            #   - Virtual machines
+            ForEach ($IpInstance in $IpInstances) {
+                Invoke-RestMethod -Uri $IpInstance.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+            }
 
-        ForEach ($VirtualMachine in $VirtualMachines) {
-            Invoke-RestMethod -Uri $VirtualMachine.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+            ForEach ($VirtualMachine in $VirtualMachines) {
+                Invoke-RestMethod -Uri $VirtualMachine.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+            }
         }
     }
 

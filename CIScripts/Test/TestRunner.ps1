@@ -1,5 +1,6 @@
 . $PSScriptRoot\TestConfigurationUtils.ps1
-. $PSScriptRoot\Utils\ContrailUtils.ps1
+. $PSScriptRoot\Utils\ContrailNetworkManager.ps1
+. $PSScriptRoot\..\Testenv\Testenv.ps1
 
 . $PSScriptRoot\Tests\ExtensionLongLeakTest.ps1
 . $PSScriptRoot\Tests\MultiEnableDisableExtensionTest.ps1
@@ -25,21 +26,19 @@ function Invoke-TestScenarios {
 
     # Temporary (remove after pesterizing tests)
     . $TestConfigurationFile
+    $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
     $TestConf = Get-TestConfiguration
     $DDConf = $TestConf.DockerDriverConfiguration
     $TenantConf = $DDConf.TenantConfiguration
+    $NetName = $TenantConf.DefaultNetworkName
 
-    $AuthToken = Get-AccessTokenFromKeystone `
-        -AuthUrl $DDConf.AuthUrl `
-        -Username $DDConf.Username `
-        -Password $DDConf.Password `
-        -TenantName $TenantConf.Name
+    $ContrailNM = [ContrailNetworkManager]::new($TestConf)
 
-    Add-ContrailVirtualNetwork `
-        -ContrailUrl "http://$( $TestConf.ControllerIP ):$( $TestConf.ControllerRestPort )" `
-        -AuthToken $AuthToken `
-        -TenantName $TenantConf.Name `
-        -NetworkName $TenantConf.DefaultNetworkName
+    $ContrailNM = [ContrailNetworkManager]::new($ControllerConfig)
+    $ContrailNM.AddProject($null)
+
+    $Subnet = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", "10.0.0.100", "10.0.0.200")
+    $ContrailNet = $ContrailNM.AddNetwork($null, $NetName, $Subnet)
 
     $TestConfiguration = $TestConf
 
@@ -92,6 +91,8 @@ function Invoke-TestScenarios {
     if ($Results.FailedCount -gt 0) {
         throw "Some tests failed"
     }
+
+    $ContrailNM.RemoveNetwork($ContrailNet)
 }
 
 function Get-Logs {
