@@ -168,7 +168,7 @@ function Test-SNAT {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText",
          "", Justification="This are just credentials to a testbed endhost.")]
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingUserNameAndPassWordParams",
-            Justification="We don't care that it's plaintext, it's just test env.")]
+            "", Justification="We don't care that it's plaintext, it's just test env.")]
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
             "EndhostPassword", Justification="We don't care that it's plaintext, it's just test env.")]
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,

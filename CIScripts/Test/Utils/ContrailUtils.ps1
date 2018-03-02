@@ -2,7 +2,7 @@ $CONVERT_TO_JSON_MAX_DEPTH = 100
 
 function Get-AccessTokenFromKeystone {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingUserNameAndPassWordParams",
-        Justification="We don't care that it's plaintext, it's just test env.")]
+        "", Justification="We don't care that it's plaintext, it's just test env.")]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
         "Password", Justification="We don't care that it's plaintext, it's just test env.")]
     Param ([Parameter(Mandatory = $true)] [string] $AuthUrl,
