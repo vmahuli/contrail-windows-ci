@@ -2,7 +2,7 @@
 
 function Register-DefaultResourcesInContrail {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingUserNameAndPassWordParams",
-        Justification="We don't care that it's plaintext, it's just test env.")]
+        "", Justification="We don't care that it's plaintext, it's just test env.")]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
         "Password", Justification="We don't care that it's plaintext, it's just test env.")]
     Param (
