@@ -16,6 +16,11 @@ if (Test-Path Env:JUNIPER_WINDOWSSTUBS) {
     }
 }
 
+$DockerDriverBranch = "master"
+if (Test-Path Env:DRIVER_BRANCH) {
+    $DockerDriverBranch = $Env:DRIVER_BRANCH
+}
+
 Get-ZuulRepos -GerritUrl $Env:GERRIT_URL `
               -ZuulProject $Env:ZUUL_PROJECT `
               -ZuulRef $Env:ZUUL_REF `
@@ -23,6 +28,7 @@ Get-ZuulRepos -GerritUrl $Env:GERRIT_URL `
               -ZuulBranch $Env:ZUUL_BRANCH
 
 Get-NonZuulRepos -DriverSrcPath $Env:DRIVER_SRC_PATH `
+                 -DriverBranch $DockerDriverBranch `
                  -WindowsStubsRepositoryPath $WindowsStubsRepositoryPath `
                  -WindowsStubsBranch $WindowsStubsBranch
 

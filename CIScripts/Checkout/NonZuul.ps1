@@ -3,6 +3,7 @@
 function Get-NonZuulRepos {
     Param(
         [Parameter(Mandatory = $true)] [string] $DriverSrcPath,
+        [Parameter(Mandatory = $true)] [string] $DriverBranch,
         [Parameter(Mandatory = $true)] [string] $WindowsStubsRepositoryPath,
         [Parameter(Mandatory = $true)] [string] $WindowsStubsBranch
     )
@@ -12,7 +13,7 @@ function Get-NonZuulRepos {
 
         # TODO: When contrail-windows-docker-driver will be on Gerrit, fetch it with zull-cloner
         Invoke-NativeCommand -ScriptBlock {
-            git clone "contrail-windows-docker-driver.$DriverClonePath.git" src/$DriverSrcPath
+            git clone "contrail-windows-docker-driver.$DriverClonePath.git" -b $DriverBranch src/$DriverSrcPath
         }
         Write-Host "Cloned docker driver"
 
