@@ -73,9 +73,6 @@
   until: >
       vm.instance.hw_eth0.ipaddresses | ipv4 | reject("match", "169.254.*") | list
 
-- debug:
-    var: vm
-
 - name: Add host to inventory
   add_host:
     name: "{{ vm.instance.hw_name }}"

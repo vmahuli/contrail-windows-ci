@@ -43,8 +43,9 @@
 - name: Pull docker images
   win_shell: "docker pull {{ item }}"
   with_items:
-      - microsoft/nanoserver
-      - microsoft/windowsservercore
+    - microsoft/nanoserver
+    - microsoft/windowsservercore
+    - microsoft/iis
 
 - name: Install MS Visuall C++ Redist 14
   win_chocolatey:
@@ -54,20 +55,20 @@
 - name: Disable Windows Firewall
   win_firewall:
     profiles:
-    - Domain
-    - Private
+      - Domain
+      - Private
     state: disabled
 
-- name: stop docker
+- name: Stop Docker
   win_service:
-      name: docker
-      state: stopped
+    name: docker
+    state: stopped
 
-- name: remove container networks
+- name: Remove container networks
   win_shell: |
-        Get-NetNat | Remove-NetNat -Confirm:$false
-        Get-ContainerNetwork | Remove-ContainerNetwork -Force
+    Get-NetNat | Remove-NetNat -Confirm:$false
+    Get-ContainerNetwork | Remove-ContainerNetwork -Force
 
-- name: enable testsigning
-  win_shell: >
-      Bcdedit.exe -set TESTSIGNING ON
+- name: Enable testsigning
+  win_shell: |
+    Bcdedit.exe -set TESTSIGNING ON
