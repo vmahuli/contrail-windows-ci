@@ -146,16 +146,21 @@ function Invoke-ExtensionBuild {
     })
 
     $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
+    $BuildModeOption = "--optimization=" + $BuildMode
 
     $Job.Step("Building Extension and Utils", {
-        $BuildModeOption = "--optimization=" + $BuildMode
-
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
             "", Justification="Cerp env variable required by vRouter build.")]
         $Env:cerp = Get-Content $CertPasswordFilePath
 
         Invoke-NativeCommand -ScriptBlock {
             scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsDir/vrouter_build.log
+        }
+    })
+
+    $Job.Step("Running kernel unit tests", {
+        Invoke-NativeCommand -ScriptBlock {
+            scons $BuildModeOption kernel-tests | Tee-Object -FilePath $LogsDir/vrouter_unit_tests.log
         }
     })
 
@@ -358,9 +363,14 @@ function Invoke-AgentTestsBuild {
             $TestsString = $Tests -join " "
         }
         $TestsBuildCommand = "scons -j 4 {0} {1}" -f "$BuildModeOption", "$TestsString"
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "", Justification="Env variable is used by another executable")]
+        $Env:BUILD_ONLY = "1"
         Invoke-NativeCommand -ScriptBlock {
             Invoke-Expression $TestsBuildCommand | Tee-Object -FilePath $LogsPath/build_agent_tests.log
         }
+        Remove-Item Env:\BUILD_ONLY
     })
 
     $rootBuildDir = "build\$BuildMode"

@@ -82,7 +82,6 @@ pipeline {
             environment {
                 THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
                 DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
-                BUILD_ONLY = "1"
                 BUILD_IN_RELEASE_MODE = "false"
                 SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
                 CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
