@@ -17,6 +17,15 @@ class Build(MonitoringBase):
     status = Column(String(4096), nullable=False)
     duration_millis = Column(BigInteger, nullable=False)
 
+    def __init__(self, build_stats):
+        self.job_name = build_stats.job_name
+        self.build_id = build_stats.build_id
+        self.build_url = build_stats.build_url
+        self.finished_at_secs = build_stats.finished_at_secs
+        self.status = build_stats.status
+        self.duration_millis = build_stats.duration_millis
+        self.stages = [Stage(stage) for stage in build_stats.stages]
+
     def __repr__(self):
         return "<Build(id={}, name={}, build_id={})>".format(self.id, self.job_name, self.build_id)
 
@@ -25,12 +34,17 @@ class Stage(MonitoringBase):
     __tablename__ = 'stages'
 
     id = Column(Integer, primary_key=True)
-    build_id = Column(Integer, ForeignKey('builds.id'))
+    build_id = Column(Integer, ForeignKey('builds.id'), nullable=False)
     name = Column(String(4096), nullable=False)
     status = Column(String(4096), nullable=False)
     duration_millis = Column(BigInteger, nullable=False)
 
     build = relationship('Build', back_populates='stages')
+
+    def __init__(self, stage_stats):
+        self.name = stage_stats.name
+        self.status = stage_stats.status
+        self.duration_millis = stage_stats.duration_millis
 
     def __repr__(self):
         return "<Stage(id={}, build_id={}, name={})>".format(self.id, self.build.build_id, self.name)

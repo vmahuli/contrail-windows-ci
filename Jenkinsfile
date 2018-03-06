@@ -71,7 +71,7 @@ pipeline {
             steps {
                 unstash "Monitoring"
                 dir("monitoring") {
-                    sh "./test_stats.py"
+                    sh "python3 -m tests.monitoring_tests"
                 }
                 runHelpersTests()
             }

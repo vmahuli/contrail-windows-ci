@@ -19,10 +19,11 @@
 
 ### Provisioning database
 
-- `provision.py` script deploys schema on provided database
+- `provision_mysql_database.py` script deploys schema on provided database
 
     ```
-    $ python3 provision.py --mysql-host MYSQL_HOST \
+    $ python3 provision_mysql_database.py \
+        --mysql-host MYSQL_HOST \
         --mysql-username MYSQL_USER \
         --mysql-password MYSQL_PASSWORD \
         --mysql-database MYSQL_DATABASE
@@ -34,7 +35,7 @@
   To run tests, just execute the following command:
 
     ```
-    $ python3 test_stats.py
+    $ python3 -m tests.monitoring_tests
     ```
 
 ### Grafana dashboards

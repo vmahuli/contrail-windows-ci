@@ -22,6 +22,3 @@ class MysqlCommonArgumentParser(object):
             prompt = 'Enter password (for MySQL user {}): '.format(args.mysql_username)
             args.mysql_password = getpass.getpass(prompt=prompt)
         return args
-
-def get_mysql_connection_string(host, username, password, database):
-    return 'mysql://{}:{}@{}/{}'.format(username, password, host, database)
