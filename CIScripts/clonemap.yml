@@ -1,4 +1,6 @@
 clonemap:
+  - name: 'Juniper/contrail-api-client'
+    dest: 'src/contrail-api-client'
   - name: 'Juniper/contrail-build'
     dest: 'tools/build'
   - name: 'Juniper/contrail-controller'

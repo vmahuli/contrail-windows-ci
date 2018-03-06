@@ -20,6 +20,7 @@ function Get-ZuulRepos {
 
     # TODO(sodar): Get project list from clonemap.yml
     $ProjectList = @(
+        "Juniper/contrail-api-client",
         "Juniper/contrail-build",
         "Juniper/contrail-controller",
         "Juniper/contrail-vrouter",

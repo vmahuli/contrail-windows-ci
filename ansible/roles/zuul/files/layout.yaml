@@ -75,6 +75,10 @@ project-templates:
       - noop
 
 projects:
+  - name: Juniper/contrail-api-client
+    template:
+      - name: ci-contrail-windows-template
+
   - name: Juniper/contrail-controller
     template:
       - name: ci-contrail-windows-template
@@ -122,10 +126,6 @@ projects:
       - name: ci-contrail-windows-other-projects-template
 
   - name: Juniper/contrail-ansible-internal
-    template:
-      - name: ci-contrail-windows-other-projects-template
-
-  - name: Juniper/contrail-api-client
     template:
       - name: ci-contrail-windows-other-projects-template
 

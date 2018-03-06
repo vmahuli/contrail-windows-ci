@@ -19,6 +19,7 @@ special_gerrit_tag = ")]}'"
 
 # TODO: list of actually used projects may be fetched from layout file.
 actually_used_projects = [
+    "Juniper/contrail-api-client",
     "Juniper/contrail-controller",
     "Juniper/contrail-vrouter",
     "Juniper/contrail-build",
