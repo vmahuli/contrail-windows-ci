@@ -125,6 +125,10 @@ projects:
     template:
       - name: ci-contrail-windows-other-projects-template
 
+  - name: Juniper/contrail-api-client
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
   - name: Juniper/contrail-ci-test
     template:
       - name: ci-contrail-windows-other-projects-template
