@@ -72,7 +72,7 @@ function Invoke-DockerDriverBuild {
         Invoke-NativeCommand -ScriptBlock {
             python tools/generateds/generateDS.py -q -f `
                                                   -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
-                                                  -g golang-api controller/src/schema/vnc_cfg.xsd
+                                                  -g golang-api src/contrail-api-client/schema/vnc_cfg.xsd
 
             # Workaround on https://github.com/golang/go/issues/18468
             Copy-Item -Path $srcPath/vendor/* -Destination $GoPath/src -Force -Container -Recurse
@@ -327,7 +327,7 @@ function Invoke-AgentTestsBuild {
             "src/dns:dns_bind_test",
             "src/dns:dns_config_test",
             "src/dns:dns_mgr_test",
-            "controller/src/schema:test",
+            "src/contrail-api-client/schema:test",
             "src/xml:xml_test",
             "controller/src/xmpp:test",
             "src/base:libtask_test",
