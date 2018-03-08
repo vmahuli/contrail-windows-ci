@@ -48,4 +48,4 @@
 
 - hosts: controller
   roles:
-    - controller
+    - contrail-ansible-deployer-new

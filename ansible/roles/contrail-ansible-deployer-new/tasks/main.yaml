@@ -2,6 +2,10 @@
 #   command: /usr/sbin/dhclient eth1
 #   become: true
 
+- name: Prepare yum mirror repo files
+  include_role:
+    name: yum-repos-prepare
+
 - name: Install build dependencies
   package:
     name: "{{ item }}"
@@ -37,6 +41,16 @@
     chmod 600 /root/.ssh/id_rsa.pub
     chmod 700 /root/.ssh
   become: True
+
+- name: Create docker configuration directory
+  file:
+    path: /etc/docker/
+    state: directory
+
+- name: Set up docker bridge network
+  template:
+    src: docker/daemon.json.j2
+    dest: /etc/docker/daemon.json
 
 - name: Provision Contrail with deploy.yml playbook
   command: >
