@@ -53,7 +53,7 @@
 
 - name: Provision Contrail with deploy.yml playbook
   command: >
-    ansible-playbook -i inventory/ playbooks/configure_instances.yml -v
+    ansible-playbook -i inventory/ -e 'REGISTRY_PRIVATE_INSECURE=True' playbooks/configure_instances.yml -v
   args:
     chdir: "{{ docker_provision_dir }}"
   environment:
@@ -63,7 +63,7 @@
 
 - name: Provision Contrail with deploy.yml playbook
   command: >
-    ansible-playbook -i inventory/ -e orchestrator=openstack playbooks/install_contrail.yml
+    ansible-playbook -i inventory/ -e orchestrator=openstack -e 'REGISTRY_PRIVATE_INSECURE=True' playbooks/install_contrail.yml
   args:
     chdir: "{{ docker_provision_dir }}"
   environment:
