@@ -2,6 +2,7 @@
 tester
 builder
 ansible-worker
+purgatory
 
 [windows:children]
 tester
@@ -12,6 +13,9 @@ drive
 [linux:children]
 ansible-worker
 jenkins-server
+
+[ubuntu:children]
+purgatory
 
 [ansible-worker]
 
@@ -28,3 +32,5 @@ jenkins-server
 [testbed]
 
 [contrail-controller]
+
+[purgatory]

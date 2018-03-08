@@ -1,0 +1,8 @@
+library "contrailWindows@$BRANCH_NAME"
+
+prepareAndRunAnsiblePlaybook(config: createTemplateConfig,
+                             playbook: 'vmware-create-template.yml',
+                             vm_role: 'purgatory',
+                             vm_hardware_memory_mb: '4096',
+                             vm_hardware_num_cpus: '2',
+                             vm_networks: [['name': 'VM-Network', 'type': 'dhcp']])

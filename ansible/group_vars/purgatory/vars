@@ -1,0 +1,2 @@
+jenkins_agent_num_executors: 16
+jenkins_agent_labels: purgatory
