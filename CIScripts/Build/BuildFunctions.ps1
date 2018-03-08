@@ -99,10 +99,6 @@ function Invoke-DockerDriverBuild {
         })
     })
 
-    $Job.Step("Copying Agent API python script", {
-        Copy-Item $srcPath/scripts/agent_api.py ./
-    })
-
     $Job.Step("Building MSI", {
         Push-Location $srcPath
         Invoke-NativeCommand -ScriptBlock {
