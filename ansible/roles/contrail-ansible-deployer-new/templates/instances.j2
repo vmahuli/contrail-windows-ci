@@ -1,3 +1,6 @@
+provider_config:
+  bms:
+    ntpserver: 192.168.1.1
 instances:
   bms1:
     provider: bms
@@ -21,6 +24,7 @@ contrail_configuration:
   OPENSTACK_VERSION: "{{ openstack_version }}"
   PHYSICAL_INTERFACE: "{{ physical_interface }}"
   VROUTER_GATEWAY: "{{ ansible_default_ipv4.gateway }}"
+  REGISTRY_PRIVATE_INSECURE: true
 {% if cloud_orchestrator == 'openstack' %}
   AUTH_MODE: keystone
   KEYSTONE_AUTH_ADMIN_PASSWORD: "c0ntrail123"
@@ -60,4 +64,4 @@ kolla_config:
 #  rabbitmq_management_port: "15673"
 #  rabbitmq_cluster_port: "25673"
 #  rabbitmq_epmd_port: "4370"
-#  ironic_notification_manager_image_full: "{{ docker_registry.fqdn }}:{{ registry_port }}/contrail-openstack-ironic-notification-manager:{{ zuul.change }}-{{ zuul.patchset }}-centos7-ocata"
+
