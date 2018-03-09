@@ -433,7 +433,7 @@ function New-AgentConfigFile {
 platform=windows
 
 [CONTROL-NODE]
-server=$ControllerIP
+servers=$ControllerIP
 
 [DISCOVERY]
 server=$ControllerIP
