@@ -1,3 +1,5 @@
 {
-    "bip": "{{ docker_bridge_network }}"
+    "bip": "{{ docker_bridge_network }}",
+    "insecure-registries" : ["{{ docker_registry.fqdn }}:{{ docker_registry.port }}"]
+    
 }

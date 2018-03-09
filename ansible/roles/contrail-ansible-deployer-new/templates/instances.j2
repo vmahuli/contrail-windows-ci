@@ -17,11 +17,11 @@ instances:
 contrail_configuration:
   CLOUD_ORCHESTRATOR: "{{ cloud_orchestrator }}"
   CONTAINER_REGISTRY: "{{ docker_registry.fqdn }}:{{ docker_registry.port }}"
-  CONTRAIL_VERSION: "{{ contrail_version }}"
+  CONTRAIL_VERSION: "ocata-master-19"
   CONTROLLER_NODES: "{{ ansible_all_ipv4_addresses[0] }}"
-  LINUX_DISTR: centos7
+  #LINUX_DISTR: centos7
   LOG_LEVEL: SYS_DEBUG
-  OPENSTACK_VERSION: "{{ openstack_version }}"
+  #OPENSTACK_VERSION: "{{ openstack_version }}"
   PHYSICAL_INTERFACE: "{{ physical_interface }}"
   VROUTER_GATEWAY: "{{ ansible_default_ipv4.gateway }}"
   REGISTRY_PRIVATE_INSECURE: true
@@ -64,4 +64,3 @@ kolla_config:
 #  rabbitmq_management_port: "15673"
 #  rabbitmq_cluster_port: "25673"
 #  rabbitmq_epmd_port: "4370"
-
