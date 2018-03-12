@@ -2,7 +2,7 @@
 
 Describe "Testenv" {
     It "can read controller config from a .yaml file" {
-        $Controller = Read-ControllerConfig -Path "TestYaml.yaml"
+        $Controller = Read-ControllerConfig -Path $YamlPath
 
         $Controller.OS_credentials.Address | Should Be "1.2.3.1"
         $Controller.OS_credentials.Port | Should Be "5000"
@@ -16,7 +16,7 @@ Describe "Testenv" {
     }
 
     It "can read configuration of testbeds from .yaml file" {
-        $Testbeds = Read-TestbedsConfig -Path "TestYaml.yaml"
+        $Testbeds = Read-TestbedsConfig -Path $YamlPath
         $Testbeds[0].Address | Should Be "1.2.3.2"
         $Testbeds[1].Address | Should Be "1.2.3.3"
         $Testbeds[0].Username | Should Be "TBUsername"
@@ -50,10 +50,7 @@ testbeds:
     username: TBUsername
     password: TBPassword
 "@
-        $Yaml | Out-File "TestYaml.yaml"
-    }
-
-    AfterEach {
-        Remove-Item "TestYaml.yaml"
+        $YamlPath = "TestDrive:\TestYaml.yaml"
+        $Yaml | Out-File $YamlPath
     }
 }
