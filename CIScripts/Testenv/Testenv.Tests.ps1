@@ -5,10 +5,16 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 Describe "Testenv" {
     It "can read controller config from a .yaml file" {
         $Controller = Read-ControllerConfig -Path "TestYaml.yaml"
-        $Controller["Address"] | Should -Be "1.2.3.1"
-        $Controller["Port"] | Should -Be "8082"
-        $Controller["Username"] | Should -Be "AzureDiamond"
-        $Controller["Password"] | Should -Be "hunter2"
+
+        $Controller["os_credentials"]["Address"] | Should -Be "1.2.3.1"
+        $Controller["os_credentials"]["Port"] | Should -Be "5000"
+        $Controller["os_credentials"]["Username"] | Should -Be "AzureDiamond"
+        $Controller["os_credentials"]["Password"] | Should -Be "hunter2"
+
+        $Controller["rest_api"]["Address"] | Should -Be "1.2.3.1"
+        $Controller["rest_api"]["Port"] | Should -Be "8082"
+
+        $Controller["default_project"] | Should -Be "ci_tests"
     }
 
     It "can read configuration of testbeds from .yaml file" {
@@ -23,20 +29,28 @@ Describe "Testenv" {
 
     BeforeEach {
         $Yaml = @"
-Controller:
-  Address: 1.2.3.1
-  Port: 8082
-  Username: AzureDiamond
-  Password: hunter2
-Testbeds:
-  - Testbed1:
-    Address: 1.2.3.2
-    Username: TBUsername
-    Password: TBPassword
-  - Testbed2:
-    Address: 1.2.3.3
-    Username: TBUsername
-    Password: TBPassword
+controller:
+  os_credentials:
+    username: AzureDiamond
+    password: hunter2
+    address: 1.2.3.1
+    port: 5000
+
+  rest_api:
+    address: 1.2.3.1
+    port: 8082
+
+  default_project: ci_tests
+
+testbeds:
+  - name: Testbed1
+    address: 1.2.3.2
+    username: TBUsername
+    password: TBPassword
+  - name: Testbed2
+    address: 1.2.3.3
+    username: TBUsername
+    password: TBPassword
 "@
         $Yaml | Out-File "TestYaml.yaml"
     }
