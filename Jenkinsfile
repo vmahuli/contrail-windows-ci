@@ -165,7 +165,7 @@ pipeline {
                         }
 
                         // 'Test' stage
-                        node(label: 'tester') {
+                        node(label: 'winci-tester-4') {
                             deleteDir()
                             unstash 'CIScripts'
                             powershell script: './CIScripts/Test.ps1'
