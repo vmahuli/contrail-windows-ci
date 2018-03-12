@@ -1,6 +1,4 @@
-﻿$here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
-. "$here\$sut"
+﻿. $PSScriptRoot\Testenv.ps1
 
 Describe "Testenv" {
     It "can read controller config from a .yaml file" {
