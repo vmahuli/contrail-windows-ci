@@ -6,25 +6,25 @@ Describe "Testenv" {
     It "can read controller config from a .yaml file" {
         $Controller = Read-ControllerConfig -Path "TestYaml.yaml"
 
-        $Controller["os_credentials"]["Address"] | Should -Be "1.2.3.1"
-        $Controller["os_credentials"]["Port"] | Should -Be "5000"
-        $Controller["os_credentials"]["Username"] | Should -Be "AzureDiamond"
-        $Controller["os_credentials"]["Password"] | Should -Be "hunter2"
+        $Controller["os_credentials"]["Address"] | Should Be "1.2.3.1"
+        $Controller["os_credentials"]["Port"] | Should Be "5000"
+        $Controller["os_credentials"]["Username"] | Should Be "AzureDiamond"
+        $Controller["os_credentials"]["Password"] | Should Be "hunter2"
 
-        $Controller["rest_api"]["Address"] | Should -Be "1.2.3.1"
-        $Controller["rest_api"]["Port"] | Should -Be "8082"
+        $Controller["rest_api"]["Address"] | Should Be "1.2.3.1"
+        $Controller["rest_api"]["Port"] | Should Be "8082"
 
-        $Controller["default_project"] | Should -Be "ci_tests"
+        $Controller["default_project"] | Should Be "ci_tests"
     }
 
     It "can read configuration of testbeds from .yaml file" {
         $Testbeds = Read-TestbedsConfig -Path "TestYaml.yaml"
-        $Testbeds[0]["Address"] | Should -Be "1.2.3.2"
-        $Testbeds[1]["Address"] | Should -Be "1.2.3.3"
-        $Testbeds[0]["Username"] | Should -Be "TBUsername"
-        $Testbeds[1]["Username"] | Should -Be "TBUsername"
-        $Testbeds[0]["Password"] | Should -Be "TBPassword"
-        $Testbeds[1]["Password"] | Should -Be "TBPassword"
+        $Testbeds[0]["Address"] | Should Be "1.2.3.2"
+        $Testbeds[1]["Address"] | Should Be "1.2.3.3"
+        $Testbeds[0]["Username"] | Should Be "TBUsername"
+        $Testbeds[1]["Username"] | Should Be "TBUsername"
+        $Testbeds[0]["Password"] | Should Be "TBPassword"
+        $Testbeds[1]["Password"] | Should Be "TBPassword"
     }
 
     BeforeEach {
