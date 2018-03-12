@@ -1,4 +1,4 @@
-﻿. $PSScriptRoot\Testenv.ps1
+. $PSScriptRoot\Testenv.ps1
 
 Describe "Testenv" {
     It "can read controller config from a .yaml file" {

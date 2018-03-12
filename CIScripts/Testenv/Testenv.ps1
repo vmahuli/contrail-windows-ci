@@ -1,4 +1,4 @@
-﻿function Read-ControllerConfig {
+function Read-ControllerConfig {
     Param ([Parameter(Mandatory=$true)] [string] $Path)
     $FileContents = Get-Content -Path $Path -Raw
     $Parsed = ConvertFrom-Yaml $FileContents
