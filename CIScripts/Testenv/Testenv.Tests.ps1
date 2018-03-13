@@ -66,13 +66,14 @@ testbeds:
     username: TBUsername
     password: TBPassword
 "@
-            $YamlPath = "TestDrive:\TestYaml.yaml"
+            $YamlPath = "TestDrive:\TestYamlSingleton.yaml"
             $Yaml | Out-File $YamlPath
         }
 
         It "can read a config file with a single testbed" {
             $Testbeds = Read-TestbedsConfig -Path $YamlPath
 
+            $Testbeds.Count | Should Be 1
             $Testbeds[0].Name | Should Be "Testbed1"
         }
     }
