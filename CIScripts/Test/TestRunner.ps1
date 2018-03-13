@@ -17,7 +17,8 @@ function Invoke-TestScenarios {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
         [Parameter(Mandatory = $true)] [String] $TestenvConfFile,
-        [Parameter(Mandatory = $true)] [String] $TestConfigurationFile
+        [Parameter(Mandatory = $true)] [String] $TestConfigurationFile,
+        [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
 
     $Job.Step("Running all integration tests", {
@@ -47,29 +48,25 @@ function Invoke-TestScenarios {
         "vRouterAgentService.Tests.ps1"
     )
 
-    $TotalFailedCount = 0
-
     $TestPaths = Get-ChildItem -Recurse -Filter "*.Tests.ps1"
-    Foreach ($TestPath in $TestPaths) {
-        if ($TestPath.Name -in $TestsBlacklist) {
-            Write-Host "Skipping $($TestPath.Name)"
-            continue
-        }
-
-        $PesterRunScript = @{
-            Path=$TestPath.FullName; 
+    $WhitelistedTestPaths = $TestPaths | Where-Object { !($_.Name -in $TestsBlacklist) }
+    $PesterScripts = $WhitelistedTestPaths | ForEach-Object {
+        @{
+            Path=$_.FullName;
             Parameters= @{
                 TestenvConfFile=$TestenvConfFile
                 ConfigFile=$TestConfigurationFile
             }; 
             Arguments=@()
         }
-
-        $Results = Invoke-Pester -PassThru -Script $PesterRunScript
-        $TotalFailedCount += $Results.FailedCount
     }
-    Write-Host "Num failed tests: $TotalFailedCount"
-    if ($TotalFailedCount -gt 0) {
+    $TestReportOutputPath = "$TestReportOutputDirectory\testReport.xml"
+    $Results = Invoke-Pester -PassThru -Script $PesterScripts `
+        -OutputFormat NUnitXml -OutputFile $TestReportOutputPath
+    Write-Host "Number of passed tests: $($Results.PassedCount)"
+    Write-Host "Number of failed tests: $($Results.FailedCount)"
+    Write-Host "Report written to $TestReportOutputPath"
+    if ($Results.FailedCount -gt 0) {
         throw "Some tests failed"
     }
 }
@@ -104,13 +101,15 @@ function Invoke-IntegrationAndFunctionalTests {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
         [Parameter(Mandatory = $true)] [String] $TestenvConfFile,
-        [Parameter(Mandatory = $true)] [String] $TestConfigurationFile
+        [Parameter(Mandatory = $true)] [String] $TestConfigurationFile,
+        [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
 
     try {
         Invoke-TestScenarios -Sessions $Sessions `
             -TestenvConfFile $TestenvConfFile `
-            -TestConfigurationFile $TestConfigurationFile
+            -TestConfigurationFile $TestConfigurationFile `
+            -TestReportOutputDirectory $TestReportOutputDirectory
     }
     catch {
         Write-Host $_

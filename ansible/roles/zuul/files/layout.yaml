@@ -165,6 +165,10 @@ projects:
     template:
       - name: ci-contrail-windows-other-projects-template
 
+  - name: Juniper/contrail-java-api
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
   - name: Juniper/contrail-kolla-ansible
     template:
       - name: ci-contrail-windows-other-projects-template
@@ -257,6 +261,18 @@ projects:
     template:
       - name: ci-contrail-windows-other-projects-template
 
+  - name: Juniper/openstack-helm
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
+  - name: Juniper/openstack-helm-infra
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
   - name: Juniper/puppet-contrail
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
+  - name: Juniper/vijava
     template:
       - name: ci-contrail-windows-other-projects-template

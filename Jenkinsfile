@@ -167,7 +167,11 @@ pipeline {
                             unstash 'CIScripts'
                             unstash 'TestenvConf'
 
-                            powershell script: './CIScripts/Test.ps1'
+                            try {
+                                powershell script: './CIScripts/Test.ps1'
+                            } finally {
+                                stash name: 'testReport', includes: 'testReport.xml', allowEmpty: true
+                            }
                         }
                     }
                 }
@@ -179,30 +183,43 @@ pipeline {
         LOG_SERVER = "logs.opencontrail.org"
         LOG_SERVER_USER = "zuul-win"
         LOG_ROOT_DIR = "/var/www/logs/winci"
-        BUILD_SPECIFIC_DIR = "${ZUUL_UUID}"
-        JOB_SUBPATH = env.JOB_NAME.replaceAll("/", "/job/")
-        REMOTE_DST_FILE = "${LOG_ROOT_DIR}/${BUILD_SPECIFIC_DIR}/log.txt.gz"
     }
 
     post {
         always {
+            node('tester') {
+                deleteDir()
+                unstash 'CIScripts'
+                script {
+                    try {
+                        unstash 'testReport'
+                        powershell script: './CIScripts/GenerateTestReport.ps1'
+                    } finally {
+                        stash name: 'testReport', includes: '*.xml,*.html', allowEmpty: true
+                    }
+                }
+            }
+
             node('master') {
                 script {
-                    // Job triggered by Zuul -> upload log file to public server.
-                    // Job triggered by Github CI repository (variable "ghprbPullId" exists) -> keep log "private".
+                    def logServer = [
+                        addr: env.LOG_SERVER,
+                        user: env.LOG_SERVER_USER,
+                        rootDir: env.LOG_ROOT_DIR
+                    ]
+                    def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
 
-                    // TODO JUNIPER_WINDOWSSTUBS variable check is temporary and should be removed once
-                    // repository contrail-windows is accessible from Gerrit and it is main source of
-                    // windowsstubs code.
-                    if (env.ghprbPullId == null && env.JUNIPER_WINDOWSSTUBS == null) {
-                        // unstash "buildLogs"
-                        // TODO correct flags for rsync
-                        sh "ssh ${LOG_SERVER_USER}@${LOG_SERVER} \"mkdir -p ${LOG_ROOT_DIR}/${BUILD_SPECIFIC_DIR}\""
-                        def tmpLogFilename = "clean_log.txt.gz"
-                        obtainLogFile(env.JOB_NAME, env.BUILD_ID, tmpLogFilename)
-                        sh "rsync $tmpLogFilename ${LOG_SERVER_USER}@${LOG_SERVER}:${REMOTE_DST_FILE}"
-                        deleteDir()
+                    try {
+                        unstash 'testReport'
+                        publishToLogServer(logServer, 'testReport.xml', destDir, false)
+                        publishToLogServer(logServer, 'testReport.html', destDir, false)
+                    } catch (Exception err) {
+                        echo "No test report to publish"
                     }
+
+                    def logFilename = 'log.txt.gz'
+                    obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
+                    publishToLogServer(logServer, logFilename, destDir)
                 }
 
                 build job: 'WinContrail/gather-build-stats', wait: false,

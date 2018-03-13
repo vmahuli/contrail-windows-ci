@@ -40,3 +40,21 @@
     -Value "{{ (((trusted_hosts.stdout | trim()).split(',') | reject('equalto', '') | list()) + ['172.17.0.*']) | join(',') }}"
     -Force
   when: not (trusted_hosts.stdout | search("172.17.0.*"))
+
+- name: Install NuGet with chocolatey
+  win_chocolatey:
+    name: nuget.commandline
+    state: present
+    version: 4.5.1
+
+- name: Install ReportUnit with NuGet
+  win_shell: >
+    nuget install ReportUnit -Version 1.2.1 -OutputDirectory C:\
+  args:
+    creates: C:\ReportUnit.1.2.1
+
+- name: Add ReportUnit to PATH
+  win_path:
+    elements:
+    - C:\ReportUnit.1.2.1\tools
+    state: present
