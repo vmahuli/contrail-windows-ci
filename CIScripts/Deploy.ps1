@@ -7,7 +7,7 @@
 
 $Job = [Job]::new("Deploy")
 
-$Sessions = New-RemoteSessionsToTestbeds
+$Sessions = New-RemoteSessionsToTestbeds -TestenvConfFile $PSScriptRoot\..\$Env:TESTENV_CONF_FILE
 Copy-ArtifactsToTestbeds -Sessions $Sessions -ArtifactsDir $Env:ARTIFACTS_DIR
 
 $Job.Done()

@@ -16,6 +16,7 @@
 function Invoke-TestScenarios {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
+        [Parameter(Mandatory = $true)] [String] $TestenvConfFile,
         [Parameter(Mandatory = $true)] [String] $TestConfigurationFile
     )
 
@@ -58,7 +59,7 @@ function Invoke-TestScenarios {
         $PesterRunScript = @{
             Path=$TestPath.FullName; 
             Parameters= @{
-                TestbedAddr=$Sessions[0].ComputerName;
+                TestenvConfFile=$TestenvConfFile
                 ConfigFile=$TestConfigurationFile
             }; 
             Arguments=@()
@@ -102,11 +103,14 @@ function Get-Logs {
 function Invoke-IntegrationAndFunctionalTests {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
+        [Parameter(Mandatory = $true)] [String] $TestenvConfFile,
         [Parameter(Mandatory = $true)] [String] $TestConfigurationFile
     )
 
     try {
-        Invoke-TestScenarios -Sessions $Sessions -TestConfigurationFile $TestConfigurationFile
+        Invoke-TestScenarios -Sessions $Sessions `
+            -TestenvConfFile $TestenvConfFile `
+            -TestConfigurationFile $TestConfigurationFile
     }
     catch {
         Write-Host $_
