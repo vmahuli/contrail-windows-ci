@@ -1,9 +1,8 @@
-def call(inventoryFilePath, demoEnvName, demoEnvFolder, mgmtNetwork, dataNetwork,
+def call(demoEnvName, demoEnvFolder, mgmtNetwork, dataNetwork,
          testbedTemplate, controllerTemplate,
          configPath = 'vmware-vm.vars') {
     def configText = """
 # Common testenv vars
-vm_inventory_file: ${inventoryFilePath}
 testenv_name: ${demoEnvName}
 testenv_folder: ${demoEnvFolder}
 

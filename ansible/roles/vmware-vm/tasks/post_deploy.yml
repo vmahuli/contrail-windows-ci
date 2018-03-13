@@ -23,10 +23,3 @@
 - name: Show obtained IP
   debug:
     var: ansible_host
-
-- name: Save VM info to inventory file '{{ vm_inventory_file }}'
-  delegate_to: localhost
-  lineinfile:
-    path: "{{ vm_inventory_file }}"
-    create: yes
-    line: "{{ inventory_hostname }};{{ newvm.instance.hw_eth0.ipaddresses | ipv4 | join(',') }};{{ newvm.instance.hw_product_uuid }}"
