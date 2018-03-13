@@ -188,6 +188,19 @@ pipeline {
 
     post {
         always {
+            node('tester') {
+                deleteDir()
+                unstash 'CIScripts'
+                script {
+                    try {
+                        unstash 'testReport'
+                        powershell script: './CIScripts/GenerateTestReport.ps1'
+                    } finally {
+                        stash name: 'testReport', includes: '*.xml,*.html', allowEmpty: true
+                    }
+                }
+            }
+
             node('master') {
                 script {
                     def logServer = [
@@ -200,6 +213,7 @@ pipeline {
                     try {
                         unstash 'testReport'
                         publishToLogServer(logServer, 'testReport.xml', destDir, false)
+                        publishToLogServer(logServer, 'testReport.html', destDir, false)
                     } catch (Exception err) {
                         echo "No test report to publish"
                     }
