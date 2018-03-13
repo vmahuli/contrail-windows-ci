@@ -49,3 +49,8 @@
 - hosts: controller
   roles:
     - controller
+
+- hosts: localhost
+  connection: local
+  roles:
+    - testenv-save-conf
