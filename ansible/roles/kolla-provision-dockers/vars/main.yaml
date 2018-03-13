@@ -2,7 +2,7 @@ kolla_globals_config:
   kolla_base_distro: "{{ kolla_docker_distro }}"
   kolla_install_type: 'binary'
   openstack_release: "{{ kolla_version }}"
-  docker_registry: "{{ docker_registry.fqdn }}:{{ docker_registry.port }}"
+  docker_registry: "{{ docker_registry }}"
   enable_keystone_v3: "no"
   keystone_admin_user: 'admin'
   contrail_api_interface_address: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
@@ -14,7 +14,7 @@ kolla_globals_config:
   neutron_external_interface: "{{ network_interface }}"
   neutron_plugin_agent: opencontrail
   rabbitmq_user: openstack
-  contrail_docker_registry: "{{ docker_registry.fqdn }}:{{ docker_registry.port }}"
+  contrail_docker_registry: "{{ docker_registry }}"
   enable_nova_compute: 'yes'
   enable_haproxy: 'no'
   # override rabbitmq ports to prevent conflict with the contrail rabbit instance

@@ -4,6 +4,3 @@ kolla_docker_distro: "ubuntu"
 openstack_version: "ocata"
 kolla_version: "contrail_4_1_8"
 network_interface: "ens192"
-docker_registry:
-  fqdn: 10.84.22.43
-  port: 5000
