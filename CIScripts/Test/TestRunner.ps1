@@ -12,25 +12,35 @@ function Invoke-TestScenarios {
         "vRouterAgentService.Tests.ps1"
     )
 
+    $TotalResults = @{
+        PassedCount = 0;
+        FailedCount = 0;
+    }
+
     $TestPaths = Get-ChildItem -Recurse -Filter "*.Tests.ps1"
     $WhitelistedTestPaths = $TestPaths | Where-Object { !($_.Name -in $TestsBlacklist) }
-    $PesterScripts = $WhitelistedTestPaths | ForEach-Object {
-        @{
-            Path=$_.FullName;
+    $WhitelistedTestPaths | ForEach-Object {
+        $PesterScript = @{
+            Path=$_.FullName
             Parameters= @{
                 TestbedAddr=$Sessions[0].ComputerName;
                 ConfigFile=$TestConfigurationFile
             }; 
             Arguments=@()
         }
+        $Basename = $_.Basename
+        $TestReportOutputPath = "$TestReportOutputDirectory\$Basename.xml"
+        $Results = Invoke-Pester -PassThru -Script $PesterScript `
+            -OutputFormat NUnitXml -OutputFile $TestReportOutputPath
+
+        $TotalResults.PassedCount += $Results.PassedCount
+        $TotalResults.FailedCount += $Results.FailedCount
     }
-    $TestReportOutputPath = "$TestReportOutputDirectory\testReport.xml"
-    $Results = Invoke-Pester -PassThru -Script $PesterScripts `
-        -OutputFormat NUnitXml -OutputFile $TestReportOutputPath
-    Write-Host "Number of passed tests: $($Results.PassedCount)"
-    Write-Host "Number of failed tests: $($Results.FailedCount)"
+
+    Write-Host "Number of passed tests: $($TotalResults.PassedCount)"
+    Write-Host "Number of failed tests: $($TotalResults.FailedCount)"
     Write-Host "Report written to $TestReportOutputPath"
-    if ($Results.FailedCount -gt 0) {
+    if ($TotalResults.FailedCount -gt 0) {
         throw "Some tests failed"
     }
 }

@@ -8,6 +8,6 @@ $Job = [Job]::new("Test")
 $Sessions = New-RemoteSessionsToTestbeds
 Invoke-IntegrationAndFunctionalTests -Sessions $Sessions `
     -TestConfigurationFile $PSScriptRoot\Test\$Env:TEST_CONFIGURATION_FILE `
-    -TestReportOutputDirectory $Env:WORKSPACE
+    -TestReportOutputDirectory $Env:WORKSPACE/test_results
 
 $Job.Done()
