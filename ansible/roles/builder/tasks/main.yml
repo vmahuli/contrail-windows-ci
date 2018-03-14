@@ -230,6 +230,15 @@
     install_args: 'ADD_CMAKE_TO_PATH=System'
     state: present
 
+- name: Uninstall old Pester
+  win_command: 'Get-InstalledModule -Name Pester | Uninstall-Module'
+
+- name: Install Pester
+  win_chocolatey:
+    name: Pester
+    version: 4.2.0
+    state: present
+
 - name: Copy aepic.dll
   # required for: https://social.msdn.microsoft.com/Forums/en-US/cd569d5e-fd17-40d6-b98a-3adb282bb4b4/windows-server-core-wdk-apivalidation-error-a-critical-error-occured-while-retrieving-driver?forum=wdk
   win_robocopy:
