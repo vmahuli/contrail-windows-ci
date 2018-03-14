@@ -6,7 +6,7 @@ function Get-TestbedCredential {
         "", Justification="This are just credentials to a testbed VM.")]
     Param ([Parameter(Mandatory = $true)] [Hashtable] $VM)
 
-    if (-not $VM['Username']) {
+    if (-not $VM['Username'] -and -not $VM['Password']) {
         return Get-Credential # assume interactive mode
     } else {
         $VMUsername = Get-UsernameInWorkgroup -Username $VM.Username
