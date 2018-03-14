@@ -103,9 +103,9 @@ Describe "Single Host Utils-based Tests" {
         Initialize-DriverAndExtension -Session $Session -TestConfiguration $TestConf `
             -ControllerConfig $ControllerConfig
 
-        New-DockerNetwork -Session $Session -TestConfiguration $TestConf `
+        New-DockerNetwork -Session $Session `
             -TenantName $ControllerConfig.Default_project `
-            -Name $NetworkName -Network $NetworkName `
+            -Name $NetworkName `
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
     }
 
