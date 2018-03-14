@@ -151,7 +151,7 @@ pipeline {
                         }
 
                         // 'Deploy' stage
-                        node(label: 'winci-tester-4') {
+                        node(label: 'tester && has-yaml') {
                             deleteDir()
 
                             unstash 'CIScripts'
@@ -162,7 +162,7 @@ pipeline {
                         }
 
                         // 'Test' stage
-                        node(label: 'winci-tester-4') {
+                        node(label: 'tester && has-yaml') {
                             deleteDir()
                             unstash 'CIScripts'
                             unstash 'TestenvConf'
