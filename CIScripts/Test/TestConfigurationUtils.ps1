@@ -113,6 +113,8 @@ function Enable-DockerDriver {
         $ControllerIP = $Using:ControllerIP
 
         Start-Job -ScriptBlock {
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
+                "OSCreds", Justification="We don't care that it's plaintext, it's just test env.")]
             Param ($OSCreds, $ControllerIP, $Adapter)
 
             $AuthUrl = "http://$( $OSCreds.Address ):$( $OSCreds.Port )/v2.0"

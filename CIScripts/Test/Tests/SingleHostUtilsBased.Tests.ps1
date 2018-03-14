@@ -98,6 +98,12 @@ Describe "Single Host Utils-based Tests" {
 
         Write-Host "Creating ContrailNetwork"
         $NetworkName = "testnet"
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "ContrailNetwork",
+            Justification="It's used in AfterEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
+        )]
         $ContrailNetwork = $ContrailNM.AddNetwork($null, $NetworkName, $Subnet)
 
         Initialize-DriverAndExtension -Session $Session -TestConfiguration $TestConf `
@@ -122,6 +128,11 @@ Describe "Single Host Utils-based Tests" {
         Install-Extension -Session $Session
         Install-Utils -Session $Session
 
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "ContrailNM",
+            Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
+        )]
         $ContrailNM = [ContrailNetworkManager]::new($ControllerConfig)
     }
 
