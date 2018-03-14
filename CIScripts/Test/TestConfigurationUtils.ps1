@@ -1,38 +1,11 @@
 . $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
 
-class NetworkConfiguration {
-    [string] $Name;
-    [string[]] $Subnets;
-}
-
-class TenantConfiguration {
-    [string] $Name;
-    [string] $DefaultNetworkName;
-    [NetworkConfiguration] $SingleSubnetNetwork;
-    [NetworkConfiguration] $MultipleSubnetsNetwork;
-    [NetworkConfiguration] $NetworkWithPolicy1;
-    [NetworkConfiguration] $NetworkWithPolicy2;
-}
-
-class DockerDriverConfiguration {
-    [string] $Username;
-    [string] $Password;
-    [string] $AuthUrl;
-    [TenantConfiguration] $TenantConfiguration;
-}
-
 class TestConfiguration {
-    [DockerDriverConfiguration] $DockerDriverConfiguration;
-    [string] $ControllerIP;
-    [int] $ControllerRestPort
-    [string] $ControllerHostUsername;
-    [string] $ControllerHostPassword;
     [string] $AdapterName;
     [string] $VHostName;
     [string] $VMSwitchName;
     [string] $ForwardingExtensionName;
     [string] $AgentConfigFilePath;
-    [string] $LinuxVirtualMachineIp;
 }
 
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
@@ -274,24 +247,13 @@ function Read-SyslogForAgentCrash {
 
 function New-DockerNetwork {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
-           [Parameter(Mandatory = $false)] [string] $Name,
-           [Parameter(Mandatory = $false)] [string] $TenantName,
+           [Parameter(Mandatory = $true)] [string] $Name,
+           [Parameter(Mandatory = $true)] [string] $TenantName,
            [Parameter(Mandatory = $false)] [string] $Network,
            [Parameter(Mandatory = $false)] [string] $Subnet)
 
-    $Configuration = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration
-
-    if (!$Name) {
-        $Name = $Configuration.DefaultNetworkName
-    }
-
     if (!$Network) {
-        $Network = $Configuration.DefaultNetworkName
-    }
-
-    if (!$TenantName) {
-        $TenantName = $Configuration.Name
+        $Network = $Name
     }
 
     Write-Host "Creating network $Name"
