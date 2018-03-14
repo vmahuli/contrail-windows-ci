@@ -51,5 +51,31 @@ function Eventually {
         [Parameter(Mandatory=$false)] [int] $Interval = 1,
         [Parameter(Mandatory=$true)] [int] $Duration = 3
     )
-    $ScriptBlock | Invoke-UntilSucceeds -Interval $Interval -Duration $Duration
+    if ($Duration -lt $Interval) {
+        throw "Duration must be longer than interval"
+    }
+    if ($Interval -eq 0) {
+        throw "Interval must not be equal to zero"
+    }
+    $StartTime = Get-Date
+    $DidNotThrow = $false
+    do {
+        try {
+            & $ScriptBlock
+            $DidNotThrow = $true
+        } catch {
+            $DidNotThrow = $false
+            $LastException = $_.Exception
+        } finally {
+            Start-Sleep -s $Interval
+        }
+        if($DidNotThrow) {
+            return
+        }
+    } while (((Get-Date) - $StartTime).Seconds -lt $Duration)
+    if ($LastException) {
+        $NewException = New-Object -TypeName CITimeoutException("Eventually failed.",
+            $LastException)
+        throw $NewException
+    }
 }
