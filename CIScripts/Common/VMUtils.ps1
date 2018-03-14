@@ -56,7 +56,6 @@ function New-RemoteSessions {
     return $Sessions
 }
 
-
 function New-RemoteSessionsToTestbeds {
     Param ([Parameter(Mandatory=$true)] [string] $TestenvConfFile)
 

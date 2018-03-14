@@ -131,7 +131,6 @@ pipeline {
                                            env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
 
                             destroyTestEnv(vmwareConfig)
-
                         }
 
                         // 'Provision' stage
