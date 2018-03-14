@@ -3,6 +3,7 @@ Param (
     [Parameter(Mandatory=$true)] [string] $ConfigFile
 )
 
+. $PSScriptRoot\..\..\Common\Init.ps1
 . $PSScriptRoot\..\Utils\ComponentsInstallation.ps1
 . $PSScriptRoot\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\TestConfigurationUtils.ps1
