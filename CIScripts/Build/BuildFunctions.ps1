@@ -90,7 +90,7 @@ function Invoke-DockerDriverBuild {
     })
 
     $Job.Step("Precompiling tests", {
-        $modules = @("driver", "controller", "hns", "hnsManager")
+        $modules = @("agent", "driver", "controller", "hns", "hnsManager")
         $modules.ForEach({
             Invoke-NativeCommand -ScriptBlock {
                 ginkgo build $srcPath/$_

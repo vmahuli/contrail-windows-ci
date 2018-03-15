@@ -33,7 +33,7 @@ function Install-Artifacts {
         Copy-Item -ToSession $Session -Path "docker_driver\docker-driver.msi" -Destination C:\Artifacts\
 
         Write-Host "Copying Docker driver tests"
-        $TestFiles = @("controller", "hns", "hnsManager", "driver")
+        $TestFiles = @("agent", "controller", "hns", "hnsManager", "driver")
         $TestFiles.ForEach({
             Copy-Item -ToSession $Session -Path "docker_driver\$_.test" -Destination "C:\Artifacts\$_.test.exe"
         })
