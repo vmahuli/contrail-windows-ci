@@ -113,19 +113,17 @@ function Enable-DockerDriver {
         $ControllerIP = $Using:ControllerIP
 
         Start-Job -ScriptBlock {
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
-                "OSCreds", Justification="We don't care that it's plaintext, it's just test env.")]
-            Param ($OSCreds, $ControllerIP, $Adapter)
+            Param ($OpenStack, $ControllerIP, $Adapter)
 
-            $AuthUrl = "http://$( $OSCreds.Address ):$( $OSCreds.Port )/v2.0"
+            $AuthUrl = "http://$( $OpenStack.Address ):$( $OpenStack.Port )/v2.0"
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="The env variable is read by contrail-windows-docker.exe")]
-            $Env:OS_USERNAME = $OSCreds.Username
+            $Env:OS_USERNAME = $OpenStack.Username
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="The env variable is read by contrail-windows-docker.exe")]
-            $Env:OS_PASSWORD = $OSCreds.Password
+            $Env:OS_PASSWORD = $OpenStack.Password
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="The env variable is read by contrail-windows-docker.exe")]
@@ -133,7 +131,7 @@ function Enable-DockerDriver {
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="The env variable is read by contrail-windows-docker.exe")]
-            $Env:OS_TENANT_NAME = $OSCreds.Project
+            $Env:OS_TENANT_NAME = $OpenStack.Project
 
             & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" -forceAsInteractive -controllerIP $ControllerIP -adapter "$Adapter" -vswitchName "Layered <adapter>" -logLevel "Debug"
         } -ArgumentList $OSCreds, $ControllerIP, $AdapterName | Out-Null
