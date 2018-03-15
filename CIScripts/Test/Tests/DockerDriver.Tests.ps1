@@ -1,12 +1,15 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestbedAddr,
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$true)] [string] $ConfigFile
 )
 
 . $PSScriptRoot\..\..\Common\Aliases.ps1
 
 . $ConfigFile
-$Session = New-PSSession -ComputerName $TestbedAddr -Credential (Get-TestbedCredential)
+$TestConf = Get-TestConfiguration
+$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+$Session = $Sessions[0]
+
 $TestsPath = "C:\Artifacts\"
 
 function Start-DockerDriverUnitTest {
