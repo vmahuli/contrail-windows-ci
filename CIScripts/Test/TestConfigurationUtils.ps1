@@ -117,23 +117,16 @@ function Enable-DockerDriver {
 
             $AuthUrl = "http://$( $OpenStack.Address ):$( $OpenStack.Port )/v2.0"
 
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-                "", Justification="The env variable is read by contrail-windows-docker.exe")]
-            $Env:OS_USERNAME = $OpenStack.Username
-
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-                "", Justification="The env variable is read by contrail-windows-docker.exe")]
-            $Env:OS_PASSWORD = $OpenStack.Password
-
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-                "", Justification="The env variable is read by contrail-windows-docker.exe")]
-            $Env:OS_AUTH_URL = $AuthUrl
-
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-                "", Justification="The env variable is read by contrail-windows-docker.exe")]
-            $Env:OS_TENANT_NAME = $OpenStack.Project
-
-            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" -forceAsInteractive -controllerIP $ControllerIP -adapter "$Adapter" -vswitchName "Layered <adapter>" -logLevel "Debug"
+            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" `
+                -forceAsInteractive `
+                -controllerIP $ControllerIP `
+                -os_username $OpenStack.Username `
+                -os_password $OpenStack.Password `
+                -os_auth_url $AuthUrl `
+                -os_tenant_name $OpenStack.Project `
+                -adapter "$Adapter" `
+                -vswitchName "Layered <adapter>" `
+                -logLevel "Debug"
         } -ArgumentList $OSCreds, $ControllerIP, $AdapterName | Out-Null
     }
 
