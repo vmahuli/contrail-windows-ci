@@ -66,7 +66,7 @@ testbeds:
     username: TBUsername
     password: TBPassword
 "@
-            $YamlPath = "TestDrive:\TestYamlSingleton.yaml"
+            $YamlPath = "TestDrive:\TestYamlSingleTestbed.yaml"
             $Yaml | Out-File $YamlPath
         }
 
