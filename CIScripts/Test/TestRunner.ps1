@@ -7,6 +7,10 @@ function Invoke-TestScenarios {
         [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
 
+    if (-not (Test-Path $TestReportOutputDirectory)) {
+        New-Item -ItemType Directory -Path $TestReportOutputDirectory
+    }
+
     $TestsBlacklist = @(
         # Put filenames of blacklisted tests here.
         "vRouterAgentService.Tests.ps1"
@@ -21,7 +25,7 @@ function Invoke-TestScenarios {
     $WhitelistedTestPaths = $TestPaths | Where-Object { !($_.Name -in $TestsBlacklist) }
     $WhitelistedTestPaths | ForEach-Object {
         $PesterScript = @{
-            Path=$_.FullName
+            Path=$_.FullName;
             Parameters= @{
                 TestbedAddr=$Sessions[0].ComputerName;
                 ConfigFile=$TestConfigurationFile
