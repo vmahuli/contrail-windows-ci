@@ -4,11 +4,8 @@ library "contrailWindows@$BRANCH_NAME"
 def mgmtNetwork
 def testNetwork
 def vmwareConfig
-def inventoryFilePath
 def testEnvName
 def testEnvFolder
-
-def testbeds
 
 pipeline {
     agent none
@@ -109,6 +106,7 @@ pipeline {
             environment {
                 VC = credentials('vcenter')
                 TEST_CONFIGURATION_FILE = "GetTestConfigurationJuni.ps1"
+                TESTENV_CONF_FILE = "testenv-conf.yaml"
                 TESTBED = credentials('win-testbed')
                 ARTIFACTS_DIR = "output"
                 TESTBED_TEMPLATE = "Template-testbed-201803050718"
@@ -128,9 +126,7 @@ pipeline {
                             deleteDir()
                             unstash 'Ansible'
 
-                            inventoryFilePath = "${env.WORKSPACE}/ansible/vm.${env.BUILD_ID}"
-
-                            prepareTestEnv(inventoryFilePath, testEnvName, testEnvFolder,
+                            prepareTestEnv(testEnvName, testEnvFolder,
                                            mgmtNetwork, testNetwork,
                                            env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
 
@@ -142,32 +138,34 @@ pipeline {
                             deleteDir()
                             unstash 'Ansible'
 
-                            inventoryFilePath = "${env.WORKSPACE}/ansible/vm.${env.BUILD_ID}"
+                            def testenvConfPath = "${env.WORKSPACE}/${env.TESTENV_CONF_FILE}"
 
-                            prepareTestEnv(inventoryFilePath, testEnvName, testEnvFolder,
+                            prepareTestEnv(testEnvName, testEnvFolder,
                                            mgmtNetwork, testNetwork,
                                            env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
 
-                            provisionTestEnv(vmwareConfig)
-                            testbeds = parseTestbedAddresses(inventoryFilePath)
+                            provisionTestEnv(vmwareConfig, testenvConfPath)
+
+                            stash name: "TestenvConf", includes: "testenv-conf.yaml"
                         }
 
                         // 'Deploy' stage
-                        node(label: 'tester') {
+                        node(label: 'tester && has-yaml') {
                             deleteDir()
 
                             unstash 'CIScripts'
                             unstash 'Artifacts'
-
-                            env.TESTBED_ADDRESSES = testbeds.join(',')
+                            unstash 'TestenvConf'
 
                             powershell script: './CIScripts/Deploy.ps1'
                         }
 
                         // 'Test' stage
-                        node(label: 'tester') {
+                        node(label: 'tester && has-yaml') {
                             deleteDir()
                             unstash 'CIScripts'
+                            unstash 'TestenvConf'
+
                             try {
                                 powershell script: './CIScripts/Test.ps1'
                             } finally {

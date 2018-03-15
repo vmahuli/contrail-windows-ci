@@ -25,6 +25,11 @@
     name: VMWare.PowerCLI
     state: present
 
+- name: Install PowerShell YAML parser module
+  win_psmodule:
+    name: powershell-yaml
+    state: present
+
 - name: Check TrustedHosts value
   win_shell: (Get-Item WSMan:\localhost\Client\TrustedHosts).Value
   register: trusted_hosts

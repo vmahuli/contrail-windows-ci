@@ -1,0 +1,7 @@
+---
+
+- name: Save testenv configuration to file
+  when: testenv_conf_file is defined
+  template:
+    src: testenv-conf.yaml.j2
+    dest: '{{ testenv_conf_file }}'
