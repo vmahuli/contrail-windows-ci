@@ -3,22 +3,35 @@
 Describe "Testenv" {
 
     Context "Example config" {
-        It "can read controller config from a .yaml file" {
-            $Controller = Read-ControllerConfig -Path $YamlPath
+        It "can read OpenStack credentials config from a .yaml file" {
+            $OpenStack = Read-OpenStackConfig -Path $YamlPath
+            $OpenStack.Address | Should Be "1.2.3.1"
+            $OpenStack.Port | Should Be "5000"
+            $OpenStack.Username | Should Be "AzureDiamond"
+            $OpenStack.Password | Should Be "hunter2"
+            $OpenStack.Project | Should Be "admin"
 
-            $Controller.OS_credentials.Address | Should Be "1.2.3.1"
-            $Controller.OS_credentials.Port | Should Be "5000"
-            $Controller.OS_credentials.Username | Should Be "AzureDiamond"
-            $Controller.OS_credentials.Password | Should Be "hunter2"
-            $Controller.OS_credentials.Project | Should Be "admin"
-
-            $Controller.Rest_API.Address | Should Be "1.2.3.1"
-            $Controller.Rest_API.Port | Should Be "8082"
-
-            $Controller.Default_Project | Should Be "ci_tests"
+            $OpenStack.AuthUrl() | Should Be "http://1.2.3.1:5000/v2.0"
         }
 
-        It "can read configuration of testbeds from .yaml file" {
+        It "can read controller config from a .yaml file" {
+            $Controller = Read-ControllerConfig -Path $YamlPath
+            $Controller.Address | Should Be "1.2.3.1"
+            $Controller.RestApiPort | Should Be "8082"
+            $Controller.DefaultProject | Should Be "ci_tests"
+
+            $Controller.RestApiUrl() | Should Be "http://1.2.3.1:8082"
+        }
+
+        It "can read testbed config from a .yaml file" {
+            $Testbed = Read-TestbedConfig -Path $YamlPath
+            $Testbed.AdapterName | Should Be "Eth1"
+            $Testbed.VMSwitchName() | Should Be "Layered Eth1"
+            $Testbed.ForwardingExtensionName | Should Be "MyExtension"
+            $Testbed.AgentConfigFilePath | Should Be "MyFile"
+        }
+
+        It "can read locations and credentials of testbeds from .yaml file" {
             $Testbeds = Read-TestbedsConfig -Path $YamlPath
             $Testbeds[0].Address | Should Be "1.2.3.2"
             $Testbeds[1].Address | Should Be "1.2.3.3"
@@ -30,19 +43,23 @@ Describe "Testenv" {
 
         BeforeEach {
             $Yaml = @"
+openStack:
+  username: AzureDiamond
+  password: hunter2
+  project: admin
+  address: 1.2.3.1
+  port: 5000
+
 controller:
-  os_credentials:
-    username: AzureDiamond
-    password: hunter2
-    project: admin
-    address: 1.2.3.1
-    port: 5000
+  address: 1.2.3.1
+  restApiPort: 8082
+  defaultProject: ci_tests
 
-  rest_api:
-    address: 1.2.3.1
-    port: 8082
-
-  default_project: ci_tests
+testbed:
+  AdapterName: Eth1
+  VHostName: vEth
+  ForwardingExtensionName: MyExtension
+  AgentConfigFilePath: MyFile
 
 testbeds:
   - name: Testbed1
