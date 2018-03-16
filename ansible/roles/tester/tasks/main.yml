@@ -41,6 +41,9 @@
     -Force
   when: not (trusted_hosts.stdout | search("172.17.0.*"))
 
+- name: Bump Pester version to 4.2.0
+  win_shell: 'Update-Module -Name Pester -MaximumVersion 4.2.0'
+
 - name: Install NuGet with chocolatey
   win_chocolatey:
     name: nuget.commandline

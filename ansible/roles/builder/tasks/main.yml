@@ -230,9 +230,6 @@
     install_args: 'ADD_CMAKE_TO_PATH=System'
     state: present
 
-- name: Bump Pester version to 4.2.0
-  win_shell: 'Update-Module -Name Pester -MaximumVersion 4.2.0'
-
 - name: Copy aepic.dll
   # required for: https://social.msdn.microsoft.com/Forums/en-US/cd569d5e-fd17-40d6-b98a-3adb282bb4b4/windows-server-core-wdk-apivalidation-error-a-critical-error-occured-while-retrieving-driver?forum=wdk
   win_robocopy:
