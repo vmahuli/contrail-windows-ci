@@ -3,14 +3,14 @@ Param (
     [Parameter(Mandatory=$true)] [string] $ConfigFile
 )
 
-. $PSScriptRoot\..\..\Common\Init.ps1
-. $PSScriptRoot\..\Utils\ComponentsInstallation.ps1
-. $PSScriptRoot\..\Utils\ContrailNetworkManager.ps1
-. $PSScriptRoot\..\TestConfigurationUtils.ps1
-. $PSScriptRoot\..\..\Testenv\Testenv.ps1
-. $PSScriptRoot\..\..\Common\VMUtils.ps1
-. $PSScriptRoot\..\PesterHelpers\PesterHelpers.ps1
-. $PSScriptRoot\..\Utils\CommonTestCode.ps1 # Get-RemoteNetAdapterInformation
+. $PSScriptRoot\..\..\..\Common\Init.ps1
+. $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
+. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
+. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\..\..\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\..\Common\VMUtils.ps1
+. $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
+. $PSScriptRoot\..\..\Utils\CommonTestCode.ps1 # Get-RemoteNetAdapterInformation
 
 . $ConfigFile
 $TestConf = Get-TestConfiguration
@@ -19,11 +19,15 @@ $Session = $Sessions[0]
 
 $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
 
-Describe "Single Host Utils-based Tests" {
+Describe "Single compute node protocol tests with utils" {
 
-    # TODO Port TCP Communication test (when docker images are ready)
+    Context "TCP" {
+        It "TCP connection works" -Pending {
+            # TCPCommunicationTest.ps1
+        }
+    }
 
-    Context "ICMP Communication" {
+    Context "ICMP" {
         It "Ping between containers succeeds" {
             Invoke-Command -Session $Session -ScriptBlock {
                 $Container2IP = $Using:Container2NetInfo.IPAddress

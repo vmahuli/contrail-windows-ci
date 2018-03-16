@@ -3,13 +3,13 @@ Param (
     [Parameter(Mandatory=$true)] [string] $ConfigFile   
 )
 
-. $PSScriptRoot\..\..\Common\Init.ps1
-. $PSScriptRoot\..\Utils\CommonTestCode.ps1
-. $PSScriptRoot\..\Utils\ComponentsInstallation.ps1
-. $PSScriptRoot\..\TestConfigurationUtils.ps1
-. $PSScriptRoot\..\..\Testenv\Testenv.ps1
-. $PSScriptRoot\..\..\Common\VMUtils.ps1
-. $PSScriptRoot\..\PesterHelpers\PesterHelpers.ps1
+. $PSScriptRoot\..\..\..\Common\Init.ps1
+. $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
+. $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
+. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\..\..\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\..\Common\VMUtils.ps1
+. $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
 . $ConfigFile
 $TestConf = Get-TestConfiguration

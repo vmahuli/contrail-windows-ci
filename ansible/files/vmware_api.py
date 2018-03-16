@@ -56,6 +56,7 @@ class VmwareApi(object):
         self.content = None
         self.datacenter = None
         self.cluster = None
+        self.storage_manager = None
         self._setup_common_objects(datacenter_name, cluster_name)
 
 
@@ -68,16 +69,6 @@ class VmwareApi(object):
         return self.content.searchIndex.FindByInventoryPath(inventory_path)
 
 
-    def select_destination_host_and_datastore_by_free_space(self):
-        datastores = [d for d in self.datacenter.datastore if 'ssd' in d.name]
-        if len(datastores) == 0:
-            return None, None
-        datastores = sorted(datastores, key=lambda d: d.info.freeSpace)
-        chosen_datastore = datastores[-1]
-        chosen_host = chosen_datastore.host[0].key
-        return chosen_host, chosen_datastore
-
-
     def _setup_common_objects(self, datacenter_name, cluster_name):
         self.content = self.si.RetrieveContent()
 
@@ -86,7 +77,6 @@ class VmwareApi(object):
             raise ResourceNotFound("Couldn't find the Datacenter with the provided name "
                                    "'{}'".format(datacenter_name))
 
-        self.cluster = None
         if cluster_name:
             self.cluster = self.get_vc_object(vim.ClusterComputeResource, cluster_name,
                                                self.content.rootFolder)
@@ -99,6 +89,10 @@ class VmwareApi(object):
             self.cluster = next(iter(clusters), None)
             if not self.cluster:
                 raise ResourceNotFound("Couldn't find any compute clusters")
+
+        self.storage_manager = self.content.storageResourceManager
+        if not self.storage_manager:
+            raise ResourceNotFound("Couldn't find Storage Resource Manager")
 
 
     def get_vc_object(self, vimtype, name, folder=None):
@@ -221,11 +215,9 @@ def get_vm_customization_spec(template, name, org, username, password, data_ip_a
     return customization_spec
 
 
-def get_vm_relocate_spec(cluster, host, datastore):
+def get_vm_relocate_spec(cluster):
     relocate_spec = vim.vm.RelocateSpec()
     relocate_spec.pool = cluster.resourcePool
-    relocate_spec.host = host
-    relocate_spec.datastore = datastore
     return relocate_spec
 
 
@@ -237,6 +229,49 @@ def get_vm_clone_spec(config_spec, customization_spec, relocate_spec):
     clone_spec.customization = customization_spec
     clone_spec.location = relocate_spec
     return clone_spec
+
+
+def get_vm_storage_spec(name, folder, pod_selection_spec, vm, clone_spec, operation_type):
+    storage_spec = vim.storageDrs.StoragePlacementSpec()
+    storage_spec.cloneName = name
+    storage_spec.folder = folder
+    storage_spec.podSelectionSpec = pod_selection_spec
+    storage_spec.vm = vm
+    storage_spec.cloneSpec = clone_spec
+    storage_spec.type = operation_type
+    return storage_spec
+
+def get_vm_pod_selection_spec(api, datastore_cluster_name):
+    datastore_cluster = _get_datastore_cluster(api, datastore_cluster_name)
+    if not datastore_cluster:
+        raise ResourceNotFound("Couldn't find the datastore cluster with provided name"
+                                "'{}'".format(datastore_cluster_name))
+
+    pod_selection_spec = vim.storageDrs.PodSelectionSpec()
+    pod_selection_spec.storagePod = datastore_cluster
+    return pod_selection_spec
+
+
+def _get_datastore_cluster(api, datastore_cluster_name):
+    datastore_cluster = api.get_vc_object(vim.StoragePod, datastore_cluster_name)
+    return datastore_cluster
+
+
+def clone_template_to_datastore_cluster(api, storage_spec):
+    storage_manager = api.storage_manager
+    recommendation_key = _get_recommendation_key(api, storage_spec)
+    task = storage_manager.ApplyStorageDrsRecommendation_Task(key = recommendation_key)
+    return task
+
+
+def _get_recommendation_key(api, storage_spec):
+    storage_manager = api.storage_manager
+    recommended_datastores = storage_manager.RecommendDatastores(storageSpec = storage_spec)
+    recommendations = recommended_datastores.recommendations
+    if not recommendations:
+        raise ResourceNotFound("Couldn't find any SDRS recommendation to apply")
+    
+    return recommendations[0].key
 
 
 def get_connection_params(args):
