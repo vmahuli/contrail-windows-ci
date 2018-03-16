@@ -58,11 +58,11 @@ class TestPublishing(unittest.TestCase):
         self.assertEqual(len(build.stages), 2)
 
         assert_stage_matches_stage_stats(self, build.stages[0], TEST_STAGE1_STATS)
-        self.assertEqual(build.stages[0].build_id, build.id)
+        self.assertEqual(build.stages[0].build_id, build.build_id)
         self.assertEqual(build.stages[0].build, build)
 
         assert_stage_matches_stage_stats(self, build.stages[1], TEST_STAGE2_STATS)
-        self.assertEqual(build.stages[1].build_id, build.id)
+        self.assertEqual(build.stages[1].build_id, build.build_id)
         self.assertEqual(build.stages[1].build, build)
 
 

@@ -215,11 +215,11 @@ function Disable-AgentService {
 
 function Get-AgentServiceStatus {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-    $Status = Invoke-Command -Session $Session -ScriptBlock {
-        (Get-Service "ContrailAgent" -ErrorAction SilentlyContinue).Status
+    $Service = Invoke-Command -Session $Session -ScriptBlock {
+        Get-Service "ContrailAgent" -ErrorAction SilentlyContinue
     }
-    if ($Status) {
-        return $Status.Value
+    if ($Service -and $Service.Status) {
+        return $Service.Status.ToString()
     } else {
         return $null
     }

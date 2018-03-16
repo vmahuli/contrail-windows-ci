@@ -1,0 +1,25 @@
+{% set controller_name = groups['controller'][0] %}
+{% set controller = hostvars[controller_name] %}
+
+controller:
+  os_credentials:
+    username: admin
+    password: c0ntrail123
+    address: {{ controller.ansible_host }}
+    port: 5000
+
+  rest_api:
+    address: {{ controller.ansible_host }}
+    port: 8082
+
+  default_project: ci_tests
+
+
+testbeds:
+{% for testbed_name in groups['testbed'] %}
+{% set testbed = hostvars[testbed_name] %}
+  - name: {{ testbed_name }}
+    address: {{ testbed.ansible_host }}
+    username: Administrator
+    password: 'Contrail123!'
+{% endfor %}

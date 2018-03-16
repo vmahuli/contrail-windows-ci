@@ -1,4 +1,4 @@
-﻿Import-Module Pester
+Import-Module Pester
 
 . $PSScriptRoot\..\..\Common\Aliases.ps1
 . $PSScriptRoot\..\..\Common\Invoke-UntilSucceeds.ps1

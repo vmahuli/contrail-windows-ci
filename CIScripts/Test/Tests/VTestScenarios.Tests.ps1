@@ -1,17 +1,19 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestbedAddr,
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$true)] [string] $ConfigFile   
 )
 
 . $PSScriptRoot\..\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\Utils\ComponentsInstallation.ps1
 . $PSScriptRoot\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\..\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\PesterHelpers\PesterHelpers.ps1
 
 . $ConfigFile
 $TestConf = Get-TestConfiguration
-$Session = New-PSSession -ComputerName $TestbedAddr -Credential (Get-TestbedCredential)
+$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+$Session = $Sessions[0]
 
 Describe "vTest scenarios" {
     It "passes all vtest scenarios" {

@@ -5,9 +5,12 @@
 
 $Job = [Job]::new("Test")
 
-$Sessions = New-RemoteSessionsToTestbeds
+$TestenvConfFile = "${Env:WORKSPACE}\${Env:TESTENV_CONF_FILE}"
+$Sessions = New-RemoteSessionsToTestbeds -TestenvConfFile $TestenvConfFile
+
 Invoke-IntegrationAndFunctionalTests -Sessions $Sessions `
-    -TestConfigurationFile $PSScriptRoot\Test\$Env:TEST_CONFIGURATION_FILE `
+    -TestenvConfFile $TestenvConfFile `
+    -TestConfigurationFile "$PSScriptRoot\Test\$Env:TEST_CONFIGURATION_FILE" `
     -TestReportOutputDirectory $Env:WORKSPACE/test_results
 
 $Job.Done()

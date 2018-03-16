@@ -4,7 +4,6 @@ def call(playbookToRun) {
     def demoEnvFolder
     def mgmtNetwork
     def dataNetwork
-    def inventoryFilePath
 
     pipeline {
         agent { label "ansible" }
@@ -25,9 +24,8 @@ def call(playbookToRun) {
                         demoEnvFolder = "WINCI"
                         mgmtNetwork = env.DEMOENV_MGMT_NETWORK
                         dataNetwork = env.DEMOENV_DATA_NETWORK
-                        inventoryFilePath = "${env.WORKSPACE}/ansible/vms.${env.BUILD_ID}"
                     }
-                    prepareTestEnv(inventoryFilePath, demoEnvName, demoEnvFolder,
+                    prepareTestEnv(demoEnvName, demoEnvFolder,
                                    mgmtNetwork, dataNetwork,
                                    env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
                 }

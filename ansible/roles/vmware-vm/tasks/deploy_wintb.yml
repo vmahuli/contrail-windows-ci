@@ -8,6 +8,7 @@
     --user '{{ vcenter_user }}'
     --password '{{ vcenter_password }}'
     --datacenter '{{ datacenter_name }}'
+    --datastore-cluster '{{ datastore_cluster_name }}'
     --template '{{ hostvars[inventory_hostname].template }}'
     --folder '{{ testenv_folder }}'
     --name '{{ inventory_hostname_short }}'
