@@ -169,7 +169,7 @@ pipeline {
                             try {
                                 powershell script: './CIScripts/Test.ps1'
                             } finally {
-                                stash name: 'testReport', includes: 'test_results/*.xml', allowEmpty: true
+                                stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
                             }
                         }
                     }
@@ -192,9 +192,9 @@ pipeline {
                 script {
                     try {
                         unstash 'testReport'
-                        powershell script: './CIScripts/GenerateTestReport.ps1 -XmlsDir testReport'
+                        powershell script: './CIScripts/GenerateTestReport.ps1 -XmlsDir test_report'
                     } finally {
-                        stash name: 'testReport', includes: 'test_results/*', allowEmpty: true
+                        stash name: 'testReport', includes: 'test_report/*', allowEmpty: true
                     }
                 }
             }
@@ -210,10 +210,10 @@ pipeline {
 
                     try {
                         unstash 'testReport'
-                        findFiles(glob: 'test_results/*.xml').each {
+                        findFiles(glob: 'test_report/*.xml').each {
                             publishToLogServer(logServer, "${it}", destDir+"Raw_NUnit", false)
                         }
-                        findFiles(glob: 'test_results/*.html').each {
+                        findFiles(glob: 'test_report/*.html').each {
                             publishToLogServer(logServer, "${it}", destDir+"Pretty_test_report", false)
                         }
                     } catch (Exception err) {
