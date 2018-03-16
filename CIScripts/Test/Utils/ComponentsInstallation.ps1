@@ -24,6 +24,11 @@ function Invoke-MsiExec {
 function Install-Agent {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
+    # Get rid of all leftover handles to the Agent service
+    Invoke-Command -Session $Session -ScriptBlock {
+        [System.GC]::Collect()
+    }
+
     Write-Host "Installing Agent"
     Invoke-MsiExec -Session $Session -Path "C:\Artifacts\contrail-vrouter-agent.msi"
 }
@@ -33,6 +38,12 @@ function Uninstall-Agent {
 
     Write-Host "Uninstalling Agent"
     Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\contrail-vrouter-agent.msi"
+
+    # Get rid of all leftover handles to the Agent service
+    Invoke-Command -Session $Session -ScriptBlock {
+        [System.GC]::Collect()
+    }
+
 }
 
 function Install-Extension {

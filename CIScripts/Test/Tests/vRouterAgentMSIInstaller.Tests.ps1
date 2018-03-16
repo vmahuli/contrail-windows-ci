@@ -27,12 +27,12 @@ Describe "vRouter Agent MSI installer" {
         Install-Agent -Session $Session
         Eventually {
             Get-AgentServiceStatus -Session $Session | Should Be "Stopped"
-        } -Duration 30
+        } -Duration 15
 
         Uninstall-Agent -Session $Session
         Eventually {
             Get-AgentServiceStatus -Session $Session | Should BeNullOrEmpty
-        } -Duration 30
+        } -Duration 15
     }
 
     Context "when vRouter Forwarding Extension is not running" {
