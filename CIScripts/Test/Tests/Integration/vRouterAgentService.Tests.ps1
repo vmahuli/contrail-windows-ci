@@ -18,6 +18,8 @@ $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
 
 $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+$OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
+$TestbedConfig = Read-TestbedConfig -Path $TestenvConfFile
 
 Describe "vRouter Agent service" {
     Context "enabling" {
@@ -106,7 +108,9 @@ Describe "vRouter Agent service" {
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
 
-        New-AgentConfigFile -Session $Session -TestConfiguration $TestConf
+        New-AgentConfigFile -Session $Session `
+            -ControllerConfig $ControllerConfig `
+            -TestbedConfig $TestbedConfig
     }
 
     AfterEach {
