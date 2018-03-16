@@ -1,3 +1,5 @@
+# TODO: migrate to ComputeControllerIntegration.Tests.ps1
+
 . $PSScriptRoot\..\..\Common\Aliases.ps1
 
 function Test-ComputeControllerIntegration {
