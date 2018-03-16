@@ -10,11 +10,16 @@ function Invoke-MsiExec {
     $Action = if ($Uninstall) { "/x" } else { "/i" }
 
     Invoke-Command -Session $Session -ScriptBlock {
+        # Get rid of all leftover handles to the Service objects
+        [System.GC]::Collect()
+
         $Result = Start-Process msiexec.exe -ArgumentList @($Using:Action, $Using:Path, "/quiet") `
             -Wait -PassThru
         if ($Result.ExitCode -ne 0) {
             throw "Installation of $Using:Path failed with $($Result.ExitCode)"
         }
+
+        [System.GC]::Collect()
 
         # Refresh Path
         $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
@@ -23,11 +28,6 @@ function Invoke-MsiExec {
 
 function Install-Agent {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
-    # Get rid of all leftover handles to the Agent service
-    Invoke-Command -Session $Session -ScriptBlock {
-        [System.GC]::Collect()
-    }
 
     Write-Host "Installing Agent"
     Invoke-MsiExec -Session $Session -Path "C:\Artifacts\contrail-vrouter-agent.msi"
@@ -38,12 +38,6 @@ function Uninstall-Agent {
 
     Write-Host "Uninstalling Agent"
     Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\contrail-vrouter-agent.msi"
-
-    # Get rid of all leftover handles to the Agent service
-    Invoke-Command -Session $Session -ScriptBlock {
-        [System.GC]::Collect()
-    }
-
 }
 
 function Install-Extension {
