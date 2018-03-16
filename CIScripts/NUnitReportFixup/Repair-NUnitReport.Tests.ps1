@@ -244,8 +244,39 @@ $ExpectedOutput = NormalizeString -InputData @"
     }
 
     Context "test name cleanup" {
-        It "makes names of tests more readable" {
+        It "makes names of test-cases more readable" {
+            $TestData = NormalizeString -InputData @"
+<?xml version="1.0"?>
+<test-results>
+    <environment />
+    <culture-info />
+    <test-suite name="2">
+    <results>
+        <test-suite name="3">
+        <results>
+            <test-case description="MyTestCase" name="2.3.MyTestCase" />
+        </results>
+        </test-suite>
+    </results>
+    </test-suite>
+</test-results>
+"@
 
+$ExpectedOutput = NormalizeString -InputData @"
+<?xml version="1.0"?>
+<test-results>
+    <environment />
+    <culture-info />
+    <test-suite name="3">
+    <results>
+        <test-case description="MyTestCase" name="MyTestCase" />
+    </results>
+    </test-suite>
+</test-results>
+"@
+
+            $ActualOutput = Repair-NUnitReport -InputData $TestData
+            $ActualOutput | Should BeExactly $ExpectedOutput
         }
     }
 }
