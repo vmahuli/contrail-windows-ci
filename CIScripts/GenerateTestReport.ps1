@@ -10,7 +10,7 @@ function Convert-TestReportToHtml {
         if (Test-Path $_) {
             [string] $Content = Get-Content $_
             $FixedContent = Repair-NUnitReport -InputData $Content
-            $FixedContent | Format-XML | Out-File $_ -Encoding "utf8"
+            $FixedContent | Out-File $_ -Encoding "utf8"
         }
     }
     ReportUnit.exe $XmlsDir
