@@ -101,8 +101,11 @@ Describe "vRouter Agent service" {
     }
 
     BeforeEach {
-        Initialize-DriverAndExtension -Session $Session -TestConfiguration $TestConf `
+        Initialize-DriverAndExtension -Session $Session `
+            -TestConfiguration $TestConf `
+            -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
+
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConf
     }
 

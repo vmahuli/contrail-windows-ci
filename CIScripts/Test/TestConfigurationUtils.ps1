@@ -1,3 +1,4 @@
+. $PSScriptRoot\..\Testenv\Testenv.ps1
 . $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
 
 class TestConfiguration {
@@ -85,13 +86,13 @@ function Test-IsVRouterExtensionEnabled {
 function Enable-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName,
-           [Parameter(Mandatory = $true)] [Hashtable] $ControllerConfig,
+           [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
+           [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
            [Parameter(Mandatory = $false)] [int] $WaitTime = 60)
 
     Write-Host "Enabling Docker Driver"
 
-    $OSCreds = $ControllerConfig.OS_Credentials
-    $ControllerIP = $ControllerConfig.Rest_API.Address
+    $ControllerIP = $ControllerConfig.Address
 
     Invoke-Command -Session $Session -ScriptBlock {
 
@@ -108,7 +109,7 @@ function Enable-DockerDriver {
         }
 
         # Nested ScriptBlock variable passing workaround
-        $OSCreds = $Using:OSCreds
+        $OpenStack = $Using:OpenStackConfig
         $AdapterName = $Using:AdapterName
         $ControllerIP = $Using:ControllerIP
 
@@ -127,7 +128,7 @@ function Enable-DockerDriver {
                 -adapter "$Adapter" `
                 -vswitchName "Layered <adapter>" `
                 -logLevel "Debug"
-        } -ArgumentList $OSCreds, $ControllerIP, $AdapterName | Out-Null
+        } -ArgumentList $OpenStack, $ControllerIP, $AdapterName | Out-Null
     }
 
     Start-Sleep -s $WaitTime
@@ -300,18 +301,22 @@ function Initialize-DriverAndExtension {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
-        [Parameter(Mandatory = $true)] [Hashtable] $ControllerConfig
+        [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
+        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
     )
 
     Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration `
-        -ControllerConfig $ControllerConfig -NoNetwork $true
+        -OpenStackConfig $OpenStackConfig `
+        -ControllerConfig $ControllerConfig `
+        -NoNetwork $true
 }
 
 function Initialize-TestConfiguration {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
-        [Parameter(Mandatory = $true)] [Hashtable] $ControllerConfig,
+        [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
+        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
         [Parameter(Mandatory = $false)] [bool] $NoNetwork = $false
     )
 
@@ -323,6 +328,7 @@ function Initialize-TestConfiguration {
 
         Enable-DockerDriver -Session $Session `
             -AdapterName $TestConfiguration.AdapterName `
+            -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig `
             -WaitTime 0
 

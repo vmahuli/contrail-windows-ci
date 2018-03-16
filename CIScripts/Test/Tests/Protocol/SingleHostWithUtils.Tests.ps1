@@ -17,6 +17,7 @@ $TestConf = Get-TestConfiguration
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
 
+$OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
 $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
 
 Describe "Single compute node protocol tests with utils" {
@@ -110,11 +111,13 @@ Describe "Single compute node protocol tests with utils" {
         )]
         $ContrailNetwork = $ContrailNM.AddNetwork($null, $NetworkName, $Subnet)
 
-        Initialize-DriverAndExtension -Session $Session -TestConfiguration $TestConf `
+        Initialize-DriverAndExtension -Session $Session `
+            -TestConfiguration $TestConf `
+            -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
 
         New-DockerNetwork -Session $Session `
-            -TenantName $ControllerConfig.Default_project `
+            -TenantName $ControllerConfig.DefaultProject `
             -Name $NetworkName `
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
     }
@@ -137,7 +140,7 @@ Describe "Single compute node protocol tests with utils" {
             "ContrailNM",
             Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
-        $ContrailNM = [ContrailNetworkManager]::new($ControllerConfig)
+        $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
     }
 
     AfterAll {

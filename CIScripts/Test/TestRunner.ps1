@@ -71,8 +71,9 @@ function Invoke-IntegrationAndFunctionalTests {
         [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
 
+    $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
     $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-    $ContrailNM = [ContrailNetworkManager]::new($ControllerConfig)
+    $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
     $ContrailNM.AddProject($null)
 
     Invoke-TestScenarios -Sessions $Sessions `
