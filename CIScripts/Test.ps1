@@ -1,3 +1,5 @@
+Param([Parameter(Mandatory = $true)] [string] $TestReportDir)
+
 . $PSScriptRoot\Common\Init.ps1
 . $PSScriptRoot\Common\Job.ps1
 . $PSScriptRoot\Common\VMUtils.ps1
@@ -8,9 +10,13 @@ $Job = [Job]::new("Test")
 $TestenvConfFile = "${Env:WORKSPACE}\${Env:TESTENV_CONF_FILE}"
 $Sessions = New-RemoteSessionsToTestbeds -TestenvConfFile $TestenvConfFile
 
+if (-not (Test-Path $TestReportDir)) {
+    New-Item -ItemType Directory -Path $TestReportDir
+}
+
 Invoke-IntegrationAndFunctionalTests -Sessions $Sessions `
     -TestenvConfFile $TestenvConfFile `
     -TestConfigurationFile "$PSScriptRoot\Test\$Env:TEST_CONFIGURATION_FILE" `
-    -TestReportOutputDirectory $Env:WORKSPACE/test_results
+    -TestReportOutputDirectory $TestReportDir
 
 $Job.Done()

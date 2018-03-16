@@ -167,7 +167,7 @@ pipeline {
                             unstash 'TestenvConf'
 
                             try {
-                                powershell script: './CIScripts/Test.ps1'
+                                powershell script: './CIScripts/Test.ps1 -TestReportDir ${env.WORKSPACE}/test_report/'
                             } finally {
                                 stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
                             }
