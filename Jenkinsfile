@@ -211,10 +211,10 @@ pipeline {
                     try {
                         unstash 'testReport'
                         findFiles(glob: 'test_results/*.xml').each {
-                            publishToLogServer(logServer, "${it}" destDir+"Raw_NUnit", false)
+                            publishToLogServer(logServer, "${it}", destDir+"Raw_NUnit", false)
                         }
                         findFiles(glob: 'test_results/*.html').each {
-                            publishToLogServer(logServer, "${it}" destDir+"Pretty_test_report", false)
+                            publishToLogServer(logServer, "${it}", destDir+"Pretty_test_report", false)
                         }
                     } catch (Exception err) {
                         echo "No test report to publish"
