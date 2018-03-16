@@ -384,28 +384,32 @@ function Clear-TestConfiguration {
 }
 
 function New-AgentConfigFile {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
+        [Parameter(Mandatory = $true)] [TestbedConfig] $TestbedConfig
+    )
 
     # Gather information about testbed's network adapters
     $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
             -Session $Session `
-            -AdapterName $TestConfiguration.VHostName
+            -AdapterName $TestbedConfig.VHostName
 
     $PhysicalAdapter = Get-RemoteNetAdapterInformation `
             -Session $Session `
-            -AdapterName $TestConfiguration.AdapterName
+            -AdapterName $TestbedConfig.AdapterName
 
     # Prepare parameters for script block
-    $ControllerIP = $TestConfiguration.ControllerIP
+    $ControllerIP = $ControllerConfig.Address
     $VHostIfName = $HNSTransparentAdapter.ifName
     $VHostIfIndex = $HNSTransparentAdapter.ifIndex
 
+    # TODO ???
     $TEST_NETWORK_GATEWAY = "10.7.3.1"
     $VHostGatewayIP = $TEST_NETWORK_GATEWAY
     $PhysIfName = $PhysicalAdapter.ifName
 
-    $AgentConfigFilePath = $TestConfiguration.AgentConfigFilePath
+    $AgentConfigFilePath = $TestbedConfig.AgentConfigFilePath
 
     Invoke-Command -Session $Session -ScriptBlock {
         $ControllerIP = $Using:ControllerIP
@@ -439,9 +443,11 @@ physical_interface=$PhysIfName
 }
 
 function Initialize-ComputeServices {
-        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
-               [Parameter(Mandatory = $false)] [Boolean] $NoNetwork = $false)
+        Param (
+            [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+            [Parameter(Mandatory = $false)] [Boolean] $NoNetwork = $false
+        )
 
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $NoNetwork
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
@@ -449,13 +455,10 @@ function Initialize-ComputeServices {
 }
 
 function Remove-DockerNetwork {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
-           [Parameter(Mandatory = $false)] [string] $Name)
-
-    if (!$Name) {
-        $Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
-    }
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [string] $Name
+    )
 
     Invoke-Command -Session $Session -ScriptBlock {
         docker network rm $Using:Name | Out-Null
