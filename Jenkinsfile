@@ -150,7 +150,7 @@ pipeline {
                         }
 
                         // 'Deploy' stage
-                        node(label: 'tester && has-yaml') {
+                        node(label: 'tester && bump-pester') {
                             deleteDir()
 
                             unstash 'CIScripts'
@@ -161,7 +161,7 @@ pipeline {
                         }
 
                         // 'Test' stage
-                        node(label: 'tester && has-yaml') {
+                        node(label: 'tester && bump-pester') {
                             deleteDir()
                             unstash 'CIScripts'
                             unstash 'TestenvConf'
