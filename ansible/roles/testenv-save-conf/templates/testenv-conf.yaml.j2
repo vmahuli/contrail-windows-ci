@@ -1,21 +1,18 @@
 {% set controller_name = groups['controller'][0] %}
 {% set controller = hostvars[controller_name] %}
 
+openStack:
+  username: admin
+  password: c0ntrail123
+  project: admin # Used only for auth (eg. by Docker Driver)
+  address: {{ controller.ansible_host }}
+  port: 5000
+
 controller:
-  os_credentials:
-    username: admin
-    password: c0ntrail123
-    project: admin # Used only for auth (eg. by Docker Driver)
-    address: {{ controller.ansible_host }}
-    port: 5000
-
-  rest_api:
-    address: {{ controller.ansible_host }}
-    port: 8082
-
+  address: {{ controller.ansible_host }}
+  restApiPort: 8082
   # Used by non-multitenancy tests
-  default_project: ci_tests
-
+  defaultProject: ci_tests
 
 testbeds:
 {% for testbed_name in groups['testbed'] %}
@@ -25,3 +22,9 @@ testbeds:
     username: Administrator
     password: 'Contrail123!'
 {% endfor %}
+
+testbed:
+  adapterName: Ethernet1
+  vHostName: vEthernet (HNSTransparent)
+  forwardingExtensionName: vRouter forwarding extension
+  agentConfigFilePath: C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-agent.conf
