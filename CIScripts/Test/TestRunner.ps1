@@ -6,7 +6,6 @@ function Invoke-TestScenarios {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
         [Parameter(Mandatory = $true)] [String] $TestenvConfFile,
-        [Parameter(Mandatory = $true)] [String] $TestConfigurationFile,
         [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
 
@@ -21,7 +20,6 @@ function Invoke-TestScenarios {
             Path=$_.FullName;
             Parameters= @{
                 TestenvConfFile=$TestenvConfFile
-                ConfigFile=$TestConfigurationFile
             }; 
             Arguments=@()
         }
@@ -67,7 +65,6 @@ function Invoke-IntegrationAndFunctionalTests {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
         [Parameter(Mandatory = $true)] [String] $TestenvConfFile,
-        [Parameter(Mandatory = $true)] [String] $TestConfigurationFile,
         [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
 
@@ -78,6 +75,5 @@ function Invoke-IntegrationAndFunctionalTests {
 
     Invoke-TestScenarios -Sessions $Sessions `
         -TestenvConfFile $TestenvConfFile `
-        -TestConfigurationFile $TestConfigurationFile `
         -TestReportOutputDirectory $TestReportOutputDirectory
 }

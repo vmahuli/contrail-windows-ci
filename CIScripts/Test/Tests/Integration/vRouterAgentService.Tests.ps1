@@ -1,6 +1,5 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$true)] [string] $ConfigFile
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
 )
 
 . $PSScriptRoot\..\..\..\Common\Init.ps1
@@ -12,8 +11,6 @@ Param (
 . $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
-. $ConfigFile
-$TestConf = Get-TestConfiguration
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
 
@@ -60,10 +57,8 @@ Describe "vRouter Agent service" {
         }
 
         BeforeEach {
-            Disable-VRouterExtension -Session $Session `
-                -AdapterName $TestConf.AdapterName `
-                -VMSwitchName $TestConf.VMSwitchName `
-                -ForwardingExtensionName $TestConf.ForwardingExtensionName
+            Disable-VRouterExtension -Session $Session -TestbedConfig $TestbedConfig
+
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
             $BeforeCrash = Invoke-Command -Session $Session -ScriptBlock { Get-Date }
@@ -95,16 +90,13 @@ Describe "vRouter Agent service" {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
             $BeforeCrash = Invoke-Command -Session $Session -ScriptBlock { Get-Date }
-            Disable-VRouterExtension -Session $Session `
-                -AdapterName $TestConf.AdapterName `
-                -VMSwitchName $TestConf.VMSwitchName `
-                -ForwardingExtensionName $TestConf.ForwardingExtensionName
+            Disable-VRouterExtension -Session $Session -TestbedConfig $TestbedConfig
         }
     }
 
     BeforeEach {
         Initialize-DriverAndExtension -Session $Session `
-            -TestConfiguration $TestConf `
+            -TestbedConfig $TestbedConfig `
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
 
@@ -114,7 +106,7 @@ Describe "vRouter Agent service" {
     }
 
     AfterEach {
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConf
+        Clear-TestConfiguration -Session $Session -TestbedConfig $TestbedConfig
         if ((Get-AgentServiceStatus -Session $Session) -eq "Running") {
             Disable-AgentService -Session $Session
         }

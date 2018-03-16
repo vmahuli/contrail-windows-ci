@@ -1,14 +1,6 @@
 . $PSScriptRoot\..\Testenv\Testenv.ps1
 . $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
 
-class TestConfiguration {
-    [string] $AdapterName;
-    [string] $VHostName;
-    [string] $VMSwitchName;
-    [string] $ForwardingExtensionName;
-    [string] $AgentConfigFilePath;
-}
-
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
 $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS = 2
 
@@ -36,13 +28,17 @@ function Test-IsProcessRunning {
 }
 
 function Enable-VRouterExtension {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [string] $AdapterName,
-           [Parameter(Mandatory = $true)] [string] $VMSwitchName,
-           [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName,
-           [Parameter(Mandatory = $false)] [string] $ContainerNetworkName = "testnet")
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [TestbedConfig] $TestbedConfig,
+        [Parameter(Mandatory = $false)] [string] $ContainerNetworkName = "testnet"
+    )
 
     Write-Host "Enabling Extension"
+
+    $AdapterName = $TestbedConfig.AdapterName
+    $ForwardingExtensionName = $TestbedConfig.ForwardingExtensionName
+    $VMSwitchName = $TestbedConfig.VMSwitchName()
 
     Invoke-Command -Session $Session -ScriptBlock {
         New-ContainerNetwork -Mode Transparent -NetworkAdapterName $Using:AdapterName -Name $Using:ContainerNetworkName | Out-Null
@@ -58,12 +54,16 @@ function Enable-VRouterExtension {
 }
 
 function Disable-VRouterExtension {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [string] $AdapterName,
-           [Parameter(Mandatory = $true)] [string] $VMSwitchName,
-           [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName)
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [TestbedConfig] $TestbedConfig
+    )
 
     Write-Host "Disabling Extension"
+
+    $AdapterName = $TestbedConfig.AdapterName
+    $ForwardingExtensionName = $TestbedConfig.ForwardingExtensionName
+    $VMSwitchName = $TestbedConfig.VMSwitchName()
 
     Invoke-Command -Session $Session -ScriptBlock {
         Disable-VMSwitchExtension -VMSwitchName $Using:VMSwitchName -Name $Using:ForwardingExtensionName -ErrorAction SilentlyContinue | Out-Null
@@ -73,9 +73,13 @@ function Disable-VRouterExtension {
 }
 
 function Test-IsVRouterExtensionEnabled {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [string] $VMSwitchName,
-           [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName)
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [TestbedConfig] $TestbedConfig
+    )
+
+    $ForwardingExtensionName = $TestbedConfig.ForwardingExtensionName
+    $VMSwitchName = $TestbedConfig.VMSwitchName()
 
     $Ext = Invoke-Command -Session $Session -ScriptBlock {
         return $(Get-VMSwitchExtension -VMSwitchName $Using:VMSwitchName -Name $Using:ForwardingExtensionName -ErrorAction SilentlyContinue)
@@ -301,24 +305,23 @@ function Wait-RemoteInterfaceIP {
 function Initialize-DriverAndExtension {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+        [Parameter(Mandatory = $true)] [TestbedConfig] $TestbedConfig,
         [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
     )
 
-    Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration `
+    Initialize-TestConfiguration -Session $Session `
+        -TestbedConfig $TestbedConfig `
         -OpenStackConfig $OpenStackConfig `
-        -ControllerConfig $ControllerConfig `
-        -NoNetwork $true
+        -ControllerConfig $ControllerConfig
 }
 
 function Initialize-TestConfiguration {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+        [Parameter(Mandatory = $true)] [TestbedConfig] $TestbedConfig,
         [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
-        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
-        [Parameter(Mandatory = $false)] [bool] $NoNetwork = $false
+        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
     )
 
     Write-Host "Initializing Test Configuration"
@@ -328,7 +331,7 @@ function Initialize-TestConfiguration {
         # DockerDriver automatically enables Extension, so there is no need to enable it manually
 
         Enable-DockerDriver -Session $Session `
-            -AdapterName $TestConfiguration.AdapterName `
+            -AdapterName $TestbedConfig.AdapterName `
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig `
             -WaitTime 0
@@ -362,25 +365,20 @@ function Initialize-TestConfiguration {
 
     $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
             -Session $Session `
-            -AdapterName $TestConfiguration.VHostName
+            -AdapterName $TestbedConfig.VHostName
     Wait-RemoteInterfaceIP -Session $Session -ifIndex $HNSTransparentAdapter.ifIndex
-
-    if (!$NoNetwork) {
-        throw "Creating network in Initialize-TestConfiguration is deprecated"
-    }
 }
 
 function Clear-TestConfiguration {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+           [Parameter(Mandatory = $true)] [TestbedConfig] $TestbedConfig)
 
     Write-Host "Cleaning up test configuration"
 
     Remove-AllUnusedDockerNetworks -Session $Session
     Disable-AgentService -Session $Session
     Disable-DockerDriver -Session $Session
-    Disable-VRouterExtension -Session $Session -AdapterName $TestConfiguration.AdapterName `
-        -VMSwitchName $TestConfiguration.VMSwitchName -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
+    Disable-VRouterExtension -Session $Session -TestbedConfig $TestbedConfig
 }
 
 function New-AgentConfigFile {
@@ -445,12 +443,20 @@ physical_interface=$PhysIfName
 function Initialize-ComputeServices {
         Param (
             [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
-            [Parameter(Mandatory = $false)] [Boolean] $NoNetwork = $false
+            [Parameter(Mandatory = $true)] [TestbedConfig] $TestbedConfig,
+            [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
+            [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
         )
 
-        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $NoNetwork
-        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session `
+            -TestbedConfig $TestbedConfig `
+            -OpenStackConfig $OpenStackConfig `
+            -ControllerConfig $ControllerConfig
+
+        New-AgentConfigFile -Session $Session `
+            -ControllerConfig $ControllerConfig `
+            -TestbedConfig $TestbedConfig
+
         Enable-AgentService -Session $Session
 }
 

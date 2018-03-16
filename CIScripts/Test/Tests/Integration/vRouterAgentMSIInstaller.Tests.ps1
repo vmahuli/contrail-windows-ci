@@ -3,8 +3,7 @@
     "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
 
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$true)] [string] $ConfigFile
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
 )
 
 . $PSScriptRoot\..\..\..\Common\Init.ps1
@@ -16,10 +15,10 @@ Param (
 . $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
-. $ConfigFile
-$TestConf = Get-TestConfiguration
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
+
+$TestbedConfig = Read-TestbedConfig -Path $TestenvConfFile
 
 Describe "vRouter Agent MSI installer" {
 
@@ -48,18 +47,16 @@ Describe "vRouter Agent MSI installer" {
 
         BeforeEach {
             Install-Extension -Session $Session
-            Enable-VRouterExtension -Session $Session -AdapterName $TestConf.AdapterName `
-                -VMSwitchName $TestConf.VMSwitchName `
-                -ForwardingExtensionName $TestConf.ForwardingExtensionName
+            Enable-VRouterExtension -Session $Session -TestbedConfig $TestbedConfig
         }
 
         AfterEach {
-            Clear-TestConfiguration -Session $Session -TestConfiguration $TestConf
+            Clear-TestConfiguration -Session $Session -TestbedConfig $TestbedConfig
             Uninstall-Extension -Session $Session
         }
     }
 
     AfterEach {
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConf
+        Clear-TestConfiguration -Session $Session -TestbedConfig $TestbedConfig
     }
 }
