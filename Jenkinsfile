@@ -106,7 +106,6 @@ pipeline {
 
             environment {
                 VC = credentials('vcenter')
-                TEST_CONFIGURATION_FILE = "GetTestConfigurationJuni.ps1"
                 TESTENV_CONF_FILE = "testenv-conf.yaml"
                 TESTBED = credentials('win-testbed')
                 ARTIFACTS_DIR = "output"

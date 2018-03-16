@@ -1,6 +1,5 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$true)] [string] $ConfigFile
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
 )
 
 . $PSScriptRoot\..\..\..\Common\Init.ps1
@@ -12,13 +11,12 @@ Param (
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1 # Get-RemoteNetAdapterInformation
 
-. $ConfigFile
-$TestConf = Get-TestConfiguration
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
 
 $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
 $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+$TestbedConfig = Read-TestbedConfig -Path $TestenvConfFile
 
 Describe "Single compute node protocol tests with utils" {
 
@@ -50,11 +48,11 @@ Describe "Single compute node protocol tests with utils" {
 
             Write-Host "Getting VM NetAdapter Information"
             $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
-                -AdapterName $TestConf.AdapterName
+                -AdapterName $TestbedConfig.AdapterName
 
             Write-Host "Getting vHost NetAdapter Information"
             $VHostInfo = Get-RemoteNetAdapterInformation -Session $Session `
-                -AdapterName $TestConf.VHostName
+                -AdapterName $TestbedConfig.VHostName
 
             Write-Host "Getting Containers NetAdapter Information"
             $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
@@ -112,7 +110,7 @@ Describe "Single compute node protocol tests with utils" {
         $ContrailNetwork = $ContrailNM.AddNetwork($null, $NetworkName, $Subnet)
 
         Initialize-DriverAndExtension -Session $Session `
-            -TestConfiguration $TestConf `
+            -TestbedConfig $TestbedConfig `
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
 
@@ -123,7 +121,7 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     AfterEach {
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConf
+        Clear-TestConfiguration -Session $Session -TestbedConfig $TestbedConfig
         if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
             $ContrailNM.RemoveNetwork($ContrailNetwork)
         }
