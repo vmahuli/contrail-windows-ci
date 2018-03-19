@@ -14,12 +14,15 @@ function Invoke-UntilSucceeds {
     Interval (in seconds) between retries.
     .PARAMETER Duration
     Timeout (in seconds).
+    .PARAMETER Precondition
+    If the precondition is false or throws, abort the waiting immediatly
     #>
     Param (
         [Parameter(Mandatory=$true,
                    ValueFromPipeline=$true)] [ScriptBlock] $ScriptBlock,
         [Parameter(Mandatory=$false)] [int] $Interval = 1,
-        [Parameter(Mandatory=$true)] [int] $Duration = 3
+        [Parameter(Mandatory=$true)] [int] $Duration = 3,
+        [Parameter(Mandatory=$false)] [ScriptBlock] $Precondition
     )
     if ($Duration -lt $Interval) {
         throw "Duration must be longer than interval"
@@ -30,6 +33,9 @@ function Invoke-UntilSucceeds {
     $StartTime = Get-Date
     $ReturnVal = $null
     do {
+        if ($Precondition -and -not (Invoke-Command $Precondition)) {
+            throw New-Object -TypeName CITimeoutException("Precondition was false, waiting aborted early")
+        }
         try {
             $ReturnVal = & $ScriptBlock
             if ($ReturnVal) {
