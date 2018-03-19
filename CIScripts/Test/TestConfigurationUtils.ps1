@@ -97,7 +97,17 @@ function Enable-DockerDriver {
 
     Write-Host "Enabling Docker Driver"
 
-    $ControllerIP = $ControllerConfig.Address
+    $Arguments = @(
+        "-forceAsInteractive",
+        "-controllerIP", $ControllerConfig.Address,
+        "-os_username", $OpenStackConfig.Username,
+        "-os_password", $OpenStackConfig.Password,
+        "-os_auth_url", $OpenStackConfig.AuthUrl(),
+        "-os_tenant_name", $OpenStackConfig.Project,
+        "-adapter", $AdapterName,
+        "-vswitchName", "Layered <adapter>",
+        "-logLevel", "Debug"
+    )
 
     Invoke-Command -Session $Session -ScriptBlock {
 
@@ -114,26 +124,12 @@ function Enable-DockerDriver {
         }
 
         # Nested ScriptBlock variable passing workaround
-        $OpenStack = $Using:OpenStackConfig
-        $AdapterName = $Using:AdapterName
-        $ControllerIP = $Using:ControllerIP
+        $Arguments = $Using:Arguments
 
         Start-Job -ScriptBlock {
-            Param ($OpenStack, $ControllerIP, $Adapter)
-
-            $AuthUrl = "http://$( $OpenStack.Address ):$( $OpenStack.Port )/v2.0"
-
-            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" `
-                -forceAsInteractive `
-                -controllerIP $ControllerIP `
-                -os_username $OpenStack.Username `
-                -os_password $OpenStack.Password `
-                -os_auth_url $AuthUrl `
-                -os_tenant_name $OpenStack.Project `
-                -adapter "$Adapter" `
-                -vswitchName "Layered <adapter>" `
-                -logLevel "Debug"
-        } -ArgumentList $OpenStack, $ControllerIP, $AdapterName | Out-Null
+            Param($Arguments)
+            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" $Arguments
+        } -ArgumentList $Arguments, $null
     }
 
     Start-Sleep -s $WaitTime
@@ -155,6 +151,12 @@ function Disable-DockerDriver {
     }
 }
 
+function Test-IsDockerDriverProcessRunning {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    return Test-IsProcessRunning -Session $Session -ProcessName "contrail-windows-docker"
+}
+
 function Test-IsDockerDriverEnabled {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
@@ -170,13 +172,8 @@ function Test-IsDockerDriverEnabled {
         }
     }
 
-    function Test-IsDockerDriverProcessRunning {
-        return Test-IsProcessRunning -Session $Session -ProcessName "contrail-windows-docker"
-    }
-
     return (Test-IsDockerDriverListening) -And `
-        (Test-IsDockerPluginRegistered) -And `
-        (Test-IsDockerDriverProcessRunning)
+        (Test-IsDockerPluginRegistered)
 }
 
 function Enable-AgentService {
@@ -336,30 +333,24 @@ function Initialize-TestConfiguration {
             -ControllerConfig $ControllerConfig `
             -WaitTime 0
 
-        $WaitForSeconds = $i * 600 / $NRetries;
-        $SleepTimeBetweenChecks = 10;
-        $MaxNumberOfChecks = $WaitForSeconds / $SleepTimeBetweenChecks
+        try {
+            $TestProcessRunning = { Test-IsDockerDriverProcessRunning -Session $Session }
 
-        # Wait for DockerDriver to start
-        $Res = $false
-        for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
-            $Res = Test-IsDockerDriverEnabled -Session $Session
-            if ($Res -eq $true) {
-                break;
-            }
+            $TestProcessRunning | Invoke-UntilSucceeds -Duration 15
 
-            Start-Sleep -s $SleepTimeBetweenChecks
+            {
+                Test-IsDockerDriverEnabled -Session $Session
+            } | Invoke-UntilSucceeds -Duration 600 -Interval 5 -Precondition $TestProcessRunning
+
+            break
         }
-
-        if ($Res -ne $true) {
+        catch {
             if ($i -eq $NRetries) {
                 throw "Docker driver was not enabled."
             } else {
                 Write-Host "Docker driver was not enabled, retrying."
                 Stop-ProcessIfExists -Session $Session -ProcessName "contrail-windows-docker"
             }
-        } else {
-            break;
         }
     }
 
