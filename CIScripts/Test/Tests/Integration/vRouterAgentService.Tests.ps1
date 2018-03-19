@@ -2,6 +2,7 @@ Param (
     [Parameter(Mandatory=$true)] [string] $TestenvConfFile
 )
 
+. $PSScriptRoot\..\..\..\Common\Invoke-UntilSucceeds.ps1
 . $PSScriptRoot\..\..\..\Common\Init.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
@@ -19,21 +20,10 @@ $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
 $TestbedConfig = Read-TestbedConfig -Path $TestenvConfFile
 
 Describe "vRouter Agent service" {
-    Context "enabling" {
-        It "is enabled" {
-            Get-AgentServiceStatus -Session $Session `
-                | Should Be "Running"
-        }
-
-        BeforeEach {
-            Enable-AgentService -Session $Session
-        }
-    }
     
     Context "disabling" {
         It "is disabled" {
-            Get-AgentServiceStatus -Session $Session `
-                | Should Be "Stopped"
+            Get-AgentServiceStatus -Session $Session | Should Be "Stopped"
         }
 
         It "does not restart" {
@@ -44,6 +34,9 @@ Describe "vRouter Agent service" {
 
         BeforeEach {
             Enable-AgentService -Session $Session
+            Invoke-UntilSucceeds {
+                (Get-AgentServiceStatus -Session $Session) -eq 'Running'
+            } -Duration 30
             Disable-AgentService -Session $Session
         }
     }
@@ -51,8 +44,7 @@ Describe "vRouter Agent service" {
     Context "given vRouter Forwarding Extension is NOT running" {
         It "crashes" {
             Eventually {
-                Read-SyslogForAgentCrash -Session $Session -After $BeforeCrash `
-                    | Should Not BeNullOrEmpty
+                Read-SyslogForAgentCrash -Session $Session -After $BeforeCrash | Should Not BeNullOrEmpty
             } -Duration 60
         }
 
@@ -68,8 +60,9 @@ Describe "vRouter Agent service" {
 
     Context "given vRouter Forwarding Extension is running" {
         It "runs correctly" {
-            Get-AgentServiceStatus -Session $Session `
-                | Should Be "Running"
+            Eventually {
+                Get-AgentServiceStatus -Session $Session | Should Be "Running"
+            } -Duration 30
         }
 
         BeforeEach {
