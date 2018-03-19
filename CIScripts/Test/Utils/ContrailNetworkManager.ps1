@@ -31,6 +31,23 @@ class ContrailNetworkManager {
             -ProjectName $TenantName
     }
 
+    EnsureProject([String] $TenantName) {
+        if (-not $TenantName) {
+            $TenantName = $this.DefaultTenantName
+        }
+
+        try {
+            $this.AddProject($TenantName)
+        }
+        catch {
+            if ($_.Exception -match "409.*conflict") {
+                Write-Warning "The project $TenantName already exists"
+            } else {
+                throw
+            }
+        }
+    }
+
     # TODO support multiple subnets per network
     # TODO return a class (perhaps use the class from MultiTenancy test?)
     # We cannot add a type to $SubnetConfig parameter,
