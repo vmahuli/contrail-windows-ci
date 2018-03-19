@@ -198,12 +198,14 @@ function Get-AgentServiceStatus {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Invoke-Command -Session $Session -ScriptBlock {
-        $Service = Get-Service "ContrailAgent" -ErrorAction SilentlyContinue
+        Invoke-Command {
+            $Service = Get-Service "ContrailAgent" -ErrorAction SilentlyContinue
 
-        if ($Service -and $Service.Status) {
-            return $Service.Status.ToString()
-        } else {
-            return $null
+            if ($Service -and $Service.Status) {
+                return $Service.Status.ToString()
+            } else {
+                return $null
+            }
         }
     }
 }
