@@ -1,4 +1,6 @@
 . $PSScriptRoot\TestConfigurationUtils.ps1
+. $PSScriptRoot\Utils\ContrailNetworkManager.ps1
+. $PSScriptRoot\..\Testenv\Testenv.ps1
 
 function Invoke-TestScenarios {
     Param (
@@ -70,17 +72,12 @@ function Invoke-IntegrationAndFunctionalTests {
         [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
 
-    try {
-        Invoke-TestScenarios -Sessions $Sessions `
-            -TestenvConfFile $TestenvConfFile `
-            -TestConfigurationFile $TestConfigurationFile `
-            -TestReportOutputDirectory $TestReportOutputDirectory
-    }
-    catch {
-        Write-Host $_
+    $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+    $ContrailNM = [ContrailNetworkManager]::new($ControllerConfig)
+    $ContrailNM.AddProject($null)
 
-        Get-Logs -Sessions $Sessions
-
-        throw
-    }
+    Invoke-TestScenarios -Sessions $Sessions `
+        -TestenvConfFile $TestenvConfFile `
+        -TestConfigurationFile $TestConfigurationFile `
+        -TestReportOutputDirectory $TestReportOutputDirectory
 }

@@ -5,6 +5,7 @@ controller:
   os_credentials:
     username: admin
     password: c0ntrail123
+    project: admin # Used only for auth (eg. by Docker Driver)
     address: {{ controller.ansible_host }}
     port: 5000
 
@@ -12,6 +13,7 @@ controller:
     address: {{ controller.ansible_host }}
     port: 8082
 
+  # Used by non-multitenancy tests
   default_project: ci_tests
 
 

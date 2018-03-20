@@ -1,4 +1,5 @@
 . $PSScriptRoot\..\..\Common\Aliases.ps1
+. $PSScriptRoot\..\Utils\ComponentsInstallation.ps1
 
 function Test-TCPCommunication {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
@@ -8,6 +9,11 @@ function Test-TCPCommunication {
 
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         Write-Host "===> Running TCP Communication test"
+
+
+        Install-Extension -Session $Session
+        Install-Utils -Session $Session
+        Install-DockerDriver -Session $Session
 
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
@@ -68,6 +74,10 @@ function Test-TCPCommunication {
         }
 
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+
+        Uninstall-Extension -Session $Session
+        Uninstall-Utils -Session $Session
+        Uninstall-DockerDriver -Session $Session
 
         Write-Host "===> Success!"
     })
