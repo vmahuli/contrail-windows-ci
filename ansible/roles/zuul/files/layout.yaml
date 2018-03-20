@@ -233,6 +233,10 @@ projects:
     template:
       - name: ci-contrail-windows-other-projects-template
 
+  - name: Juniper/contrail-vrouter-java-api
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
   - name: Juniper/contrail-web-controller
     template:
       - name: ci-contrail-windows-other-projects-template
