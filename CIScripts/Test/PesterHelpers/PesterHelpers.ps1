@@ -54,26 +54,11 @@ function Eventually {
         [Parameter(Mandatory=$false)] [int] $Interval = 1,
         [Parameter(Mandatory=$true)] [int] $Duration = 3
     )
-    if ($Duration -lt $Interval) {
-        throw "Duration must be longer than interval"
-    }
-    if ($Interval -eq 0) {
-        throw "Interval must not be equal to zero"
-    }
-    $StartTime = Get-Date
 
-    while ($true) {
-        $LastCheck = ((Get-Date) - $StartTime).Seconds -ge $Duration
-
-        try {
-            & $ScriptBlock
-            return
-        } catch {
-            if ($LastCheck) {
-                throw New-Object -TypeName CITimeoutException("Eventually failed.", $_.Exception)
-            } else {
-                Start-Sleep -Seconds $Interval
-            }
-        }
-    }
+    Invoke-UntilSucceeds `
+            -ScriptBlock $ScriptBlock `
+            -AssumeTrue `
+            -Interval $Interval `
+            -Duration $Duration `
+            -Name "Eventually"
 }

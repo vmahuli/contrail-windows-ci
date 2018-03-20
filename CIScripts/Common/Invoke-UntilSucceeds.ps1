@@ -18,14 +18,21 @@ function Invoke-UntilSucceeds {
     .PARAMETER Duration
     Timeout (in seconds).
     .PARAMETER Precondition
-    If the precondition is false or throws, abort the waiting immediatly
+    If the precondition is false or throws, abort the waiting immediately.
+    .PARAMETER Name
+    Name of the function to be used in exceptions' messages.
+    .Parameter AssumeTrue
+    If set, Invoke-UntilSucceeds doesn't check the returned value at all
+    (it will still treat exceptions as failure though).
     #>
     Param (
         [Parameter(Mandatory=$true,
                    ValueFromPipeline=$true)] [ScriptBlock] $ScriptBlock,
         [Parameter(Mandatory=$false)] [int] $Interval = 1,
         [Parameter(Mandatory=$true)] [int] $Duration = 3,
-        [Parameter(Mandatory=$false)] [ScriptBlock] $Precondition
+        [Parameter(Mandatory=$false)] [ScriptBlock] $Precondition,
+        [Parameter(Mandatory=$false)] [String] $Name = "Invoke-UntilSucceds",
+        [Switch] $AssumeTrue
     )
     if ($Duration -lt $Interval) {
         throw "Duration must be longer than interval"
@@ -44,7 +51,7 @@ function Invoke-UntilSucceeds {
 
         try {
             $ReturnVal = Invoke-Command $ScriptBlock
-            if ($ReturnVal) {
+            if ($AssumeTrue -Or $ReturnVal) {
                 return $ReturnVal
             } else {
                 throw New-Object -TypeName CITimeoutException("Did not evaluate to True." + 
@@ -52,7 +59,7 @@ function Invoke-UntilSucceeds {
             }
         } catch {
             if ($LastCheck) {
-                throw New-Object -TypeName CITimeoutException("Invoke-UntilSucceeds failed.", $_.Exception)
+                throw New-Object -TypeName CITimeoutException("$Name failed.", $_.Exception)
             } else {
                 Start-Sleep -Seconds $Interval
             }
