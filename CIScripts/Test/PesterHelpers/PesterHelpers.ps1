@@ -58,6 +58,7 @@ function Eventually {
         throw "Interval must not be equal to zero"
     }
     $StartTime = Get-Date
+    $LastException = $null
     $DidNotThrow = $false
     do {
         try {
@@ -67,15 +68,13 @@ function Eventually {
             $DidNotThrow = $false
             $LastException = $_.Exception
         } finally {
-            Start-Sleep -s $Interval
+            Start-Sleep -Seconds $Interval
         }
-        if($DidNotThrow) {
+        if ($DidNotThrow) {
             return
         }
     } while (((Get-Date) - $StartTime).Seconds -lt $Duration)
     if ($LastException) {
-        $NewException = New-Object -TypeName CITimeoutException("Eventually failed.",
-            $LastException)
-        throw $NewException
+        throw New-Object -TypeName CITimeoutException("Eventually failed.", $LastException)
     }
 }
