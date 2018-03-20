@@ -1,38 +1,11 @@
 . $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
 
-class NetworkConfiguration {
-    [string] $Name;
-    [string[]] $Subnets;
-}
-
-class TenantConfiguration {
-    [string] $Name;
-    [string] $DefaultNetworkName;
-    [NetworkConfiguration] $SingleSubnetNetwork;
-    [NetworkConfiguration] $MultipleSubnetsNetwork;
-    [NetworkConfiguration] $NetworkWithPolicy1;
-    [NetworkConfiguration] $NetworkWithPolicy2;
-}
-
-class DockerDriverConfiguration {
-    [string] $Username;
-    [string] $Password;
-    [string] $AuthUrl;
-    [TenantConfiguration] $TenantConfiguration;
-}
-
 class TestConfiguration {
-    [DockerDriverConfiguration] $DockerDriverConfiguration;
-    [string] $ControllerIP;
-    [int] $ControllerRestPort
-    [string] $ControllerHostUsername;
-    [string] $ControllerHostPassword;
     [string] $AdapterName;
     [string] $VHostName;
     [string] $VMSwitchName;
     [string] $ForwardingExtensionName;
     [string] $AgentConfigFilePath;
-    [string] $LinuxVirtualMachineIp;
 }
 
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
@@ -112,13 +85,13 @@ function Test-IsVRouterExtensionEnabled {
 function Enable-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName,
-           [Parameter(Mandatory = $true)] [string] $ControllerIP,
-           [Parameter(Mandatory = $true)] [DockerDriverConfiguration] $Configuration,
+           [Parameter(Mandatory = $true)] [Hashtable] $ControllerConfig,
            [Parameter(Mandatory = $false)] [int] $WaitTime = 60)
 
     Write-Host "Enabling Docker Driver"
 
-    $TenantName = $Configuration.TenantConfiguration.Name
+    $OSCreds = $ControllerConfig.OS_Credentials
+    $ControllerIP = $ControllerConfig.Rest_API.Address
 
     Invoke-Command -Session $Session -ScriptBlock {
 
@@ -135,21 +108,26 @@ function Enable-DockerDriver {
         }
 
         # Nested ScriptBlock variable passing workaround
+        $OSCreds = $Using:OSCreds
         $AdapterName = $Using:AdapterName
         $ControllerIP = $Using:ControllerIP
-        $Configuration = $Using:Configuration
-        $TenantName = $Using:TenantName
 
         Start-Job -ScriptBlock {
-            Param ($Cfg, $ControllerIP, $Tenant, $Adapter)
+            Param ($OpenStack, $ControllerIP, $Adapter)
 
-            $Env:OS_USERNAME = $Cfg.Username
-            $Env:OS_PASSWORD = $Cfg.Password
-            $Env:OS_AUTH_URL = $Cfg.AuthUrl
-            $Env:OS_TENANT_NAME = $Tenant
+            $AuthUrl = "http://$( $OpenStack.Address ):$( $OpenStack.Port )/v2.0"
 
-            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" -forceAsInteractive -controllerIP $ControllerIP -adapter "$Adapter" -vswitchName "Layered <adapter>" -logLevel "Debug"
-        } -ArgumentList $Configuration, $ControllerIP, $TenantName, $AdapterName | Out-Null
+            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" `
+                -forceAsInteractive `
+                -controllerIP $ControllerIP `
+                -os_username $OpenStack.Username `
+                -os_password $OpenStack.Password `
+                -os_auth_url $AuthUrl `
+                -os_tenant_name $OpenStack.Project `
+                -adapter "$Adapter" `
+                -vswitchName "Layered <adapter>" `
+                -logLevel "Debug"
+        } -ArgumentList $OSCreds, $ControllerIP, $AdapterName | Out-Null
     }
 
     Start-Sleep -s $WaitTime
@@ -264,24 +242,13 @@ function Read-SyslogForAgentCrash {
 
 function New-DockerNetwork {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
-           [Parameter(Mandatory = $false)] [string] $Name,
-           [Parameter(Mandatory = $false)] [string] $TenantName,
+           [Parameter(Mandatory = $true)] [string] $Name,
+           [Parameter(Mandatory = $true)] [string] $TenantName,
            [Parameter(Mandatory = $false)] [string] $Network,
            [Parameter(Mandatory = $false)] [string] $Subnet)
 
-    $Configuration = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration
-
-    if (!$Name) {
-        $Name = $Configuration.DefaultNetworkName
-    }
-
     if (!$Network) {
-        $Network = $Configuration.DefaultNetworkName
-    }
-
-    if (!$TenantName) {
-        $TenantName = $Configuration.Name
+        $Network = $Name
     }
 
     Write-Host "Creating network $Name"
@@ -318,7 +285,7 @@ function Wait-RemoteInterfaceIP {
         foreach ($i in 1..$WAIT_TIME_FOR_DHCP_IN_SECONDS) {
             $Address = Get-NetIPAddress -InterfaceIndex $Using:ifIndex -ErrorAction SilentlyContinue `
                 | Where-Object AddressFamily -eq IPv4 `
-                | Where-Object SuffixOrigin -eq "Dhcp"
+                | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") }
             if ($Address) {
                 return
             }
@@ -330,22 +297,34 @@ function Wait-RemoteInterfaceIP {
 }
 
 function Initialize-DriverAndExtension {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
-    Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $true
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+        [Parameter(Mandatory = $true)] [Hashtable] $ControllerConfig
+    )
+
+    Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration `
+        -ControllerConfig $ControllerConfig -NoNetwork $true
 }
 
 function Initialize-TestConfiguration {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
-           [Parameter(Mandatory = $false)] [bool] $NoNetwork = $false)
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+        [Parameter(Mandatory = $true)] [Hashtable] $ControllerConfig,
+        [Parameter(Mandatory = $false)] [bool] $NoNetwork = $false
+    )
 
     Write-Host "Initializing Test Configuration"
 
     $NRetries = 3;
     foreach ($i in 1..$NRetries) {
         # DockerDriver automatically enables Extension, so there is no need to enable it manually
-        Enable-DockerDriver -Session $Session -AdapterName $TestConfiguration.AdapterName -ControllerIP $TestConfiguration.ControllerIP -Configuration $TestConfiguration.DockerDriverConfiguration -WaitTime 0
+
+        Enable-DockerDriver -Session $Session `
+            -AdapterName $TestConfiguration.AdapterName `
+            -ControllerConfig $ControllerConfig `
+            -WaitTime 0
 
         $WaitForSeconds = $i * 600 / $NRetries;
         $SleepTimeBetweenChecks = 10;
@@ -380,7 +359,7 @@ function Initialize-TestConfiguration {
     Wait-RemoteInterfaceIP -Session $Session -ifIndex $HNSTransparentAdapter.ifIndex
 
     if (!$NoNetwork) {
-        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration | Out-Null
+        throw "Creating network in Initialize-TestConfiguration is deprecated"
     }
 }
 

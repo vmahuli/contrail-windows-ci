@@ -3,18 +3,21 @@ Param (
     [Parameter(Mandatory=$true)] [string] $ConfigFile
 )
 
+. $PSScriptRoot\..\..\..\Common\Init.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\..\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
-. $PSScriptRoot\..\..\C..\ommon\VMUtils.ps1
+. $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
 . $ConfigFile
 $TestConf = Get-TestConfiguration
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
+
+$ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
 
 Describe "vRouter Agent service" {
     Context "enabling" {
@@ -98,7 +101,8 @@ Describe "vRouter Agent service" {
     }
 
     BeforeEach {
-        Initialize-DriverAndExtension -Session $Session -TestConfiguration $TestConf
+        Initialize-DriverAndExtension -Session $Session -TestConfiguration $TestConf `
+            -ControllerConfig $ControllerConfig
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConf
     }
 
