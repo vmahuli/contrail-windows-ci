@@ -6,21 +6,18 @@ class ContrailNetworkManager {
     [String] $ContrailUrl;
     [String] $DefaultTenantName;
 
-    # We cannot add a type to $Controller parameter,
+    # We cannot add a type to the parameters,
     # because the class is parsed before the files are sourced.
-    ContrailNetworkManager($Controller) {
+    ContrailNetworkManager($OpenStackConfig, $ControllerConfig) {
         
-        $this.ContrailUrl = "http://$( $Controller.Rest_API.Address ):$( $Controller.Rest_API.Port )"
-        $this.DefaultTenantName = $Controller.Default_Project
-
-        $OSCreds = $Controller.OS_credentials
-        $AuthUrl = "http://$( $OSCreds.Address ):$( $OSCreds.Port )/v2.0"
+        $this.ContrailUrl = $ControllerConfig.RestApiUrl()
+        $this.DefaultTenantName = $ControllerConfig.DefaultProject
 
         $this.AuthToken = Get-AccessTokenFromKeystone `
-            -AuthUrl $AuthUrl `
-            -Username $OSCreds.Username `
-            -Password $OSCreds.Password `
-            -Tenant $OsCreds.Project
+            -AuthUrl $OpenStackConfig.AuthUrl() `
+            -Username $OpenStackConfig.Username `
+            -Password $OpenStackConfig.Password `
+            -Tenant $OpenStackConfig.Project
     }
 
     [String] AddProject([String] $TenantName) {
@@ -32,6 +29,23 @@ class ContrailNetworkManager {
             -ContrailUrl $this.ContrailUrl `
             -AuthToken $this.AuthToken `
             -ProjectName $TenantName
+    }
+
+    EnsureProject([String] $TenantName) {
+        if (-not $TenantName) {
+            $TenantName = $this.DefaultTenantName
+        }
+
+        try {
+            $this.AddProject($TenantName)
+        }
+        catch {
+            if ($_.Exception -match "409.*conflict") {
+                Write-Warning "The project $TenantName already exists"
+            } else {
+                throw
+            }
+        }
     }
 
     # TODO support multiple subnets per network

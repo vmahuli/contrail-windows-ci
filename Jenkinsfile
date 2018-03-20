@@ -106,7 +106,6 @@ pipeline {
 
             environment {
                 VC = credentials('vcenter')
-                TEST_CONFIGURATION_FILE = "GetTestConfigurationJuni.ps1"
                 TESTENV_CONF_FILE = "testenv-conf.yaml"
                 TESTBED = credentials('win-testbed')
                 ARTIFACTS_DIR = "output"
@@ -190,14 +189,14 @@ pipeline {
             node('tester') {
                 deleteDir()
                 unstash 'CIScripts'
-                script {
-                    try {
-                        unstash 'testReport'
-                        powershell script: './CIScripts/GenerateTestReport.ps1'
-                    } finally {
-                        stash name: 'testReport', includes: '*.xml,*.html', allowEmpty: true
-                    }
-                }
+                // script {
+                //     try {
+                //         unstash 'testReport'
+                //         powershell script: './CIScripts/GenerateTestReport.ps1'
+                //     } finally {
+                //         stash name: 'testReport', includes: '*.xml,*.html', allowEmpty: true
+                //     }
+                // }
             }
 
             node('master') {
