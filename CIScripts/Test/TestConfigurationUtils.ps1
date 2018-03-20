@@ -396,9 +396,6 @@ function New-AgentConfigFile {
     $ControllerIP = $ControllerConfig.Address
     $VHostIfName = $HNSTransparentAdapter.ifName
     $VHostIfIndex = $HNSTransparentAdapter.ifIndex
-
-    $TEST_NETWORK_GATEWAY = "10.7.3.1"
-    $VHostGatewayIP = $TEST_NETWORK_GATEWAY
     $PhysIfName = $PhysicalAdapter.ifName
 
     $AgentConfigFilePath = $SystemConfig.AgentConfigFilePath
@@ -410,7 +407,6 @@ function New-AgentConfigFile {
         $PhysIfName = $Using:PhysIfName
 
         $VHostIP = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).IPAddress
-        $VHostGatewayIP = $Using:VHostGatewayIP
 
         $ConfigFileContent = @"
 [DEFAULT]
@@ -420,12 +416,11 @@ platform=windows
 servers=$ControllerIP
 
 [DISCOVERY]
-server=$ControllerIP
+servers=$ControllerIP
 
 [VIRTUAL-HOST-INTERFACE]
 name=$VHostIfName
 ip=$VHostIP/24
-gateway=$VHostGatewayIP
 physical_interface=$PhysIfName
 "@
 
