@@ -61,13 +61,13 @@ Describe "PesterHelpers" {
     Context "Eventually" {
         It "works on trivial cases" {
             { Eventually { $true | Should Be $true } -Duration 3 } | Should Not Throw
-            { Eventually { $true | Should -Not -Be $false } -Duration 3 } | Should -Not -Throw
+            { Eventually { $true | Should Not Be $false } -Duration 3 } | Should Not Throw
             { Eventually { $true | Should Not Be $true } -Duration 3 } | Should Throw
         }
         
         It "calls assert multiple times until it is true" {
             $Script:Counter = 0
-            Eventually { $Script:Counter += 1; $Script:Counter | Should -Be 3 } `
+            Eventually { $Script:Counter += 1; $Script:Counter | Should Be 3 } `
                 -Interval 1 -Duration 5
             $Script:Counter | Should Be 3
         }
