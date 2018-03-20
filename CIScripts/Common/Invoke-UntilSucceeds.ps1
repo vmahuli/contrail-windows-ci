@@ -8,6 +8,9 @@ function Invoke-UntilSucceeds {
     happen after Interval seconds. Will catch any exceptions that occur in the meantime.
     User has to specify a timeout after which the function fails by setting the Duration parameter.
     If the function fails, it throws an exception containing the last reason of failure.
+
+    It is guaranteed that that if Invoke-UntilSucceeds had failed and precondition was true,
+    there was at least one check performed at time T where T >= T_start + Duration
     .PARAMETER ScriptBlock
     ScriptBlock to repeatedly call.
     .PARAMETER Interval
@@ -31,30 +34,28 @@ function Invoke-UntilSucceeds {
         throw "Interval must not be equal to zero"
     }
     $StartTime = Get-Date
-    $ReturnVal = $null
-    do {
+
+    while ($true) {
+        $LastCheck = ((Get-Date) - $StartTime).Seconds -ge $Duration
+
         if ($Precondition -and -not (Invoke-Command $Precondition)) {
             throw New-Object -TypeName CITimeoutException("Precondition was false, waiting aborted early")
         }
+
         try {
-            $ReturnVal = & $ScriptBlock
+            $ReturnVal = Invoke-Command $ScriptBlock
             if ($ReturnVal) {
-                break
+                return $ReturnVal
             } else {
                 throw New-Object -TypeName CITimeoutException("Did not evaluate to True." + 
                     "Last return value encountered was: $ReturnVal.")
             }
         } catch {
-            $LastException = $_.Exception
-            Start-Sleep -s $Interval
+            if ($LastCheck) {
+                throw New-Object -TypeName CITimeoutException("Invoke-UntilSucceeds failed.", $_.Exception)
+            } else {
+                Start-Sleep -Seconds $Interval
+            }
         }
-    } while (((Get-Date) - $StartTime).Seconds -lt $Duration)
-
-    if ($ReturnVal) {
-        return $ReturnVal
-    } else {
-        $NewException = New-Object -TypeName CITimeoutException("Invoke-UntilSucceeds failed.",
-            $LastException)
-        throw $NewException
     }
 }

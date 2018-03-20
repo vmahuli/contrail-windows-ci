@@ -137,11 +137,25 @@ Describe "Invoke-UntilSucceeds" {
         $HasThrown | Should Be $true
     }
 
+    It "allows a long condition always to run twice" {
+        $Script:Counter = 0
+        $StartDate = (Get-Date)
+
+        Invoke-UntilSucceeds {
+            Start-Sleep -Seconds 20
+            $Script:Counter += 1
+            $Script:Counter -eq 2
+        } -Duration 10 -Interval 5
+
+        ((Get-Date) - $StartDate).Seconds | Should Be 45
+    }
+
     BeforeEach {
         $Script:MockStartDate = Get-Date
         $Script:SecondsCounter = 0
         Mock Start-Sleep {
-            $Script:SecondsCounter += 1;
+            Param($Seconds)
+            $Script:SecondsCounter += $Seconds;
         }
         Mock Get-Date {
             return $Script:MockStartDate.AddSeconds($Script:SecondsCounter)
