@@ -10,7 +10,6 @@ $Sessions = New-RemoteSessionsToTestbeds -TestenvConfFile $TestenvConfFile
 
 Invoke-IntegrationAndFunctionalTests -Sessions $Sessions `
     -TestenvConfFile $TestenvConfFile `
-    -TestConfigurationFile "$PSScriptRoot\Test\$Env:TEST_CONFIGURATION_FILE" `
     -TestReportOutputDirectory $Env:WORKSPACE
 
 $Job.Done()

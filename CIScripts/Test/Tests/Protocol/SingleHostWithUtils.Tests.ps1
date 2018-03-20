@@ -1,6 +1,5 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$true)] [string] $ConfigFile
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
 )
 
 . $PSScriptRoot\..\..\..\Common\Init.ps1
@@ -12,12 +11,12 @@ Param (
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1 # Get-RemoteNetAdapterInformation
 
-. $ConfigFile
-$TestConf = Get-TestConfiguration
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
 
+$OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
 $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
 Describe "Single compute node protocol tests with utils" {
 
@@ -49,11 +48,11 @@ Describe "Single compute node protocol tests with utils" {
 
             Write-Host "Getting VM NetAdapter Information"
             $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
-                -AdapterName $TestConf.AdapterName
+                -AdapterName $SystemConfig.AdapterName
 
             Write-Host "Getting vHost NetAdapter Information"
             $VHostInfo = Get-RemoteNetAdapterInformation -Session $Session `
-                -AdapterName $TestConf.VHostName
+                -AdapterName $SystemConfig.VHostName
 
             Write-Host "Getting Containers NetAdapter Information"
             $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
@@ -110,17 +109,19 @@ Describe "Single compute node protocol tests with utils" {
         )]
         $ContrailNetwork = $ContrailNM.AddNetwork($null, $NetworkName, $Subnet)
 
-        Initialize-DriverAndExtension -Session $Session -TestConfiguration $TestConf `
+        Initialize-DriverAndExtension -Session $Session `
+            -SystemConfig $SystemConfig `
+            -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
 
         New-DockerNetwork -Session $Session `
-            -TenantName $ControllerConfig.Default_project `
+            -TenantName $ControllerConfig.DefaultProject `
             -Name $NetworkName `
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
     }
 
     AfterEach {
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConf
+        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
         if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
             $ContrailNM.RemoveNetwork($ContrailNetwork)
         }
@@ -137,7 +138,7 @@ Describe "Single compute node protocol tests with utils" {
             "ContrailNM",
             Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
-        $ContrailNM = [ContrailNetworkManager]::new($ControllerConfig)
+        $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
     }
 
     AfterAll {

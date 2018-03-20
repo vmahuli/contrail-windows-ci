@@ -22,6 +22,15 @@ Describe "Invoke-UntilSucceeds" {
         { return $true } | Invoke-UntilSucceeds -Duration 3 | Should Be $true
     }
 
+    It "succeeds if ScriptBlock is immediately true with precondition" {
+        { { return $true } | Invoke-UntilSucceeds -Duration 3 -Precondition { $true } } | Should Not Throw
+        { return $true } | Invoke-UntilSucceeds -Duration 3 -Precondition { $true } | Should Be $true
+    }
+
+    It "fails if ScriptBlock is immediately true but precondition throws" {
+        { { return $true } | Invoke-UntilSucceeds -Duration 3 -Precondition { throw "precondition fails" } } | Should Throw
+    }
+
     It "succeeds for other values than pure `$true" {
         { { return "abcd" } | Invoke-UntilSucceeds -Duration 3 } | Should Not Throw
         { return "abcd" } | Invoke-UntilSucceeds -Duration 3 | Should Be "abcd"
@@ -35,26 +44,39 @@ Describe "Invoke-UntilSucceeds" {
 
     It "succeeds if ScriptBlock is eventually true" {
         $Script:Counter = 0
-        { { 
-            $Script:Counter += 1;
-            return ($Script:Counter -eq 3)
-        } | Invoke-UntilSucceeds -Duration 3 } `
-            | Should Not Throw
+        {
+            { 
+                $Script:Counter += 1;
+                return ($Script:Counter -eq 3)
+            } | Invoke-UntilSucceeds -Duration 3
+        } | Should Not Throw
+    }
+
+    It "fails if ScriptBlock is eventually true, but precondition is false" {
+        $Script:Counter = 0
+        {
+            { 
+                $Script:Counter += 1;
+                return ($Script:Counter -eq 3)
+            } | Invoke-UntilSucceeds -Duration 3 -Precondition { $Script:Counter -ne 2 }
+        } | Should Throw
+        $Script:Counter | Should Be 2
     }
 
     It "keeps retrying even when exception is throw" {
         $Script:Counter = 0
-        { { 
-            $Script:Counter += 1;
-            if ($Script:Counter -eq 1) {
-                return $false 
-            } elseif ($Script:Counter -eq 2) {
-                throw "nope"
-            } elseif ($Script:Counter -eq 3) {
-                return $true
-            }
-        } | Invoke-UntilSucceeds -Duration 3 } `
-            | Should Not Throw
+        {
+            { 
+                $Script:Counter += 1;
+                if ($Script:Counter -eq 1) {
+                    return $false 
+                } elseif ($Script:Counter -eq 2) {
+                    throw "nope"
+                } elseif ($Script:Counter -eq 3) {
+                    return $true
+                }
+            } | Invoke-UntilSucceeds -Duration 3
+        } | Should Not Throw
     }
 
     It "retries until specified timeout is reached with sleeps in between" {
