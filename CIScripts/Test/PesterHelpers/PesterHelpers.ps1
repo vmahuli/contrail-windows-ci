@@ -39,6 +39,9 @@ function Eventually {
     Utility wrapper for Pester for making sure that the assert is eventually true.
     It works by retrying the assert every Interval seconds, up to Duration. If until then,
     the assert is not true, Eventually fails.
+
+    It is guaranteed that that if Eventually had failed, there was
+    at least one check performed at time T where T >= T_start + Duration
     .PARAMETER ScriptBlock
     ScriptBlock containing a Pester assertion.
     .PARAMETER Interval
@@ -58,23 +61,19 @@ function Eventually {
         throw "Interval must not be equal to zero"
     }
     $StartTime = Get-Date
-    $LastException = $null
-    $DidNotThrow = $false
-    do {
+
+    while ($true) {
+        $LastCheck = ((Get-Date) - $StartTime).Seconds -ge $Duration
+
         try {
             & $ScriptBlock
-            $DidNotThrow = $true
-        } catch {
-            $DidNotThrow = $false
-            $LastException = $_.Exception
-        } finally {
-            Start-Sleep -Seconds $Interval
-        }
-        if ($DidNotThrow) {
             return
+        } catch {
+            if ($LastCheck) {
+                throw New-Object -TypeName CITimeoutException("Eventually failed.", $_.Exception)
+            } else {
+                Start-Sleep -Seconds $Interval
+            }
         }
-    } while (((Get-Date) - $StartTime).Seconds -lt $Duration)
-    if ($LastException) {
-        throw New-Object -TypeName CITimeoutException("Eventually failed.", $LastException)
     }
 }

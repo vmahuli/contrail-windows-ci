@@ -75,7 +75,7 @@ Describe "PesterHelpers" {
         It "throws if inner assert is never true" {
             $Script:Counter = 0
             { Eventually { $Script:Counter += 1; $Script:Counter | Should Be 6 } `
-                -Interval 1 -Duration 5 } | Should Throw
+                -Interval 1 -Duration 4 } | Should Throw
         }
 
         It "does not allow interval equal to zero" {
@@ -90,8 +90,11 @@ Describe "PesterHelpers" {
             $Script:Messages = @("E1", "E2", "E3", "E4", "E5")
             $Script:Counter = 0
             try {
-                Eventually { $Script:Counter += 1; throw $Script:Messages[$Script:Counter] } `
-                    -Duration 3
+                Eventually {
+                    $Exception = $Script:Messages[$Script:Counter];
+                    $Script:Counter += 1;
+                    throw $Exception
+                } -Duration 3
             } catch {
                 $_.Exception.InnerException.Message | `
                     Should Be "E4"
@@ -106,13 +109,24 @@ Describe "PesterHelpers" {
                     Should Be "Expected {True} to be different from the actual value, but got the same value."
             }
         }
+
+        It "allows a long condition always to run twice" {
+            $Script:Counter = 0
+
+            Eventually {
+                Start-Sleep -Seconds 20
+                $Script:Counter += 1
+                $Script:Counter | Should Be 2
+            } -Duration 10
+        }
     }
 
     BeforeEach {
         $Script:MockStartDate = Get-Date
         $Script:SecondsCounter = 0
         Mock Start-Sleep {
-            $Script:SecondsCounter += 1;
+            Param($Seconds)
+            $Script:SecondsCounter += $Seconds;
         }
         Mock Get-Date {
             return $Script:MockStartDate.AddSeconds($Script:SecondsCounter)
