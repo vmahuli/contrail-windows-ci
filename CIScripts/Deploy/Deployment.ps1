@@ -40,14 +40,8 @@ function Install-Artifacts {
     }
 
     if (Test-NonemptyDir "agent") {
-        Write-Host "Copying Agent and Contrail vRouter API"
+        Write-Host "Copying Agent"
         Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-agent.msi" -Destination C:\Artifacts\
-        Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-api-1.0.tar.gz" -Destination C:\Artifacts\
-
-        Invoke-Command -Session $Session -ScriptBlock {
-            Write-Host "Installing Contrail vRouter API"
-            pip2 install C:\Artifacts\contrail-vrouter-api-1.0.tar.gz | Out-Null
-        }
     }
 
     if (Test-NonemptyDir "vrouter") {

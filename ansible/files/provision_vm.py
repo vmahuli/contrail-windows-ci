@@ -14,6 +14,11 @@ def get_args():
                         action='store',
                         help='Cluster to use (if not provided, script will choose the first one available)')
 
+    parser.add_argument('--datastore-cluster',
+                        required=True,
+                        action='store',
+                        help='Datastore cluster to use')
+
     parser.add_argument('--template',
                         required=True,
                         action='store',
@@ -85,10 +90,6 @@ def provision_vm(api, args):
         raise ResourceNotFound("Couldn't find the folder with the provided path "
                                "'{}'".format(args.folder))
 
-    host, datastore = api.select_destination_host_and_datastore_by_free_space()
-    if not host or not datastore:
-        raise ResourceNotFound('Choosing appropriate host and datastore failed')
-
     customization_data = {
         'name': args.name,
         'org': 'Contrail',
@@ -100,10 +101,14 @@ def provision_vm(api, args):
 
     config_spec = get_vm_config_spec(api, vm=template, networks=[args.mgmt_network, args.data_network])
     customization_spec = get_vm_customization_spec(template, **customization_data)
-    relocate_spec = get_vm_relocate_spec(api.cluster, host, datastore)
+    relocate_spec = get_vm_relocate_spec(api.cluster)
     clone_spec = get_vm_clone_spec(config_spec, customization_spec, relocate_spec)
 
-    task = template.Clone(name=name, folder=folder, spec=clone_spec)
+    datastore_cluster_name = args.datastore_cluster
+    pod_selection_spec = get_vm_pod_selection_spec(api, datastore_cluster_name)
+    storage_spec = get_vm_storage_spec(name, folder, pod_selection_spec, template, clone_spec, operation_type='clone')
+
+    task = clone_template_to_datastore_cluster(api, storage_spec)
     WaitForTask(task)
 
 

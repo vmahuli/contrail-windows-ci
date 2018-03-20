@@ -7,13 +7,13 @@ Param (
     [Parameter(Mandatory=$true)] [string] $ConfigFile
 )
 
-. $PSScriptRoot\..\Utils\CommonTestCode.ps1
-. $PSScriptRoot\..\Utils\ComponentsInstallation.ps1
-. $PSScriptRoot\..\TestConfigurationUtils.ps1
-. $PSScriptRoot\..\..\Testenv\Testenv.ps1
-. $PSScriptRoot\..\..\Common\Aliases.ps1
-. $PSScriptRoot\..\..\Common\VMUtils.ps1
-. $PSScriptRoot\..\PesterHelpers\PesterHelpers.ps1
+. $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
+. $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
+. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\..\..\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\..\Common\Aliases.ps1
+. $PSScriptRoot\..\..\..\Common\VMUtils.ps1
+. $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
 . $ConfigFile
 $TestConf = Get-TestConfiguration
@@ -26,12 +26,12 @@ Describe "vRouter Agent MSI installer" {
         Install-Agent -Session $Session
         Eventually {
             Get-AgentServiceStatus -Session $Session | Should Be "Stopped"
-        } -Duration 30
+        } -Duration 15
 
         Uninstall-Agent -Session $Session
         Eventually {
             Get-AgentServiceStatus -Session $Session | Should BeNullOrEmpty
-        } -Duration 30
+        } -Duration 15
     }
 
     Context "when vRouter Forwarding Extension is not running" {
