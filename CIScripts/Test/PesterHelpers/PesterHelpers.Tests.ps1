@@ -50,10 +50,18 @@ Describe "PesterHelpers" {
 
         It "exception contains the same info as normal Pester exception" {
             try {
-                Consistently { $true | Should Not Be $true } -Duration 3
+                "Foo" | Should Be "Bar"
+            }
+            catch {
+                $OriginalMessage = $_.Exception.Message
+            }
+
+            try {
+                Consistently { "Foo" | Should Be "Bar" } -Duration 3
             } catch {
-                $_.Exception.Message | `
-                    Should Be "Expected: value was {True}, but should not have been the same"
+                $_.Exception.Message | Should Match "Foo"
+                $_.Exception.Message | Should Match "Bar"
+                $_.Exception.Message | Should Be $OriginalMessage
             }
         }
     }
@@ -75,7 +83,7 @@ Describe "PesterHelpers" {
         It "throws if inner assert is never true" {
             $Script:Counter = 0
             { Eventually { $Script:Counter += 1; $Script:Counter | Should Be 6 } `
-                -Interval 1 -Duration 5 } | Should Throw
+                -Interval 1 -Duration 4 } | Should Throw
         }
 
         It "does not allow interval equal to zero" {
@@ -90,8 +98,11 @@ Describe "PesterHelpers" {
             $Script:Messages = @("E1", "E2", "E3", "E4", "E5")
             $Script:Counter = 0
             try {
-                Eventually { $Script:Counter += 1; throw $Script:Messages[$Script:Counter] } `
-                    -Duration 3
+                Eventually {
+                    $Exception = $Script:Messages[$Script:Counter];
+                    $Script:Counter += 1;
+                    throw $Exception
+                } -Duration 3
             } catch {
                 $_.Exception.InnerException.Message | `
                     Should Be "E4"
@@ -100,11 +111,29 @@ Describe "PesterHelpers" {
 
         It "rethrows the last Pester exception in trivial case" {
             try {
-                Eventually { $true | Should Not Be $true } -Duration 3
-            } catch {
-                $_.Exception.InnerException.Message | `
-                    Should Be "Expected: value was {True}, but should not have been the same"
+                "Foo" | Should Be "Bar"
             }
+            catch {
+                $OriginalMessage = $_.Exception.Message
+            }
+
+            try {
+                Eventually { "Foo" | Should Be "Bar" } -Duration 3
+            } catch {
+                $_.Exception.InnerException.Message | Should Match "Foo"
+                $_.Exception.InnerException.Message | Should Match "Bar"
+                $_.Exception.InnerException.Message | Should Be $OriginalMessage
+            }
+        }
+
+        It "allows a long condition always to run twice" {
+            $Script:Counter = 0
+
+            Eventually {
+                Start-Sleep -Seconds 20
+                $Script:Counter += 1
+                $Script:Counter | Should Be 2
+            } -Duration 10
         }
     }
 
@@ -112,11 +141,11 @@ Describe "PesterHelpers" {
         $Script:MockStartDate = Get-Date
         $Script:SecondsCounter = 0
         Mock Start-Sleep {
-            $Script:SecondsCounter += 1;
+            Param($Seconds)
+            $Script:SecondsCounter += $Seconds;
         }
         Mock Get-Date {
             return $Script:MockStartDate.AddSeconds($Script:SecondsCounter)
         }
-        Mock Write-Host { return }
     }
 }

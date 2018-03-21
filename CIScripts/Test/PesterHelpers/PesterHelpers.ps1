@@ -39,6 +39,9 @@ function Eventually {
     Utility wrapper for Pester for making sure that the assert is eventually true.
     It works by retrying the assert every Interval seconds, up to Duration. If until then,
     the assert is not true, Eventually fails.
+
+    It is guaranteed that that if Eventually had failed, there was
+    at least one check performed at time T where T >= T_start + Duration
     .PARAMETER ScriptBlock
     ScriptBlock containing a Pester assertion.
     .PARAMETER Interval
@@ -51,5 +54,11 @@ function Eventually {
         [Parameter(Mandatory=$false)] [int] $Interval = 1,
         [Parameter(Mandatory=$true)] [int] $Duration = 3
     )
-    $ScriptBlock | Invoke-UntilSucceeds -Interval $Interval -Duration $Duration
+
+    Invoke-UntilSucceeds `
+            -ScriptBlock $ScriptBlock `
+            -AssumeTrue `
+            -Interval $Interval `
+            -Duration $Duration `
+            -Name "Eventually"
 }

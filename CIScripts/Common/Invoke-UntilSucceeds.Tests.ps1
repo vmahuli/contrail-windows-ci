@@ -9,12 +9,20 @@ Describe "Invoke-UntilSucceeds" {
         { {} | Invoke-UntilSucceeds -Duration 3 } | Should Throw
     }
 
+    It "succeeds if ScriptBlock doesn't return anything but -AssumeTrue is set" {
+        { {} | Invoke-UntilSucceeds -Duration 3 -AssumeTrue } | Should Not Throw
+    }
+
     It "fails if ScriptBlock never returns true" {
         { { return $false } | Invoke-UntilSucceeds -Duration 3 } | Should Throw
     }
 
     It "fails if ScriptBlock only throws all the time" {
         { { throw "abcd" } | Invoke-UntilSucceeds -Duration 3 } | Should Throw
+    }
+
+    It "fails if ScriptBlock only throws all the time and -AssumeTrue is set" {
+        { { throw "abcd" } | Invoke-UntilSucceeds -Duration 3 -AssumeTrue } | Should Throw
     }
 
     It "succeeds if ScriptBlock is immediately true" {
@@ -137,11 +145,26 @@ Describe "Invoke-UntilSucceeds" {
         $HasThrown | Should Be $true
     }
 
+    It "allows a long condition always to run twice" {
+        $Script:Counter = 0
+        $StartDate = (Get-Date)
+
+        Invoke-UntilSucceeds {
+            Start-Sleep -Seconds 20
+            $Script:Counter += 1
+            $Script:Counter -eq 2
+        } -Duration 10 -Interval 5
+
+        $Script:Counter | Should Be 2
+        ((Get-Date) - $StartDate).Seconds | Should Be 45
+    }
+
     BeforeEach {
         $Script:MockStartDate = Get-Date
         $Script:SecondsCounter = 0
         Mock Start-Sleep {
-            $Script:SecondsCounter += 1;
+            Param($Seconds)
+            $Script:SecondsCounter += $Seconds;
         }
         Mock Get-Date {
             return $Script:MockStartDate.AddSeconds($Script:SecondsCounter)

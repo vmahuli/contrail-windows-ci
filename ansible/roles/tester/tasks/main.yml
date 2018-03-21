@@ -41,6 +41,10 @@
     -Force
   when: not (trusted_hosts.stdout | search("172.17.0.*"))
 
+- name: Install Pester 4.2.0 (override default installation)
+  # We need to do it like this due to https://github.com/pester/Pester/wiki/Installation-and-Update#installing-from-psgallery-windows-10-or-windows-server-2016
+  win_shell: 'Install-Module -Name Pester -Force -SkipPublisherCheck -RequiredVersion 4.2.0'
+
 - name: Install NuGet with chocolatey
   win_chocolatey:
     name: nuget.commandline
