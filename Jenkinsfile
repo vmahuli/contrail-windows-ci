@@ -106,9 +106,7 @@ pipeline {
 
             environment {
                 VC = credentials('vcenter')
-                TESTENV_CONF_FILE = "testenv-conf.yaml"
                 TESTBED = credentials('win-testbed')
-                ARTIFACTS_DIR = "output"
                 TESTBED_TEMPLATE = "Template-testbed-201803050718"
                 CONTROLLER_TEMPLATE = "Template-CentOS-7.4"
             }
@@ -138,7 +136,7 @@ pipeline {
                             deleteDir()
                             unstash 'Ansible'
 
-                            def testenvConfPath = "${env.WORKSPACE}/${env.TESTENV_CONF_FILE}"
+                            def testenvConfPath = "${env.WORKSPACE}/testenv-conf.yaml"
 
                             prepareTestEnv(testEnvName, testEnvFolder,
                                            mgmtNetwork, testNetwork,
@@ -157,7 +155,9 @@ pipeline {
                             unstash 'Artifacts'
                             unstash 'TestenvConf'
 
-                            powershell script: './CIScripts/Deploy.ps1'
+                            powershell script: """./CIScripts/Deploy.ps1 `
+                                -TestenvConfFile testenv-conf.yaml `
+                                -ArtifactsDir output"""
                         }
 
                         // 'Test' stage
@@ -167,7 +167,9 @@ pipeline {
                             unstash 'TestenvConf'
 
                             try {
-                                powershell script: './CIScripts/Test.ps1 -TestReportDir ${env.WORKSPACE}/test_report/'
+                                powershell script: """./CIScripts/Test.ps1 `
+                                    -TestenvConfFile testenv-conf.yaml `
+                                    -TestReportDir ${env.WORKSPACE}/test_report/"""
                             } finally {
                                 stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
                             }

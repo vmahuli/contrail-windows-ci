@@ -1,4 +1,7 @@
-Param([Parameter(Mandatory = $true)] [string] $TestReportDir)
+Param(
+    [Parameter(Mandatory = $true)] [string] $TestReportDir,
+    [Parameter(Mandatory = $true)] [string] $TestenvConfFile
+)
 
 . $PSScriptRoot\Common\Init.ps1
 . $PSScriptRoot\Common\Job.ps1
@@ -7,7 +10,6 @@ Param([Parameter(Mandatory = $true)] [string] $TestReportDir)
 
 $Job = [Job]::new("Test")
 
-$TestenvConfFile = "${Env:WORKSPACE}\${Env:TESTENV_CONF_FILE}"
 $Sessions = New-RemoteSessionsToTestbeds -TestenvConfFile $TestenvConfFile
 
 if (-not (Test-Path $TestReportDir)) {
