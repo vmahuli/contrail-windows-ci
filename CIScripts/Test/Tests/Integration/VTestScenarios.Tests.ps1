@@ -1,6 +1,5 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$true)] [string] $ConfigFile   
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
 )
 
 . $PSScriptRoot\..\..\..\Common\Init.ps1
@@ -11,14 +10,14 @@ Param (
 . $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
-. $ConfigFile
-$TestConf = Get-TestConfiguration
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
 
+$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+
 Describe "vTest scenarios" {
     It "passes all vtest scenarios" {
-        $VMSwitchName = $TestConf.VMSwitchName
+        $VMSwitchName = $SystemConfig.VMSwitchName()
         {
             Invoke-Command -Session $Session -ScriptBlock {
                 Push-Location C:\Artifacts\
@@ -32,13 +31,11 @@ Describe "vTest scenarios" {
     BeforeAll {
         Install-Extension -Session $Session
         Install-Utils -Session $Session
-        Enable-VRouterExtension -Session $Session -AdapterName $TestConf.AdapterName `
-            -VMSwitchName $TestConf.VMSwitchName `
-            -ForwardingExtensionName $TestConf.ForwardingExtensionName
+        Enable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
     }
 
     AfterAll {
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConf
+        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
         Uninstall-Utils -Session $Session
         Uninstall-Extension -Session $Session
     }
