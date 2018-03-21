@@ -27,7 +27,7 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     Context "ICMP" {
-        It "Ping between containers succeeds" -Pending {
+        It "Ping between containers succeeds" {
             Invoke-Command -Session $Session -ScriptBlock {
                 $Container2IP = $Using:Container2NetInfo.IPAddress
                 docker exec $Using:Container1ID powershell "ping $Container2IP > null 2>&1; `$LASTEXITCODE;"
@@ -70,9 +70,9 @@ Describe "Single compute node protocol tests with utils" {
                 vif.exe --add $Using:Container1NetInfo.IfName --mac $Using:Container1NetInfo.MACAddress --vrf 1 --type virtual
                 vif.exe --add $Using:Container2NetInfo.IfName --mac $Using:Container2NetInfo.MACAddress --vrf 1 --type virtual
 
-                nh.exe --create 1 --vrf 1 --type 2 --el2 --oif $Using:Container1NetInfo.IfIndex
-                nh.exe --create 2 --vrf 1 --type 2 --el2 --oif $Using:Container2NetInfo.IfIndex
-                nh.exe --create 3 --vrf 1 --type 6 --cen --cni 1 --cni 2
+                nh.exe --create 1 --vrf 1 --type 2 --l2 --oif $Using:Container1NetInfo.IfIndex
+                nh.exe --create 2 --vrf 1 --type 2 --l2 --oif $Using:Container2NetInfo.IfIndex
+                nh.exe --create 3 --vrf 1 --type 6 --l2 --cen --cni 1 --cni 2
 
                 rt.exe -c -v 1 -f 1 -e ff:ff:ff:ff:ff:ff -n 3
                 rt.exe -c -v 1 -f 1 -e $Using:Container1NetInfo.MACAddress -n 1
