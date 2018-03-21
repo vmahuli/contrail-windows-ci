@@ -33,8 +33,6 @@ function Test-ComputeControllerIntegration {
             "", Justification="This are just credentials to a testbed controller.")]
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingUserNameAndPassWordParams",
             "", Justification="We don't care that it's plaintext, it's just test env.")]
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
-            "Password", Justification="We don't care that it's plaintext, it's just test env.")]
         Param ([Parameter(Mandatory = $true)] [string] $IP,
                [Parameter(Mandatory = $true)] [string] $Username,
                [Parameter(Mandatory = $true)] [string] $Password)

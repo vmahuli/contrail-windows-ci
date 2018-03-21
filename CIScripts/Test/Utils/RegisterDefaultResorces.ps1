@@ -3,8 +3,6 @@
 function Register-DefaultResourcesInContrail {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingUserNameAndPassWordParams",
         "", Justification="We don't care that it's plaintext, it's just test env.")]
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
-        "Password", Justification="We don't care that it's plaintext, it's just test env.")]
     Param (
         [Parameter(Mandatory = $true)] [string] $ContrailIp,
         [string] $TenantName = "admin",

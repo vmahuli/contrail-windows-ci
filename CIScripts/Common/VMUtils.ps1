@@ -30,8 +30,6 @@ function Get-UsernameInWorkgroup {
 }
 
 function New-RemoteSessions {
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword", "Creds",
-        Justification="Complains that it's plaintext. It's not.")]
     Param ([Parameter(Mandatory = $true)] [Hashtable[]] $VMs)
 
     $Sessions = [System.Collections.ArrayList] @()

@@ -22,8 +22,6 @@ function Initialize-BuildEnvironment {
 }
 
 function Set-MSISignature {
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
-        "CertPasswordFilePath", Justification="It's filepath, not password.")]
     Param ([Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
@@ -37,8 +35,6 @@ function Set-MSISignature {
 }
 
 function Invoke-DockerDriverBuild {
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
-        "CertPasswordFilePath", Justification="It's filepath, not password.")]
     Param ([Parameter(Mandatory = $true)] [string] $DriverSrcPath,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
@@ -125,8 +121,6 @@ function Invoke-DockerDriverBuild {
 }
 
 function Invoke-ExtensionBuild {
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
-        "CertPasswordFilePath", Justification="It's filepath, not password.")]
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
@@ -197,8 +191,6 @@ function Copy-VtestScenarios {
 }
 
 function Invoke-AgentBuild {
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
-        "CertPasswordFilePath", Justification="It's filepath, not password.")]
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
