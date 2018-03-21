@@ -27,7 +27,7 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     Context "ICMP" {
-        It "Ping between containers succeeds" {
+        It "Ping between containers succeeds" -Pending {
             Invoke-Command -Session $Session -ScriptBlock {
                 $Container2IP = $Using:Container2NetInfo.IPAddress
                 docker exec $Using:Container1ID powershell "ping $Container2IP > null 2>&1; `$LASTEXITCODE;"
