@@ -66,6 +66,7 @@ pipeline {
                 timeout time: 5, unit: 'MINUTES'
             }
             steps {
+                deleteDir()
                 unstash "Monitoring"
                 dir("monitoring") {
                     sh "python3 -m tests.monitoring_tests"
@@ -105,7 +106,6 @@ pipeline {
 
             environment {
                 VC = credentials('vcenter')
-                TEST_CONFIGURATION_FILE = "GetTestConfigurationJuni.ps1"
                 TESTENV_CONF_FILE = "testenv-conf.yaml"
                 TESTBED = credentials('win-testbed')
                 ARTIFACTS_DIR = "output"
@@ -150,7 +150,7 @@ pipeline {
                         }
 
                         // 'Deploy' stage
-                        node(label: 'tester-with-pester420') {
+                        node(label: 'tester') {
                             deleteDir()
 
                             unstash 'CIScripts'
@@ -161,7 +161,7 @@ pipeline {
                         }
 
                         // 'Test' stage
-                        node(label: 'tester-with-pester420') {
+                        node(label: 'tester') {
                             deleteDir()
                             unstash 'CIScripts'
                             unstash 'TestenvConf'
@@ -189,14 +189,14 @@ pipeline {
             node('tester') {
                 deleteDir()
                 unstash 'CIScripts'
-                script {
-                    try {
-                        unstash 'testReport'
-                        powershell script: './CIScripts/GenerateTestReport.ps1 -XmlsDir test_report'
-                    } finally {
-                        stash name: 'testReport', includes: 'test_report/*', allowEmpty: true
-                    }
-                }
+                // script {
+                //     try {
+                //         unstash 'testReport'
+                //         powershell script: './CIScripts/GenerateTestReport.ps1 -XmlsDir test_report'
+                //     } finally {
+                //         stash name: 'testReport', includes: 'test_report/*', allowEmpty: true
+                //     }
+                // }
             }
 
             node('master') {

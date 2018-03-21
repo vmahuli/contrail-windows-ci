@@ -1,3 +1,5 @@
+# TODO: migrate to ComputeControllerIntegration.Tests.ps1
+
 . $PSScriptRoot\..\..\Common\Aliases.ps1
 
 function Test-ComputeControllerIntegration {
@@ -30,9 +32,7 @@ function Test-ComputeControllerIntegration {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText",
             "", Justification="This are just credentials to a testbed controller.")]
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingUserNameAndPassWordParams",
-            Justification="We don't care that it's plaintext, it's just test env.")]
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingPlainTextForPassword",
-            "Password", Justification="We don't care that it's plaintext, it's just test env.")]
+            "", Justification="We don't care that it's plaintext, it's just test env.")]
         Param ([Parameter(Mandatory = $true)] [string] $IP,
                [Parameter(Mandatory = $true)] [string] $Username,
                [Parameter(Mandatory = $true)] [string] $Password)

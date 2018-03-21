@@ -16,7 +16,6 @@ if (-not (Test-Path $TestReportDir)) {
 
 Invoke-IntegrationAndFunctionalTests -Sessions $Sessions `
     -TestenvConfFile $TestenvConfFile `
-    -TestConfigurationFile "$PSScriptRoot\Test\$Env:TEST_CONFIGURATION_FILE" `
     -TestReportOutputDirectory $TestReportDir
 
 $Job.Done()

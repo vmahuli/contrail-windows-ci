@@ -1,3 +1,5 @@
+. $PSScriptRoot\Init.ps1
+
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
@@ -5,6 +7,10 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 Describe "Invoke-UntilSucceeds" {
     It "fails if ScriptBlock doesn't return anything" {
         { {} | Invoke-UntilSucceeds -Duration 3 } | Should Throw
+    }
+
+    It "succeeds if ScriptBlock doesn't return anything but -AssumeTrue is set" {
+        { {} | Invoke-UntilSucceeds -Duration 3 -AssumeTrue } | Should Not Throw
     }
 
     It "fails if ScriptBlock never returns true" {
@@ -15,9 +21,22 @@ Describe "Invoke-UntilSucceeds" {
         { { throw "abcd" } | Invoke-UntilSucceeds -Duration 3 } | Should Throw
     }
 
+    It "fails if ScriptBlock only throws all the time and -AssumeTrue is set" {
+        { { throw "abcd" } | Invoke-UntilSucceeds -Duration 3 -AssumeTrue } | Should Throw
+    }
+
     It "succeeds if ScriptBlock is immediately true" {
         { { return $true } | Invoke-UntilSucceeds -Duration 3 } | Should Not Throw
         { return $true } | Invoke-UntilSucceeds -Duration 3 | Should Be $true
+    }
+
+    It "succeeds if ScriptBlock is immediately true with precondition" {
+        { { return $true } | Invoke-UntilSucceeds -Duration 3 -Precondition { $true } } | Should Not Throw
+        { return $true } | Invoke-UntilSucceeds -Duration 3 -Precondition { $true } | Should Be $true
+    }
+
+    It "fails if ScriptBlock is immediately true but precondition throws" {
+        { { return $true } | Invoke-UntilSucceeds -Duration 3 -Precondition { throw "precondition fails" } } | Should Throw
     }
 
     It "succeeds for other values than pure `$true" {
@@ -33,26 +52,39 @@ Describe "Invoke-UntilSucceeds" {
 
     It "succeeds if ScriptBlock is eventually true" {
         $Script:Counter = 0
-        { { 
-            $Script:Counter += 1;
-            return ($Script:Counter -eq 3)
-        } | Invoke-UntilSucceeds -Duration 3 } `
-            | Should Not Throw
+        {
+            { 
+                $Script:Counter += 1;
+                return ($Script:Counter -eq 3)
+            } | Invoke-UntilSucceeds -Duration 3
+        } | Should Not Throw
+    }
+
+    It "fails if ScriptBlock is eventually true, but precondition is false" {
+        $Script:Counter = 0
+        {
+            { 
+                $Script:Counter += 1;
+                return ($Script:Counter -eq 3)
+            } | Invoke-UntilSucceeds -Duration 3 -Precondition { $Script:Counter -ne 2 }
+        } | Should Throw
+        $Script:Counter | Should Be 2
     }
 
     It "keeps retrying even when exception is throw" {
         $Script:Counter = 0
-        { { 
-            $Script:Counter += 1;
-            if ($Script:Counter -eq 1) {
-                return $false 
-            } elseif ($Script:Counter -eq 2) {
-                throw "nope"
-            } elseif ($Script:Counter -eq 3) {
-                return $true
-            }
-        } | Invoke-UntilSucceeds -Duration 3 } `
-            | Should Not Throw
+        {
+            { 
+                $Script:Counter += 1;
+                if ($Script:Counter -eq 1) {
+                    return $false 
+                } elseif ($Script:Counter -eq 2) {
+                    throw "nope"
+                } elseif ($Script:Counter -eq 3) {
+                    return $true
+                }
+            } | Invoke-UntilSucceeds -Duration 3
+        } | Should Not Throw
     }
 
     It "retries until specified timeout is reached with sleeps in between" {
@@ -113,11 +145,26 @@ Describe "Invoke-UntilSucceeds" {
         $HasThrown | Should Be $true
     }
 
+    It "allows a long condition always to run twice" {
+        $Script:Counter = 0
+        $StartDate = (Get-Date)
+
+        Invoke-UntilSucceeds {
+            Start-Sleep -Seconds 20
+            $Script:Counter += 1
+            $Script:Counter -eq 2
+        } -Duration 10 -Interval 5
+
+        $Script:Counter | Should Be 2
+        ((Get-Date) - $StartDate).Seconds | Should Be 45
+    }
+
     BeforeEach {
         $Script:MockStartDate = Get-Date
         $Script:SecondsCounter = 0
         Mock Start-Sleep {
-            $Script:SecondsCounter += 1;
+            Param($Seconds)
+            $Script:SecondsCounter += $Seconds;
         }
         Mock Get-Date {
             return $Script:MockStartDate.AddSeconds($Script:SecondsCounter)

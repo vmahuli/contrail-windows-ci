@@ -1,16 +1,16 @@
 . $PSScriptRoot\TestConfigurationUtils.ps1
+. $PSScriptRoot\Utils\ContrailNetworkManager.ps1
+. $PSScriptRoot\..\Testenv\Testenv.ps1
 
 function Invoke-TestScenarios {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
         [Parameter(Mandatory = $true)] [String] $TestenvConfFile,
-        [Parameter(Mandatory = $true)] [String] $TestConfigurationFile,
         [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
 
     $TestsBlacklist = @(
         # Put filenames of blacklisted tests here.
-        "vRouterAgentService.Tests.ps1"
     )
 
     $TotalResults = @{
@@ -25,7 +25,6 @@ function Invoke-TestScenarios {
             Path=$_.FullName;
             Parameters= @{
                 TestenvConfFile=$TestenvConfFile
-                ConfigFile=$TestConfigurationFile
             }; 
             Arguments=@()
         }
@@ -76,21 +75,15 @@ function Invoke-IntegrationAndFunctionalTests {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
         [Parameter(Mandatory = $true)] [String] $TestenvConfFile,
-        [Parameter(Mandatory = $true)] [String] $TestConfigurationFile,
         [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
 
-    try {
-        Invoke-TestScenarios -Sessions $Sessions `
-            -TestenvConfFile $TestenvConfFile `
-            -TestConfigurationFile $TestConfigurationFile `
-            -TestReportOutputDirectory $TestReportOutputDirectory
-    }
-    catch {
-        Write-Host $_
+    $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
+    $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+    $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
+    $ContrailNM.EnsureProject($null)
 
-        Get-Logs -Sessions $Sessions
-
-        throw
-    }
+    Invoke-TestScenarios -Sessions $Sessions `
+        -TestenvConfFile $TestenvConfFile `
+        -TestReportOutputDirectory $TestReportOutputDirectory
 }

@@ -10,6 +10,9 @@ function Invoke-MsiExec {
     $Action = if ($Uninstall) { "/x" } else { "/i" }
 
     Invoke-Command -Session $Session -ScriptBlock {
+        # Get rid of all leftover handles to the Service objects
+        [System.GC]::Collect()
+
         $Result = Start-Process msiexec.exe -ArgumentList @($Using:Action, $Using:Path, "/quiet") `
             -Wait -PassThru
         if ($Result.ExitCode -ne 0) {

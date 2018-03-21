@@ -149,6 +149,10 @@ projects:
     template:
       - name: ci-contrail-windows-other-projects-template
 
+  - name: Juniper/contrail-dpdk
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
   - name: Juniper/contrail-fabric-utils
     template:
       - name: ci-contrail-windows-other-projects-template
@@ -226,6 +230,10 @@ projects:
       - name: ci-contrail-windows-other-projects-template
 
   - name: Juniper/contrail-vnc
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
+  - name: Juniper/contrail-vrouter-java-api
     template:
       - name: ci-contrail-windows-other-projects-template
 

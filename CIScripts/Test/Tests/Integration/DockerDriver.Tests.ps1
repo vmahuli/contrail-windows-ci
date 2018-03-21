@@ -1,11 +1,9 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$true)] [string] $ConfigFile
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
 )
 
-. $PSScriptRoot\..\..\Common\Aliases.ps1
+. $PSScriptRoot\..\..\..\Common\Aliases.ps1
 
-. $ConfigFile
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
 
