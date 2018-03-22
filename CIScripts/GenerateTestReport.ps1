@@ -3,6 +3,7 @@ Param(
     [Parameter(Mandatory = $true)] [string] $OutputDir
 )
 
+. $PSScriptRoot\Common\Init.ps1
 . $PSScriptRoot\NUnitReportFixup\Repair-NUnitReport.ps1
 
 function Convert-TestReportToHtml {
@@ -15,15 +16,15 @@ function Convert-TestReportToHtml {
     $PrettyDirName = "pretty_test_report"
     $PrettyDir = "$OutputDir/$PrettyDirName"
 
+    New-Item -Type Directory -Force $RawDir | Out-Null
+    New-Item -Type Directory -Force $PrettyDir | Out-Null
+
     foreach ($ReportFile in Get-ChildItem $XmlReportDir -Filter *.xml) {
         [string] $Content = Get-Content $ReportFile.FullName
         $FixedContent = Repair-NUnitReport -InputData $Content
         $FixedContent | Out-File "$RawDir/$($ReportFile.Name)" -Encoding "utf8"
     }
     ReportUnit.exe $RawDir
-
-    New-Item -Type Directory -Force $RawDir | Out-Null
-    New-Item -Type Directory -Force $PrettyDir | Out-Null
 
     Move-Item "$XmlReportDir/*.html" $PrettyDir
 
