@@ -12,7 +12,8 @@ function Convert-TestReportToHtml {
     )
 
     $RawDir = "$OutputDir/raw_NUnit"
-    $PrettyDir = "$OutputDir/pretty_test_report"
+    $PrettyDirName = "pretty_test_report"
+    $PrettyDir = "$OutputDir/$PrettyDirName"
 
     foreach ($ReportFile in Get-ChildItem $XmlReportDir -Filter *.xml) {
         [string] $Content = Get-Content $ReportFile.FullName
@@ -30,7 +31,7 @@ function Convert-TestReportToHtml {
     $Xmls = Get-ChildItem $RawDir | Foreach-Object { $_.FullName.split('\')[-2 .. -1] -join "/" }
     @{
         xml_reports = $Xmls
-        html_report = "$PrettyDir/index.html"
+        html_report = "$PrettyDirName/index.html"
     } | ConvertTo-Json -Depth 10 | Out-File "$OutputDir/reports-locations.json"
 }
 
