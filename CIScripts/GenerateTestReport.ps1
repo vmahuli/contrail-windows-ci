@@ -11,15 +11,15 @@ function Convert-TestReportToHtml {
         [Parameter(Mandatory = $true)] [string] $OutputDir
     )
 
+    $RawDir = "$OutputDir/raw_NUnit"
+    $PrettyDir = "$OutputDir/pretty_test_report"
+
     foreach ($ReportFile in Get-ChildItem $XmlReportDir -Filter *.xml) {
         [string] $Content = Get-Content $ReportFile.FullName
         $FixedContent = Repair-NUnitReport -InputData $Content
-        $FixedContent | Out-File $ReportFile.FullName -Encoding "utf8"
+        $FixedContent | Out-File "$RawDir/$($ReportFile.Name)" -Encoding "utf8"
     }
-    ReportUnit.exe $XmlsDir
-
-    $RawDir = "$OutputDir/raw_NUnit"
-    $PrettyDir = "$OutputDir/pretty_test_report"
+    ReportUnit.exe $RawDir
 
     New-Item -Type Directory -Force $RawDir | Out-Null
     New-Item -Type Directory -Force $PrettyDir | Out-Null
