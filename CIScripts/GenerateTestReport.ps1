@@ -26,12 +26,12 @@ function Convert-TestReportToHtml {
     }
     ReportUnit.exe $RawDir
 
-    Move-Item "$XmlReportDir/*.html" $PrettyDir
+    Move-Item "$RawDir/*.html" $PrettyDir
 
     $Xmls = Get-ChildItem $RawDir | Foreach-Object { $_.FullName.split('\')[-2 .. -1] -join "/" }
     @{
         xml_reports = $Xmls
-        html_report = "$PrettyDirName/index.html"
+        html_report = "$PrettyDirName/Index.html"
     } | ConvertTo-Json -Depth 10 | Out-File "$OutputDir/reports-locations.json"
 }
 
