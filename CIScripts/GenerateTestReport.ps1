@@ -25,8 +25,7 @@ function Convert-TestReportToHtml {
     New-Item -Type Directory -Force $RawDir | Out-Null
     New-Item -Type Directory -Force $PrettyDir | Out-Null
 
-    Copy-Item "$XmlReportDir/*.xml" $RawDir
-    Copy-Item "$XmlReportDir/*.html" $PrettyDir
+    Move-Item "$XmlReportDir/*.html" $PrettyDir
 
     $Xmls = Get-ChildItem $RawDir | Foreach-Object { $_.FullName.split('\')[-2 .. -1] -join "/" }
     @{
