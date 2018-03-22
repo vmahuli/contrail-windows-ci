@@ -206,8 +206,13 @@ pipeline {
                     } catch (Exception err) {
                         echo "No test report to parse"
                     } finally {
-                        powershell script: './CIScripts/GenerateTestReport.ps1 -XmlsDir test_report'
-                        stash name: 'testReport', includes: 'test_report/*', allowEmpty: true
+                        powershell script: '''./CIScripts/GenerateTestReport.ps1 `
+                            -XmlsDir test_report `
+                            -OutputDir procesed_reports'''
+
+                        dir("processed_reports") {
+                            stash name: 'processedTestReport', allowEmpty: true
+                        }
                     }
                 }
             }
@@ -221,24 +226,9 @@ pipeline {
                     ]
                     def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
 
-                    unstash 'testReport'
+                    unstash 'processedTestReport'
 
-                    dir('to_publish') {
-                        dir('raw_NUnit') {
-                            shellCommand "find", [
-                                env.WORKSPACE + '/test_report',
-                                '-name', '*.xml',
-                                '-exec', 'mv', '{}', '.', ';'
-                            ]
-                        }
-                        dir('pretty_test_report') {
-                            shellCommand "find", [
-                                env.WORKSPACE + '/test_report',
-                                '-name', '*.html',
-                                '-exec', 'mv', '{}', '.', ';'
-                            ]
-                        }
-
+                    dir('test_report') {
                         def logFilename = 'log.txt.gz'
                         obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
 

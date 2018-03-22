@@ -13,7 +13,7 @@ $Job = [Job]::new("Test")
 $Sessions = New-RemoteSessionsToTestbeds -TestenvConfFile $TestenvConfFile
 
 if (-not (Test-Path $TestReportDir)) {
-    New-Item -ItemType Directory -Path $TestReportDir
+    New-Item -ItemType Directory -Path $TestReportDir | Out-Null
 }
 
 Invoke-IntegrationAndFunctionalTests -Sessions $Sessions `
