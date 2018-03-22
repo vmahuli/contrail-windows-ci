@@ -80,8 +80,8 @@ projects:
   - name: Juniper/contrail-controller
     template:
       - name: ci-contrail-windows-template
-    check:
-      - check-development
+    check-development:
+      - ci-contrail-windows-development
 
   - name: Juniper/contrail-vrouter
     template:
