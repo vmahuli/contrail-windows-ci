@@ -30,8 +30,8 @@ function Convert-TestReportToHtml {
 
     $Xmls = Get-ChildItem $RawDir | Foreach-Object { $_.FullName.Substring((pwd).Length) }
     @{
-        xml_reports: $Xmls
-        html_report: "$PrettyDir/index.html"
+        xml_reports = $Xmls
+        html_report = "$PrettyDir/index.html"
     } | ConvertTo-Json -Depth 10 | Out-File "$OutputDir/reports-locations.json"
 }
 
