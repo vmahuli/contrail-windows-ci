@@ -190,14 +190,16 @@ pipeline {
             node('tester') {
                 deleteDir()
                 unstash 'CIScripts'
-                // script {
-                //     try {
-                //         unstash 'testReport'
-                //         powershell script: './CIScripts/GenerateTestReport.ps1'
-                //     } finally {
-                //         stash name: 'testReport', includes: '*.xml,*.html', allowEmpty: true
-                //     }
-                // }
+                script {
+                    try {
+                        unstash 'testReport'
+                    } catch (Exception err) {
+                        echo "No test report to parse"
+                    } finally {
+                        powershell script: './CIScripts/GenerateTestReport.ps1'
+                        stash name: 'testReport', includes: '*.xml,*.html', allowEmpty: true
+                    }
+                }
             }
 
             node('master') {
