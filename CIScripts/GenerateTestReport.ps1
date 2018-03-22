@@ -11,11 +11,10 @@ function Convert-TestReportToHtml {
         [Parameter(Mandatory = $true)] [string] $OutputDir
     )
 
-    $XmlReports = Get-ChildItem -Filter "$XmlReportDir/*.xml"
-    $XmlReports | ForEach-Object {
-        [string] $Content = Get-Content $_
+    foreach ($ReportFile in Get-ChildItem $XmlReportDir -Filter *.xml) {
+        [string] $Content = Get-Content $ReportFile.FullName
         $FixedContent = Repair-NUnitReport -InputData $Content
-        $FixedContent | Out-File $_ -Encoding "utf8"
+        $FixedContent | Out-File $ReportFile.FullName -Encoding "utf8"
     }
     ReportUnit.exe $XmlsDir
 
