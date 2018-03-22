@@ -16,4 +16,8 @@ function Convert-TestReportToHtml {
     ReportUnit.exe $XmlsDir
 }
 
-Convert-TestReportToHtml -XmlReportDir $XmlsDir
+if (Test-Path $XmlsDir) {
+    Convert-TestReportToHtml -XmlReportDir $XmlsDir
+} else {
+    Write-Warning "No report generated, directory $XmlsDir doesn't exist"
+}
