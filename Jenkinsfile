@@ -221,21 +221,29 @@ pipeline {
                     ]
                     def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
 
-                    try {
-                        unstash 'testReport'
-                        findFiles(glob: 'test_report/*.xml').each {
-                            publishToLogServer(logServer, "${it}", destDir+"Raw_NUnit", false)
-                        }
-                        findFiles(glob: 'test_report/*.html').each {
-                            publishToLogServer(logServer, "${it}", destDir+"Pretty_test_report", false)
-                        }
-                    } catch (Exception err) {
-                        echo "No test report to publish"
-                    }
+                    unstash 'testReport'
 
-                    def logFilename = 'log.txt.gz'
-                    obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
-                    publishToLogServer(logServer, logFilename, destDir)
+                    dir('to_publish') {
+                        dir('raw_NUnit') {
+                            shellCommand "find", [
+                                env.WORKSPACE + '/test_report',
+                                '-name', '*.xml',
+                                '-exec', 'mv', '{}', '.', ';'
+                            ]
+                        }
+                        dir('pretty_test_report') {
+                            shellCommand "find", [
+                                env.WORKSPACE + '/test_report',
+                                '-name', '*.html',
+                                '-exec', 'mv', '{}', '.', ';'
+                            ]
+                        }
+
+                        def logFilename = 'log.txt.gz'
+                        obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
+
+                        publishToLogServer(logServer, ".", destDir)
+                    }
                 }
 
                 build job: 'WinContrail/gather-build-stats', wait: false,
