@@ -1,9 +1,7 @@
 def call(playbookToRun) {
     def vmwareConfig
-    def demoEnvName
-    def demoEnvFolder
-    def mgmtNetwork
-    def dataNetwork
+    def testenvConfig
+    def ansibleExtraVars
 
     pipeline {
         agent { label "ansible" }
@@ -16,27 +14,24 @@ def call(playbookToRun) {
         }
 
         stages {
-            stage("Prepare environment") {
+            stage("Run Ansible playbook") {
                 steps {
                     script {
                         vmwareConfig = getVMwareConfig()
-                        demoEnvName = env.DEMOENV_NAME
-                        demoEnvFolder = "WINCI"
-                        mgmtNetwork = env.DEMOENV_MGMT_NETWORK
-                        dataNetwork = env.DEMOENV_DATA_NETWORK
+                        testenvConfig = [
+                            testenv_name: env.DEMOENV_NAME,
+                            testenv_vmware_folder: "WINCI",
+                            testenv_mgmt_network: env.DEMOENV_MGMT_NETWORK,
+                            testenv_data_network: env.DEMOENV_DATA_NETWORK
+                        ]
+
+                        ansibleExtraVars = vmwareConfig + testenvConfig
                     }
-                    prepareTestEnv(demoEnvName, demoEnvFolder,
-                                   mgmtNetwork, dataNetwork,
-                                   env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
-                }
-            }
-            stage("Run Ansible") {
-                steps {
+
                     dir('ansible') {
-                        ansiblePlaybook inventory: 'inventory',
-                                        playbook: playbookToRun,
-                                        extraVars: vmwareConfig,
-                                        extras: '-e @vmware-vm.vars'
+                        ansiblePlaybook inventory: 'inventory.testenv',
+                                        extraVars: ansibleExtraVars,
+                                        playbook: playbookToRun
                     }
                 }
             }
