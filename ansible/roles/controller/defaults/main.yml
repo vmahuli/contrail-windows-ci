@@ -1,5 +1,5 @@
 docker_registry: "ci-repo.englab.juniper.net:5000"
-contrail_version: "ocata-master-19"
+contrail_version: "ocata-master-34"
 docker_bridge_network: "172.26.0.1/16"
 site_pulp:
   fqdn: ci-repo.englab.juniper.net

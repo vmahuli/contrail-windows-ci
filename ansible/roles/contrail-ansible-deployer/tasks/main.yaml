@@ -2,7 +2,7 @@
   git:
     repo: 'https://github.com/Juniper/contrail-ansible-deployer'
     dest: "{{ docker_provision_dir }}"
-    version: 6369b17e3e42632769ae85f20a0ae384700faacb
+    version: c59449e1887ed8128848032c846515584b47d7d4
     force: yes
 
 - name: Install build dependencies
