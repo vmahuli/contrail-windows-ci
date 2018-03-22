@@ -1,11 +1,7 @@
 #!groovy
 library "contrailWindows@$BRANCH_NAME"
 
-def mgmtNetwork
-def testNetwork
-def vmwareConfig
-def testEnvName
-def testEnvFolder
+def ansibleExtraVars
 
 pipeline {
     agent none
@@ -84,6 +80,7 @@ pipeline {
                 SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
                 CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
                 CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
+                COMPONENTS_TO_BUILD = "DockerDriver,Extension,Agent"
 
                 MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
                 WINCIDEV = credentials('winci-drive')
@@ -114,21 +111,35 @@ pipeline {
             steps {
                 script {
                     lock(label: 'testenv_pool', quantity: 1) {
-                        testNetwork = getLockedNetworkName()
-                        vmwareConfig = getVMwareConfig()
-                        testEnvName = getTestEnvName(testNetwork)
-                        testEnvFolder = env.VC_FOLDER
+                        // 'Cleanup' stage
+                        node(label: 'ansible') {
+                            def vmwareConfig = getVMwareConfig()
+                            def testenvConfPath = "${env.WORKSPACE}/testenv-conf.yaml"
+                            def testNetwork = getLockedNetworkName()
+                            def testEnvName = getTestEnvName(testNetwork)
+                            def testEnvConfig = [
+                                testenv_conf_file: testenvConfPath,
+                                testenv_name: testEnvName,
+                                testenv_vmware_folder: env.VC_FOLDER,
+                                testenv_mgmt_network: mgmtNetwork,
+                                testenv_data_network: testNetwork,
+                                testenv_testbed_vmware_template: env.TESTBED_TEMPLATE,
+                                testenv_controller_vmware_template: env.CONTROLLER_TEMPLATE
+                            ]
+
+                            ansibleExtraVars = vmwareConfig + testEnvConfig
+                        }
 
                         // 'Cleanup' stage
                         node(label: 'ansible') {
                             deleteDir()
                             unstash 'Ansible'
 
-                            prepareTestEnv(testEnvName, testEnvFolder,
-                                           mgmtNetwork, testNetwork,
-                                           env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
-
-                            destroyTestEnv(vmwareConfig)
+                            dir('ansible') {
+                                ansiblePlaybook inventory: 'inventory.testenv',
+                                                playbook: 'vmware-destroy-testenv.yml',
+                                                extraVars: ansibleExtraVars
+                            }
                         }
 
                         // 'Provision' stage
@@ -136,13 +147,11 @@ pipeline {
                             deleteDir()
                             unstash 'Ansible'
 
-                            def testenvConfPath = "${env.WORKSPACE}/testenv-conf.yaml"
-
-                            prepareTestEnv(testEnvName, testEnvFolder,
-                                           mgmtNetwork, testNetwork,
-                                           env.TESTBED_TEMPLATE, env.CONTROLLER_TEMPLATE)
-
-                            provisionTestEnv(vmwareConfig, testenvConfPath)
+                            dir('ansible') {
+                                ansiblePlaybook inventory: 'inventory.testenv',
+                                                playbook: 'vmware-deploy-testenv.yml',
+                                                extraVars: ansibleExtraVars
+                            }
 
                             stash name: "TestenvConf", includes: "testenv-conf.yaml"
                         }
@@ -191,14 +200,16 @@ pipeline {
             node('tester') {
                 deleteDir()
                 unstash 'CIScripts'
-                // script {
-                //     try {
-                //         unstash 'testReport'
-                //         powershell script: './CIScripts/GenerateTestReport.ps1 -XmlsDir test_report'
-                //     } finally {
-                //         stash name: 'testReport', includes: 'test_report/*', allowEmpty: true
-                //     }
-                // }
+                script {
+                    try {
+                        unstash 'testReport'
+                    } catch (Exception err) {
+                        echo "No test report to parse"
+                    } finally {
+                        powershell script: './CIScripts/GenerateTestReport.ps1 -XmlsDir test_report'
+                        stash name: 'testReport', includes: 'test_report/*', allowEmpty: true
+                    }
+                }
             }
 
             node('master') {

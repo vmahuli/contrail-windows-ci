@@ -1,13 +1,21 @@
 ---
+- name: Check testenv name
+  fail:
+    msg: testenv_name is too long; should be 7 characters or less
+  when: testenv_name|length > 7
 
 - name: "Add Contrail controller VMs to ad-hoc inventory for testenv '{{ testenv_name }}'"
   add_host:
     name: "{{ item.name }}"
     groups: testenv,controller
     type: controller
-    template: "{{ testenv_block.controller.template }}"
+    template: "{{ testenv_block.vms.controller.template }}"
+    testenv_name: "{{ testenv_block.name }}"
+    testenv_folder: "{{ testenv_block.folder }}"
+    portgroup_mgmt: "{{ testenv_block.portgroup_mgmt }}"
+    portgroup_contrail: "{{ testenv_block.portgroup_contrail }}"
   with_items:
-    "{{ testenv_block.controller.nodes }}"
+    "{{ testenv_block.vms.controller.nodes }}"
 
 - name: "Add Windows testbed VMs to ad-hoc inventory for testenv '{{ testenv_name }}'"
   add_host:
@@ -15,10 +23,14 @@
     groups: testenv,testbed,windows
     type: wintb
     ip: "{{ item.ip }}"
-    netmask: "{{ testenv_block.wintb.netmask }}"
-    template: "{{ testenv_block.wintb.template }}"
+    netmask: "{{ testenv_block.vms.wintb.netmask }}"
+    template: "{{ testenv_block.vms.wintb.template }}"
+    testenv_name: "{{ testenv_block.name }}"
+    testenv_folder: "{{ testenv_block.folder }}"
+    portgroup_mgmt: "{{ testenv_block.portgroup_mgmt }}"
+    portgroup_contrail: "{{ testenv_block.portgroup_contrail }}"
   with_items:
-    "{{ testenv_block.wintb.nodes }}"
+    "{{ testenv_block.vms.wintb.nodes }}"
 
 - name: Display inventory for 'testenv' group
   debug:
