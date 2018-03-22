@@ -27,7 +27,7 @@ function Convert-TestReportToHtml {
     Copy-Item "$XmlReportDir/*.xml" $RawDir
     Copy-Item "$XmlReportDir/*.html" $PrettyDir
 
-    $Xmls = Get-ChildItem $RawDir | Foreach-Object { $RawDir/$_.Name }
+    $Xmls = Get-ChildItem $RawDir | Foreach-Object { $RawDir + "/" + $_.Name }
     @{
         xml_reports = $Xmls
         html_report = "$PrettyDir/index.html"
