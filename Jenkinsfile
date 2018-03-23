@@ -113,24 +113,19 @@ pipeline {
             steps {
                 script {
                     lock(label: 'testenv_pool', quantity: 1) {
-                        // 'Cleanup' stage
-                        node(label: 'ansible') {
-                            def vmwareConfig = getVMwareConfig()
-                            def testenvConfPath = "${env.WORKSPACE}/${env.TESTENV_CONF_FILE}"
-                            def testNetwork = getLockedNetworkName()
-                            def testEnvName = getTestEnvName(testNetwork)
-                            def testEnvConfig = [
-                                testenv_conf_file: testenvConfPath,
-                                testenv_name: testEnvName,
-                                testenv_vmware_folder: env.VC_FOLDER,
-                                testenv_mgmt_network: mgmtNetwork,
-                                testenv_data_network: testNetwork,
-                                testenv_testbed_vmware_template: env.TESTBED_TEMPLATE,
-                                testenv_controller_vmware_template: env.CONTROLLER_TEMPLATE
-                            ]
+                        def vmwareConfig = getVMwareConfig()
+                        def testNetwork = getLockedNetworkName()
+                        def testEnvName = getTestEnvName(testNetwork)
+                        def testEnvConfig = [
+                            testenv_name: testEnvName,
+                            testenv_vmware_folder: env.VC_FOLDER,
+                            testenv_mgmt_network: mgmtNetwork,
+                            testenv_data_network: testNetwork,
+                            testenv_testbed_vmware_template: env.TESTBED_TEMPLATE,
+                            testenv_controller_vmware_template: env.CONTROLLER_TEMPLATE
+                        ]
 
-                            ansibleExtraVars = vmwareConfig + testEnvConfig
-                        }
+                        ansibleExtraVars = vmwareConfig + testEnvConfig
 
                         // 'Cleanup' stage
                         node(label: 'ansible') {
@@ -149,10 +144,15 @@ pipeline {
                             deleteDir()
                             unstash 'Ansible'
 
+                            def testEnvConfPath = "${env.WORKSPACE}/${env.TESTENV_CONF_FILE}"
+                            def provisioningExtraVars = ansibleExtraVars + [
+                                testenv_conf_file: testEnvConfPath
+                            ]
+
                             dir('ansible') {
                                 ansiblePlaybook inventory: 'inventory.testenv',
                                                 playbook: 'vmware-deploy-testenv.yml',
-                                                extraVars: ansibleExtraVars
+                                                extraVars: provisioningExtraVars
                             }
 
                             stash name: "TestenvConf", includes: "testenv-conf.yaml"
