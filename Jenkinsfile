@@ -95,6 +95,11 @@ pipeline {
 
                 stash name: "Artifacts", includes: "output/**/*"
             }
+            post {
+                always {
+                    deleteDir()
+                }
+            }
         }
 
         stage('Cleanup-Provision-Deploy-Test') {
