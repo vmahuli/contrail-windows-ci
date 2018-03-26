@@ -25,6 +25,7 @@
 
 - hosts: testenv
   gather_facts: no
+  any_errors_fatal: true
   tasks:
   - name: Add script_path to each host in testenv group
     delegate_to: localhost
@@ -34,12 +35,14 @@
 - hosts: testenv
   gather_facts: no
   strategy: free
+  any_errors_fatal: true
   roles:
   - role: vmware-vm
     action: deploy
 
 - hosts: testenv
   gather_facts: no
+  any_errors_fatal: true
   tasks:
   - name: "Wait for hosts in testenv to become reachable"
     wait_for_connection:
