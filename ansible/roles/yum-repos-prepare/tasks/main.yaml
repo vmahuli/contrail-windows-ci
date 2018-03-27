@@ -1,5 +1,4 @@
 ---
-
 - name: Remove the upstream yum repos
   yum_repository:
     name: "{{ item.name }}"
