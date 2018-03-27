@@ -35,7 +35,13 @@ function New-RemoteSessions {
     $Sessions = [System.Collections.ArrayList] @()
     foreach ($VM in $VMs) {
         $Creds = Get-TestbedCredential -VM $VM
-        $Sess = New-PSSession -ComputerName $VM.Address -Credential $Creds
+        $Sess = if ($VM['Address']) {
+            New-PSSession -ComputerName $VM.Address -Credential $Creds
+        } elseif ($VM['VMName']) {
+            New-PSSession -VMName $VM.VMName -Credential $Creds
+        } else {
+            throw "You need to specify 'address' or 'vmName' for a testbed."
+        }
 
         Invoke-Command -Session $Sess -ScriptBlock {
             Set-StrictMode -Version Latest
