@@ -1,13 +1,13 @@
-function Convert-TestReportToHtml {
-    param (
-        [Parameter(Mandatory = $true)] [String[]] $XmlReports
-    )
+Param(
+    [Parameter(Mandatory = $true)] [string] $XmlsDir,
+    [Parameter(Mandatory = $true)] [string] $OutputDir
+)
 
-    $XmlReports | ForEach-Object {
-        if (Test-Path $_) {
-            ReportUnit.exe $_
-        }
-    }
+. $PSScriptRoot\Common\Init.ps1
+. $PSScriptRoot\Report\GenerateTestReport.ps1
+
+if ((Test-Path $XmlsDir) -and (Get-ChildItem $XmlsDir)) {
+    Convert-TestReportsToHtml -XmlReportsDir $XmlsDir -OutputDir $OutputDir
+} else {
+    Write-Warning "No report generated, directory $XmlsDir doesn't exist or is empty"
 }
-
-Convert-TestReportToHtml -XmlReports @('testReport.xml')

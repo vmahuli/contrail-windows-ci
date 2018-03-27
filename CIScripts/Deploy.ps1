@@ -1,3 +1,8 @@
+Param(
+    [Parameter(Mandatory = $true)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $true)] [string] $ArtifactsDir
+)
+
 # Deploy copies required artifacts onto already provisioned machines.
 
 . $PSScriptRoot\Common\Init.ps1
@@ -7,8 +12,8 @@
 
 $Job = [Job]::new("Deploy")
 
-$Sessions = New-RemoteSessionsToTestbeds -TestenvConfFile $PSScriptRoot\..\$Env:TESTENV_CONF_FILE
-Copy-ArtifactsToTestbeds -Sessions $Sessions -ArtifactsDir $Env:ARTIFACTS_DIR
+$Sessions = New-RemoteSessionsToTestbeds -TestenvConfFile $TestenvConfFile
+Copy-ArtifactsToTestbeds -Sessions $Sessions -ArtifactsDir $ArtifactsDir
 
 $Job.Done()
 

@@ -108,9 +108,7 @@ pipeline {
 
             environment {
                 VC = credentials('vcenter')
-                TESTENV_CONF_FILE = "testenv-conf.yaml"
                 TESTBED = credentials('win-testbed')
-                ARTIFACTS_DIR = "output"
                 TESTBED_TEMPLATE = "Template-testbed-201803050718"
                 CONTROLLER_TEMPLATE = "Template-CentOS-7.4"
             }
@@ -149,7 +147,7 @@ pipeline {
                             deleteDir()
                             unstash 'Ansible'
 
-                            def testEnvConfPath = "${env.WORKSPACE}/${env.TESTENV_CONF_FILE}"
+                            def testEnvConfPath = "${env.WORKSPACE}/testenv-conf.yaml"
                             def provisioningExtraVars = ansibleExtraVars + [
                                 testenv_conf_file: testEnvConfPath
                             ]
@@ -171,7 +169,9 @@ pipeline {
                             unstash 'Artifacts'
                             unstash 'TestenvConf'
 
-                            powershell script: './CIScripts/Deploy.ps1'
+                            powershell script: """./CIScripts/Deploy.ps1 `
+                                -TestenvConfFile testenv-conf.yaml `
+                                -ArtifactsDir output"""
                         }
 
                         // 'Test' stage
@@ -181,9 +181,11 @@ pipeline {
                             unstash 'TestenvConf'
 
                             try {
-                                powershell script: './CIScripts/Test.ps1'
+                                powershell script: """./CIScripts/Test.ps1 `
+                                    -TestenvConfFile testenv-conf.yaml `
+                                    -TestReportDir ${env.WORKSPACE}/test_report/"""
                             } finally {
-                                stash name: 'testReport', includes: 'testReport.xml', allowEmpty: true
+                                stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
                             }
                         }
                     }
@@ -209,14 +211,20 @@ pipeline {
                     } catch (Exception err) {
                         echo "No test report to parse"
                     } finally {
-                        powershell script: './CIScripts/GenerateTestReport.ps1'
-                        stash name: 'testReport', includes: '*.xml,*.html', allowEmpty: true
+                        powershell script: '''./CIScripts/GenerateTestReport.ps1 `
+                            -XmlsDir test_report `
+                            -OutputDir processed_reports'''
+
+                        dir("processed_reports") {
+                            stash name: 'processedTestReport', allowEmpty: true
+                        }
                     }
                 }
             }
 
             node('master') {
                 script {
+                    deleteDir()
                     def logServer = [
                         addr: env.LOG_SERVER,
                         user: env.LOG_SERVER_USER,
@@ -224,17 +232,14 @@ pipeline {
                     ]
                     def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
 
-                    try {
-                        unstash 'testReport'
-                        publishToLogServer(logServer, 'testReport.xml', destDir, false)
-                        publishToLogServer(logServer, 'testReport.html', destDir, false)
-                    } catch (Exception err) {
-                        echo "No test report to publish"
-                    }
+                    dir('to_publish') {
+                        unstash 'processedTestReport'
 
-                    def logFilename = 'log.txt.gz'
-                    obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
-                    publishToLogServer(logServer, logFilename, destDir)
+                        def logFilename = 'log.txt.gz'
+                        obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
+
+                        publishToLogServer(logServer, ".", destDir)
+                    }
                 }
 
                 build job: 'WinContrail/gather-build-stats', wait: false,
