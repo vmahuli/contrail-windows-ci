@@ -109,8 +109,13 @@ def provision_vm(api, args):
     storage_spec = get_vm_storage_spec(name, folder, pod_selection_spec, template, clone_spec, operation_type='clone')
 
     task = clone_template_to_datastore_cluster(api, storage_spec)
-    WaitForTask(task)
-
+    try:
+        WaitForTask(task)
+    except Exception:
+        raise
+    except:
+        # In this case we should at least try to cancel the taskq
+        task.CancelTask()
 
 def main():
     args = get_args()
