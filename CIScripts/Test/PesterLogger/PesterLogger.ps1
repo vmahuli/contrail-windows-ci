@@ -1,4 +1,19 @@
-﻿
+﻿function New-PesterLogger {
+    Param([Parameter(Mandatory = $true)] [string] $Outdir,
+          $WriterFunc = (Get-Command Add-Content))
+
+    $DeducerFunc = Get-Item function:Get-CurrentPesterScope
+
+    $WriteLogFunc = {
+        Param([Parameter(Mandatory = $true)] [string] $Message)
+        $Scope = & $DeducerFunc
+        $Outpath = $Script:Outdir + "/" + $Scope + ".log"
+        & $WriterFunc -Path $Outpath -Value $Message
+    }.GetNewClosure()
+
+    Register-NewWriteLogFunc -Func $WriteLogFunc
+}
+
 function Get-CurrentPesterScope {
     # UGLY HACK WARNING
     # -----------------
@@ -48,20 +63,3 @@ function Register-NewWriteLogFunc {
     }
     New-Item -Path function:\ -Name Global:Write-Log -Value $Func
 }
-
-function New-PesterLogger {
-    Param([Parameter(Mandatory = $true)] [string] $Outdir,
-          $WriterFunc = (Get-Command Add-Content))
-
-    $DeducerFunc = Get-Item function:Get-CurrentPesterScope
-
-    $WriteLogFunc = {
-        Param([Parameter(Mandatory = $true)] [string] $Message)
-        $Scope = & $DeducerFunc
-        $Outpath = $Script:Outdir + "/" + $Scope + ".log"
-        & $WriterFunc -Path $Outpath -Value $Message
-    }.GetNewClosure()
-
-    Register-NewWriteLogFunc -Func $WriteLogFunc
-}
-

@@ -26,9 +26,10 @@ Describe "PesterLogger" {
         $Script:Path = $Path
     }
 
-    BeforeEach {
+    function MakeFakeWriter {
         $Script:Content = ""
         $Script:Path = ""
+        Get-Item function:InMemoryAddContent
     }
 
     Context "New-PesterLogger" {
@@ -43,7 +44,7 @@ Describe "PesterLogger" {
             New-Item function:Write-Log -Value OldImpl
             Write-Log "test"
 
-            New-PesterLogger -OutDir "some_dir" -WriterFunc (Get-Item function:InMemoryAddContent)
+            New-PesterLogger -OutDir "some_dir" -WriterFunc (MakeFakeWriter)
             Get-Item function:Write-Log -ErrorAction SilentlyContinue | Should Not BeNullOrEmpty
 
             Write-Log "test2"
@@ -53,14 +54,14 @@ Describe "PesterLogger" {
 
     Context "Write-Log" {
         It "writes correct messages" {
-            New-PesterLogger -OutDir "some_dir" -WriterFunc (Get-Item function:InMemoryAddContent)
+            New-PesterLogger -OutDir "some_dir" -WriterFunc (MakeFakeWriter)
             Write-Log "msg1"
             Write-Log "msg2"
             $Script:Content | Should Be "msg1msg2"
         }
         
         It "writes to correct file" {
-            New-PesterLogger -OutDir "some_dir" -WriterFunc (Get-Item function:InMemoryAddContent)
+            New-PesterLogger -OutDir "some_dir" -WriterFunc (MakeFakeWriter)
             Write-Log "msg"
             $Script:Path | Should Be "some_dir/PesterLogger.Write-Log.writes to correct file.log"
         }
