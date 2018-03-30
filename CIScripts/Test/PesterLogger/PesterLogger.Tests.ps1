@@ -4,14 +4,16 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 function ItBlockOutsideOfDescribe() {
     It "getting Pester scope works in It block outside of Describe" {
-        Get-CurrentPesterScope | Should -BeExactly @("PesterLogger", "It blocks in weird places", "getting Pester scope works in It block outside of Describe")
+        Get-CurrentPesterScope | Should -BeExactly @("PesterLogger", "It blocks in weird places",
+            "getting Pester scope works in It block outside of Describe")
     }
 }
 
 Describe "PesterLogger" {
     Context "when inside Context block" {
         It "getting Pester scope works" {
-            Get-CurrentPesterScope | Should -BeExactly @("PesterLogger", "when inside Context block", "getting Pester scope works")
+            Get-CurrentPesterScope | Should -BeExactly @("PesterLogger",
+                "when inside Context block", "getting Pester scope works")
         }
 
         $Name = "hi"
@@ -34,13 +36,15 @@ Describe "PesterLogger" {
                     Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
                 ]
                 $Name = "hi"
-                Get-CurrentPesterScope | Should -BeExactly @("PesterLogger", "when inside Context block", "works with nested functions that override Name")
+                Get-CurrentPesterScope | Should -BeExactly @("PesterLogger",
+                    "when inside Context block", "works with nested functions that override Name")
                 Get-CurrentPesterScope
             }
             SomeFuncNested
         }
         It "works with nested functions that override Name" {
-            SomeFunc | Should -BeExactly @("PesterLogger", "when inside Context block", "works with nested functions that override Name")
+            SomeFunc | Should -BeExactly @("PesterLogger",
+                "when inside Context block", "works with nested functions that override Name")
         }
 
 
@@ -50,11 +54,13 @@ Describe "PesterLogger" {
         function ItNested() {
             function ItNestedTwice() {
                 It "getting Pester scope works in It nested twice" {
-                    Get-CurrentPesterScope | Should -BeExactly @("PesterLogger", "It blocks in weird places", "getting Pester scope works in It nested twice")
+                    Get-CurrentPesterScope | Should -BeExactly @("PesterLogger",
+                        "It blocks in weird places", "getting Pester scope works in It nested twice")
                 }
             }
             It "getting Pester scope works in It nested once" {
-                Get-CurrentPesterScope | Should -BeExactly @("PesterLogger", "It blocks in weird places", "getting Pester scope works in It nested once")
+                Get-CurrentPesterScope | Should -BeExactly @("PesterLogger",
+                    "It blocks in weird places", "getting Pester scope works in It nested once")
             }
             ItNestedTwice
         }
@@ -63,7 +69,8 @@ Describe "PesterLogger" {
     }
 
     It "getting Pester scope outside of Context works" {
-        Get-CurrentPesterScope | Should -BeExactly @("PesterLogger", "getting Pester scope outside of Context works")
+        Get-CurrentPesterScope | Should -BeExactly @("PesterLogger",
+            "getting Pester scope outside of Context works")
     }
 
     It "SANITY CHECK: hack tested only on Pester 4.2.0" {
