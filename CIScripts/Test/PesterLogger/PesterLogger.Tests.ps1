@@ -3,21 +3,9 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
 Describe "PesterLogger" {
-    function InMemoryAddContent() {
-        Param($Path, $Value)
-        $Script:Content += $Value
-        $Script:Path = $Path
-    }
-
-    function MakeFakeWriter {
-        $Script:Content = ""
-        $Script:Path = ""
-        Get-Item function:InMemoryAddContent
-    }
-
-    Context "New-PesterLogger" {
+    Context "Initialize-PesterLogger" {
         It "registers a new global Write-Log function" {
-            New-PesterLogger -OutDir "some_dir"
+            Initialize-PesterLogger -OutDir "TestDrive:\"
             Get-Item function:Write-Log -ErrorAction SilentlyContinue | Should -Not -BeNullOrEmpty
         }
 
@@ -27,7 +15,7 @@ Describe "PesterLogger" {
             New-Item function:Write-Log -Value OldImpl
             Write-Log "test"
 
-            New-PesterLogger -OutDir "some_dir" -WriterFunc (MakeFakeWriter)
+            Initialize-PesterLogger -OutDir "TestDrive:\"
             Get-Item function:Write-Log -ErrorAction SilentlyContinue | Should -Not -BeNullOrEmpty
 
             Write-Log "test2"
@@ -36,17 +24,50 @@ Describe "PesterLogger" {
     }
 
     Context "Write-Log" {
+        It "writes to correct file" {
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+            Write-Log "msg"
+            Test-Path "TestDrive:\PesterLogger\Write-Log\writes to correct file.log" | Should -Be $true
+        }
+
+        It "changing location doesn't change the output directory" {
+            Push-Location TestDrive:\
+            Initialize-PesterLogger -OutDir "."
+
+            New-Item -ItemType directory TestDrive:\abcd
+            Push-Location TestDrive:\abcd
+
+            Write-Log "msg"
+            
+            Pop-Location
+            Pop-Location
+            "TestDrive:\PesterLogger\Write-Log\changing location doesn't change the output directory.log" `
+                | Should -Exist
+        }
+
         It "writes correct messages" {
-            New-PesterLogger -OutDir "some_dir" -WriterFunc (MakeFakeWriter)
+            Initialize-PesterLogger -OutDir "TestDrive:\"
             Write-Log "msg1"
             Write-Log "msg2"
-            $Script:Content | Should -Be "msg1msg2"
+            Get-Content -Raw "TestDrive:\PesterLogger\Write-Log\writes correct messages.log" | Should -Be @"
+msg1
+msg2
+
+"@
         }
-        
-        It "writes to correct file" {
-            New-PesterLogger -OutDir "some_dir" -WriterFunc (MakeFakeWriter)
-            Write-Log "msg"
-            $Script:Path | Should -Be "some_dir\PesterLogger\Write-Log\writes to correct file.log"
+    }
+
+    Context "Initializing in BeforeEach" {
+        It "registers Write-Log correctly" {
+            Write-Log "hi"
+            Get-Content -Raw "TestDrive:\PesterLogger\Initializing in BeforeEach\registers Write-Log correctly.log" `
+                | Should -Be @"
+hi
+
+"@
+        }
+        BeforeEach {
+            Initialize-PesterLogger -OutDir "TestDrive:\"
         }
     }
 
