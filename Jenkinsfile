@@ -202,7 +202,7 @@ pipeline {
 
     post {
         always {
-            node('tester') {
+            node('winci-tester-3') {
                 deleteDir()
                 unstash 'CIScripts'
                 script {
