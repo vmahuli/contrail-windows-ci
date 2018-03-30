@@ -1,6 +1,6 @@
 ﻿function New-PesterLogger {
     Param([Parameter(Mandatory = $true)] [string] $Outdir,
-          $WriterFunc = (Get-Command Add-Content))
+          $WriterFunc = (Get-Item function:Add-ContentForce))
 
     $DeducerFunc = Get-Item function:Get-CurrentPesterScope
 
@@ -14,6 +14,14 @@
     }.GetNewClosure()
 
     Register-NewWriteLogFunc -Func $WriteLogFunc
+}
+
+function Add-ContentForce {
+    Param([string] $Path, [string] $Value)
+    if (-not (Test-Path $Path)) {
+        New-Item -Force -Path $Path -Type File
+    }
+    Add-Content -Path $Path -Value $Value
 }
 
 function Get-CurrentPesterScope {
