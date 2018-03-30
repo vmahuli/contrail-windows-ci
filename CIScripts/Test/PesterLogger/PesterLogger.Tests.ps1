@@ -16,6 +16,11 @@ Describe "PesterLogger" {
 
         $Name = "hi"
         It "works when variable called Name is used in test case" {
+            [
+                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "Name",
+                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+            ]
             $Name = "hi"
             "hi" | Should -Not -BeIn Get-CurrentPesterScope 
         }
@@ -23,6 +28,11 @@ Describe "PesterLogger" {
         function SomeFunc() {
             $Name = "hi"
             function SomeFuncNested() {
+                [
+                    Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                    "Name",
+                    Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+                ]
                 $Name = "hi"
                 Get-CurrentPesterScope | Should -BeExactly @("PesterLogger", "when inside Context block", "works with nested functions that override Name")
                 Get-CurrentPesterScope
