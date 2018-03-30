@@ -7,7 +7,9 @@
     $WriteLogFunc = {
         Param([Parameter(Mandatory = $true)] [string] $Message)
         $Scope = & $DeducerFunc
-        $Outpath = $Script:Outdir + "/" + $Scope + ".log"
+        $Outpath = $Script:Outdir
+        $Scope | ForEach-Object { $Outpath = Join-Path $Outpath $_ }
+        $Outpath += ".log"
         & $WriterFunc -Path $Outpath -Value $Message
     }.GetNewClosure()
 
@@ -52,7 +54,7 @@ function Get-CurrentPesterScope {
             $i += 2
         }
         [Array]::Reverse($AllScopes)
-        return $AllScopes -Join "."
+        return $AllScopes
     }
 }
 
