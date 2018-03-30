@@ -18,14 +18,17 @@ function Invoke-TestScenarios {
         FailedCount = 0;
     }
 
+    $DetailedLogDir = Join-Path $TestReportOutputDirectory "detailed"
+
     $TestPaths = Get-ChildItem -Recurse -Filter "*.Tests.ps1"
     $WhitelistedTestPaths = $TestPaths | Where-Object { !($_.Name -in $TestsBlacklist) }
     $WhitelistedTestPaths | ForEach-Object {
         $PesterScript = @{
             Path=$_.FullName;
             Parameters= @{
-                TestenvConfFile=$TestenvConfFile
-            }; 
+                TestenvConfFile=$TestenvConfFile;
+                LogDir=$DetailedLogDir
+            };
             Arguments=@()
         }
         $Basename = $_.Basename

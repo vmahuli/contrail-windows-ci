@@ -34,7 +34,7 @@ function Enable-VRouterExtension {
         [Parameter(Mandatory = $false)] [string] $ContainerNetworkName = "testnet"
     )
 
-    Write-Host "Enabling Extension"
+    Write-Log "Enabling Extension"
 
     $AdapterName = $SystemConfig.AdapterName
     $ForwardingExtensionName = $SystemConfig.ForwardingExtensionName
@@ -59,7 +59,7 @@ function Disable-VRouterExtension {
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
 
-    Write-Host "Disabling Extension"
+    Write-Log "Disabling Extension"
 
     $AdapterName = $SystemConfig.AdapterName
     $ForwardingExtensionName = $SystemConfig.ForwardingExtensionName
@@ -95,7 +95,7 @@ function Enable-DockerDriver {
            [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
            [Parameter(Mandatory = $false)] [int] $WaitTime = 60)
 
-    Write-Host "Enabling Docker Driver"
+    Write-Log "Enabling Docker Driver"
 
     $Arguments = @(
         "-forceAsInteractive",
@@ -142,7 +142,7 @@ function Enable-DockerDriver {
 function Disable-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    Write-Host "Disabling Docker Driver"
+    Write-Log "Disabling Docker Driver"
 
     Stop-ProcessIfExists -Session $Session -ProcessName "contrail-windows-docker"
 
@@ -183,7 +183,7 @@ function Test-IsDockerDriverEnabled {
 function Enable-AgentService {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    Write-Host "Starting Agent"
+    Write-Log "Starting Agent"
     Invoke-Command -Session $Session -ScriptBlock {
         Start-Service ContrailAgent | Out-Null
     }
@@ -192,7 +192,7 @@ function Enable-AgentService {
 function Disable-AgentService {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    Write-Host "Stopping Agent"
+    Write-Log "Stopping Agent"
     Invoke-Command -Session $Session -ScriptBlock {
         Stop-Service ContrailAgent -ErrorAction SilentlyContinue | Out-Null
     }
@@ -258,7 +258,7 @@ function New-DockerNetwork {
         $Network = $Name
     }
 
-    Write-Host "Creating network $Name"
+    Write-Log "Creating network $Name"
 
     $NetworkID = Invoke-Command -Session $Session -ScriptBlock {
         if ($Using:Subnet) {
@@ -275,7 +275,7 @@ function New-DockerNetwork {
 function Remove-AllUnusedDockerNetworks {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    Write-Host "Removing all docker networks"
+    Write-Log "Removing all docker networks"
 
     Invoke-Command -Session $Session -ScriptBlock {
         docker network prune --force | Out-Null
@@ -325,7 +325,7 @@ function Initialize-TestConfiguration {
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
     )
 
-    Write-Host "Initializing Test Configuration"
+    Write-Log "Initializing Test Configuration"
 
     $NRetries = 3;
     foreach ($i in 1..$NRetries) {
@@ -352,7 +352,7 @@ function Initialize-TestConfiguration {
             if ($i -eq $NRetries) {
                 throw "Docker driver was not enabled."
             } else {
-                Write-Host "Docker driver was not enabled, retrying."
+                Write-Log "Docker driver was not enabled, retrying."
                 Stop-ProcessIfExists -Session $Session -ProcessName "contrail-windows-docker"
             }
         }
@@ -368,7 +368,7 @@ function Clear-TestConfiguration {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig)
 
-    Write-Host "Cleaning up test configuration"
+    Write-Log "Cleaning up test configuration"
 
     Remove-AllUnusedDockerNetworks -Session $Session
     Disable-AgentService -Session $Session

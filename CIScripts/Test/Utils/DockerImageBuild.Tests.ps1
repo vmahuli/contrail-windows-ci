@@ -1,8 +1,13 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$false)] [string] $LogDir = "."
 )
 
+. $PSScriptRoot\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\DockerImageBuild.ps1
+
+. $PSScriptRoot\..\PesterLogger\PesterLogger.ps1
+Initialize-PesterLogger -OutDir $LogDir
 
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
