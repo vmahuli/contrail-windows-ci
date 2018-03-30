@@ -21,6 +21,12 @@ Describe "PesterLogger" {
             Write-Log "test2"
             Assert-MockCalled OldImpl -Exactly -Times 1
         }
+
+        It "creates output directory if it doesn't exist" {
+            Initialize-PesterLogger -OutDir "TestDrive:\some_dir"
+            "TestDrive:\some_dir" | Should -Exist
+        }
+
     }
 
     Context "Write-Log" {

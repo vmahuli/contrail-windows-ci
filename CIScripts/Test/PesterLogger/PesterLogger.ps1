@@ -8,6 +8,9 @@ function Initialize-PesterLogger {
     $DeducerFunc = Get-Item function:Get-CurrentPesterScope
 
     # This is so we can change location in our test cases but it won't affect location of logs.
+    if (-not (Test-Path $Outdir)) {
+        New-Item -Force -Path $Outdir -Type Directory
+    }
     $ConstOutdir = Resolve-Path $Outdir
 
     $WriteLogFunc = {
