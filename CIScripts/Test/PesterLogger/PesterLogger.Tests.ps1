@@ -1,4 +1,4 @@
-﻿$here = Split-Path -Parent $MyInvocation.MyCommand.Path
+$here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
@@ -55,22 +55,15 @@ Describe "PesterLogger" {
             Initialize-PesterLogger -OutDir "TestDrive:\"
             Write-Log "msg1"
             Write-Log "msg2"
-            Get-Content -Raw "TestDrive:\PesterLogger\Write-Log\writes correct messages.log" | Should -Be @"
-msg1
-msg2
-
-"@
+            Get-Content "TestDrive:\PesterLogger\Write-Log\writes correct messages.log" | Should -Be @("msg1", "msg2")
         }
     }
 
     Context "Initializing in BeforeEach" {
         It "registers Write-Log correctly" {
             Write-Log "hi"
-            Get-Content -Raw "TestDrive:\PesterLogger\Initializing in BeforeEach\registers Write-Log correctly.log" `
-                | Should -Be @"
-hi
-
-"@
+            Get-Content "TestDrive:\PesterLogger\Initializing in BeforeEach\registers Write-Log correctly.log" `
+                | Should -Be @("hi")
         }
         BeforeEach {
             Initialize-PesterLogger -OutDir "TestDrive:\"
