@@ -120,8 +120,18 @@ Describe "PesterLogger" {
         BeforeEach {
             $Sess1 = New-PSSession -ComputerName localhost
             $Sess2 = New-PSSession -ComputerName "127.0.0.1"
+            [
+                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "Sessions",
+                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+            ]
             $Sessions = @($Sess1, $Sess2)
             "remote log text" | Out-File "TestDrive:\remote.log"
+            [
+                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "SourcePath",
+                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+            ]
             $SourcePath = ((Get-Item $TestDrive).FullName) + "\remote.log"
         }
 
