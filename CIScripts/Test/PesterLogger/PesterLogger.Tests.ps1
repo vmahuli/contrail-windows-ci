@@ -65,6 +65,51 @@ Describe "PesterLogger" {
         }
     }
 
+    Context "Move-Logs" {
+        It "appends collected logs to correct output file" {
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions $Sessions
+            Write-Log "first message"
+            Move-Logs -From $SourcePath
+            $Content = Get-Content "TestDrive:\PesterLogger.Move-Logs.appends collected logs to correct output file.log"
+            "first message" | Should -BeIn $Content
+            "remote log text" | Should -BeIn $Content
+        }
+
+        It "cleans logs in source directory" {
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions $Sessions
+            Move-Logs -From $SourcePath
+            Test-Path $SourcePath | Should -Be $false
+        }
+
+        It "adds a prefix describing source directory" {
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions $Sessions
+            Write-Log "first message"
+            Move-Logs -From $SourcePath
+            $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.adds a prefix describing source directory.log"
+            $ContentRaw | Should -BeLike "*$SourcePath*"
+            $ComputerName = $Sessions[0].ComputerName
+            $ContentRaw | Should -BeLike "*$ComputerName*"
+        }
+
+        It "works with multiple sessions" {
+            $Sess
+        }
+
+        BeforeEach {
+            $Sess1 = New-PSSession -ComputerName localhost
+            $Sess2 = New-PSSession -ComputerName "127.0.0.1"
+            $Sessions = @($Sess1, $Sess2)
+            "remote log text" | Out-File "TestDrive:\remote.log"
+            $SourcePath = ((Get-Item $TestDrive).FullName) + "\remote.log"
+        }
+
+        AfterEach {
+            $Sessions | ForEach-Object {
+                Remove-PSSession $_
+            }
+        }
+    }
+
     Context "Initializing in BeforeEach" {
         It "registers Write-Log correctly" {
             Write-Log "hi"

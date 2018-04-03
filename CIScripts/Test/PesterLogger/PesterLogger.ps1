@@ -1,7 +1,10 @@
+. $PSScriptRoot/../../Common/Aliases.ps1
+
 . $PSScriptRoot/Get-CurrentPesterScope.ps1
 
 function Initialize-PesterLogger {
-    Param([Parameter(Mandatory = $true)] [string] $Outdir)
+    Param([Parameter(Mandatory = $true)] [string] $Outdir,
+          [Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
 
     # Closures don't capture functions, so we need to capture them as variables.
     $WriterFunc = Get-Item function:Add-ContentForce
@@ -21,7 +24,24 @@ function Initialize-PesterLogger {
         & $WriterFunc -Path $Outpath -Value $Message
     }.GetNewClosure()
 
-    Register-NewWriteLogFunc -Func $WriteLogFunc
+    Register-NewFunc -Name "Write-Log" -Func $WriteLogFunc
+
+    $MoveLogsFunc = {
+        Param([Parameter(Mandatory = $true)] [string] $From)
+        $Script:Sessions | ForEach-Object {
+            $Content = Invoke-Command -Session $_ {
+                Get-Content $Using:From
+            }
+            Write-Log "-----------------------------------"
+            Write-Log "Logs from $($_.ComputerName):$From : "
+            Write-Log $Content
+            Invoke-Command -Session $_ {
+                Remove-Item $Using:From
+            }
+        }
+    }.GetNewClosure()
+
+    Register-NewFunc -Name "Move-Logs" -Func $MoveLogsFunc
 }
 
 function Add-ContentForce {
@@ -32,10 +52,10 @@ function Add-ContentForce {
     Add-Content -Path $Path -Value $Value | Out-Null
 }
 
-function Register-NewWriteLogFunc {
-    Param($Func)
-    if (Get-Item function:Write-Log -ErrorAction SilentlyContinue) {
-        Remove-Item function:Write-Log
+function Register-NewFunc {
+    Param([string] $Name, $Func)
+    if (Get-Item function:$Name -ErrorAction SilentlyContinue) {
+        Remove-Item function:$Name
     }
-    New-Item -Path function:\ -Name Global:Write-Log -Value $Func | Out-Null
+    New-Item -Path function:\ -Name Global:$Name -Value $Func | Out-Null
 }
