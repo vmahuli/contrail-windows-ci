@@ -32,7 +32,7 @@ function Get-CurrentPesterScope {
                 break
             }
             # We jump by 2 scopes at a time, because each Pester block consists of
-            # two scopes I guess ¯\_(ツ)_/¯
+            # two scopes I guess
             $i += 2
         }
         [Array]::Reverse($AllScopes)
