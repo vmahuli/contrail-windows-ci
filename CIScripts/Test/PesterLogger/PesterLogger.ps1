@@ -27,16 +27,20 @@ function Initialize-PesterLogger {
     Register-NewFunc -Name "Write-Log" -Func $WriteLogFunc
 
     $MoveLogsFunc = {
-        Param([Parameter(Mandatory = $true)] [string] $From)
+        Param([Parameter(Mandatory = $true)] [string] $From,
+              [Parameter(Mandatory = $false)] [switch] $DontCleanUp)
         $Script:Sessions | ForEach-Object {
             $Content = Invoke-Command -Session $_ {
                 Get-Content $Using:From
             }
-            Write-Log "-----------------------------------"
-            Write-Log "Logs from $($_.ComputerName):$From : "
+            $Prefix = "Logs from $($_.ComputerName):$From : "
+            Write-Log ((@("-") * $Prefix.Length) -join "")
+            Write-Log $Prefix
             Write-Log $Content
-            Invoke-Command -Session $_ {
-                Remove-Item $Using:From
+            if (-not $DontCleanUp) {
+                Invoke-Command -Session $_ {
+                    Remove-Item $Using:From
+                }
             }
         }
     }.GetNewClosure()
