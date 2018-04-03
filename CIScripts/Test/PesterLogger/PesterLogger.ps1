@@ -16,9 +16,8 @@ function Initialize-PesterLogger {
     $WriteLogFunc = {
         Param([Parameter(Mandatory = $true)] [string] $Message)
         $Scope = & $DeducerFunc
-        $Outpath = $Script:ConstOutdir
-        $Scope | ForEach-Object { $Outpath = Join-Path $Outpath $_ }
-        $Outpath += ".log"
+        $Filename = ($Scope -join ".") + ".log"
+        $Outpath = Join-Path $Script:ConstOutdir $Filename
         & $WriterFunc -Path $Outpath -Value $Message
     }.GetNewClosure()
 
