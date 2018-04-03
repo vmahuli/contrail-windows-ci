@@ -117,9 +117,10 @@ def provision_vm(api, args):
         if task is not None:
             # In this case we should at least try to cancel the task
             task.CancelTask()
+        raise
 
 def signal_handler(_signo, _stack_frame):
-    # Rise an exception to trigger cleanup handlers
+    # Raise an exception to trigger cleanup handlers
     sys.exit()
 
 def main():
