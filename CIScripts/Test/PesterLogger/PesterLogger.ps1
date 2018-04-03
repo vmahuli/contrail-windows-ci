@@ -1,4 +1,4 @@
-﻿. $PSScriptRoot/Get-CurrentPesterScope.ps1
+. $PSScriptRoot/Get-CurrentPesterScope.ps1
 
 function Initialize-PesterLogger {
     Param([Parameter(Mandatory = $true)] [string] $Outdir)

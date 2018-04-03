@@ -1,4 +1,4 @@
-﻿function Get-CurrentPesterScope {
+function Get-CurrentPesterScope {
     # UGLY HACK WARNING
     # -----------------
     # We use Pester's InModuleScope utility for spying on private methods/variables...
