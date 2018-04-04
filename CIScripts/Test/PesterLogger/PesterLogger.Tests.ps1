@@ -2,6 +2,8 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
+. $PSScriptRoot/../../Common/Invoke-CommandInLocation.ps1
+
 Describe "PesterLogger" {
     Context "Initialize-PesterLogger" {
         It "registers a new global Write-Log function" {
@@ -37,24 +39,17 @@ Describe "PesterLogger" {
         }
 
         It "changing location doesn't change the output directory" {
-            # try-finally block is here because we change working directory to temporary TestDrive. 
-            # If something fails during test, we must ensure that we go back to original working 
-            # directory. Otherwise, following tests will run in the temporary TestDrive directory.
-            # There is a possiblity that they would break. We need to isolate them.
-            try {
-                Push-Location TestDrive:\
+            Invoke-CommandInLocation TestDrive:\ {
                 Initialize-PesterLogger -OutDir "."
     
                 New-Item -ItemType directory TestDrive:\abcd
-                Push-Location TestDrive:\abcd
-    
-                Write-Log "msg"
-            } finally {
-                Pop-Location
-                Pop-Location
-                "TestDrive:\PesterLogger.Write-Log.changing location doesn't change the output directory.log" `
-                    | Should -Exist
+
+                Invoke-CommandInLocation TestDrive:\abcd {
+                    Write-Log "msg"
+                }
             }
+            "TestDrive:\PesterLogger.Write-Log.changing location doesn't change the output directory.log" `
+                | Should -Exist
         }
 
         It "writes correct messages" {
