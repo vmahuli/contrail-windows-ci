@@ -7,10 +7,10 @@ function Initialize-PesterLogger {
     $WriterFunc = Get-Item function:Add-ContentForce
     $DeducerFunc = Get-Item function:Get-CurrentPesterScope
 
-    # This is so we can change location in our test cases but it won't affect location of logs.
     if (-not (Test-Path $Outdir)) {
         New-Item -Force -Path $Outdir -Type Directory
     }
+    # This is so we can change location in our test cases but it won't affect location of logs.
     $ConstOutdir = Resolve-Path $Outdir
 
     $WriteLogFunc = {
@@ -27,7 +27,7 @@ function Initialize-PesterLogger {
 function Add-ContentForce {
     Param([string] $Path, [string] $Value)
     if (-not (Test-Path $Path)) {
-        New-Item -Force -Path $Path -Type File
+        New-Item -Force -Path $Path -Type File | Out-Null
     }
     Add-Content -Path $Path -Value $Value | Out-Null
 }
