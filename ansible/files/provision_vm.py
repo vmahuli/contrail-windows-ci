@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import argparse
 import getpass
+import signal
+import sys
 from pyVim.connect import SmartConnection
 from pyVim.task import WaitForTask
 from vmware_api import *
@@ -108,13 +110,24 @@ def provision_vm(api, args):
     pod_selection_spec = get_vm_pod_selection_spec(api, datastore_cluster_name)
     storage_spec = get_vm_storage_spec(name, folder, pod_selection_spec, template, clone_spec, operation_type='clone')
 
-    task = clone_template_to_datastore_cluster(api, storage_spec)
-    WaitForTask(task)
+    try:
+        task = clone_template_to_datastore_cluster(api, storage_spec)
+        WaitForTask(task)
+    except (KeyboardInterrupt, SystemExit):
+        if task is not None:
+            # In this case we should at least try to cancel the task
+            task.CancelTask()
+        raise
 
+def signal_handler(_signo, _stack_frame):
+    # Raise an exception to trigger cleanup handlers
+    sys.exit()
 
 def main():
     args = get_args()
     conn_params = get_connection_params(args)
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGHUP, signal_handler)
     with SmartConnection(**conn_params) as si:
         api = VmwareApi(si, datacenter_name=args.datacenter, cluster_name=args.cluster)
         provision_vm(api, args)
