@@ -15,18 +15,21 @@ pipelines:
             - ^contrail/ocata$
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
+            - ^R5\..*$
         - event: change-restored
           branch:
             - ^master$
             - ^contrail/ocata$
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
+            - ^R5\..*$
         - event: comment-added
           branch:
             - ^master$
             - ^contrail/ocata$
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
+            - ^R5\..*$
           comment: (?i)recheck(( (?:bug|lp)[\s#:]*(\d+))|( no bug))?(\s+clean)?\s*$
         - event: comment-added
           comment: (?i)recheck windows$
