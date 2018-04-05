@@ -17,9 +17,14 @@ kolla_globals_config:
   contrail_docker_registry: "{{ docker_registry }}"
   enable_nova_compute: 'yes'
   enable_haproxy: 'no'
+  enable_ironic: 'no'
+  enable_ironic_notifications: 'no'
   # override rabbitmq ports to prevent conflict with the contrail rabbit instance
   rabbitmq_port: "5673"
   rabbitmq_management_port: "15673"
   rabbitmq_cluster_port: "25673"
   rabbitmq_epmd_port: "4370"
   openstack_service_workers: 1
+  neutron_opencontrail_init_image_full: "{{ docker_registry }}/contrail-openstack-neutron-init:{{ contrail_version }}"
+  nova_compute_opencontrail_init_image_full: "{{ docker_registry }}/contrail-openstack-compute-init:{{ contrail_version }}"
+  ironic_notification_manager_image_full: "{{ docker_registry }}/contrail-openstack-ironic-notification-manager:{{ contrail_version }}"

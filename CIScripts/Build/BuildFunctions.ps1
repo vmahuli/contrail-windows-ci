@@ -262,22 +262,20 @@ function Invoke-AgentUnitTestRunner {
     Param ([Parameter(Mandatory = $true)] [String] $TestExecutable)
     Write-Host "===> Agent tests: running $TestExecutable..."
     $Res = Invoke-Command -ScriptBlock {
-        $NativeCommandReturn = Invoke-NativeCommand -AllowNonZero $true -ScriptBlock {
+        $Command = Invoke-NativeCommand -AllowNonZero -CaptureOutput -ScriptBlock {
             Invoke-Expression $TestExecutable
         }
-        $ExitCode = $NativeCommandReturn[-1]
-        $TestOutput = $NativeCommandReturn[0..($NativeCommandReturn.Length-2)]
 
         # This is a workaround for the following bug:
         # https://bugs.launchpad.net/opencontrail/+bug/1714205
         # Even if all tests actually pass, test executables can sometimes
         # return non-zero exit code.
         # TODO: It should be removed once the bug is fixed (JW-1110).
-        $SeemsLegitimate = Test-IfGTestOutputSuggestsThatAllTestsHavePassed -TestOutput $TestOutput
-        if ($ExitCode -eq 0 -or $SeemsLegitimate) {
+        $SeemsLegitimate = Test-IfGTestOutputSuggestsThatAllTestsHavePassed -TestOutput $Command.Output
+        if ($Command.ExitCode -eq 0 -or $SeemsLegitimate) {
             return 0
         } else {
-            return $ExitCode
+            return $Command.ExitCode
         }
     }
 

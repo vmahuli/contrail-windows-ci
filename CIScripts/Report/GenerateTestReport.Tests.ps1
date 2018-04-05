@@ -13,12 +13,12 @@ Describe "Generating test report" {
         New-Item -Type Directory $InputDir | Out-Null
 
         '
-            <test-results>
-                <test-suite name="outer_suite">
+            <test-results failures="0" inconclusive="0" skipped="0" date="2018-01-01" time="15:00:00">
+                <test-suite name="outer_suite" type="TestFixture" result="Success">
                     <results>
-                        <test-suite name="inner_suite">
+                        <test-suite name="inner_suite" type="TestFixture" result="Success">
                             <results>
-                                <test-case name="test" />
+                                <test-case name="test" result="Success" />
                             </results>
                         </test-suite>
                     </results>
@@ -42,10 +42,10 @@ Describe "Generating test report" {
 
     It "flattens the xml files" {
         $ExpectedXml = NormalizeXmlString '
-            <test-results>
-                <test-suite name="inner_suite">
+            <test-results failures="0" inconclusive="0" skipped="0" date="2018-01-01" time="15:00:00">
+                <test-suite name="inner_suite" type="TestFixture" result="Success">
                     <results>
-                        <test-case name="test" />
+                        <test-case name="test" result="Success" />
                     </results>
                 </test-suite>
             </test-results>

@@ -110,7 +110,7 @@ pipeline {
                 VC = credentials('vcenter')
                 TESTBED = credentials('win-testbed')
                 TESTBED_TEMPLATE = "Template-testbed-201803050718"
-                CONTROLLER_TEMPLATE = "Template-CentOS-7.4"
+                CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin"
             }
 
             steps {
