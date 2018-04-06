@@ -1,5 +1,5 @@
 # Default test env templates
-testenv_testbed_vmware_template: Template-testbed-201803050718
+testenv_testbed_vmware_template: Template-testbed-201804050628
 testenv_controller_vmware_template: Template-CentOS-7.4
 
 # Testenv block definition

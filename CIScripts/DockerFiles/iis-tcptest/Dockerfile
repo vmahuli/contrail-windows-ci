@@ -1,4 +1,4 @@
-FROM microsoft/iis
+FROM microsoft/iis:windowsservercore-10.0.14393.1358
 
 RUN mkdir C:\TCPTest
 RUN echo "<h1>Hello, Contrail!</h1>" > C:\TCPTest\index.html

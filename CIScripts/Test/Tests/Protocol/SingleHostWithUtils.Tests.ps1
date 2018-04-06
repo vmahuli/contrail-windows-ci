@@ -4,6 +4,7 @@ Param (
 
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\Common\Init.ps1
+. $PSScriptRoot\..\..\..\Common\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
@@ -103,11 +104,17 @@ Describe "Single compute node protocol tests with utils" {
             -Name $NetworkName `
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
-        Write-Host "Creating containers"
-        $Container1ID, $Container2ID = Invoke-Command -Session $Session -ScriptBlock {
+        Write-Host "Creating container 1"
+        $Cmd1 = Invoke-NativeCommand -Session $Session -CaptureOutput {
             docker run --network $Using:NetworkName -d iis-tcptest
-            docker run --network $Using:NetworkName -d microsoft/nanoserver ping -t localhost
         }
+        $Container1ID = $Cmd1.Output[0]
+
+        Write-Host "Creating container 2"
+        $Cmd2 = Invoke-NativeCommand -Session $Session -CaptureOutput {
+            docker run --network $Using:NetworkName -dt microsoft/nanoserver
+        }
+        $Container2ID = $Cmd2.Output[0]
 
         Write-Host "Getting VM NetAdapter Information"
         $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
@@ -130,15 +137,26 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     AfterEach {
-        Write-Host "Removing containers"
-        if (Get-Variable Container1ID -ErrorAction SilentlyContinue) {
-            Invoke-Command -Session $Session -ScriptBlock { docker rm -f $Using:Container1ID } | Out-Null
-            Invoke-Command -Session $Session -ScriptBlock { docker rm -f $Using:Container2ID } | Out-Null
+        Write-Host "Removing container 1"
+        if (Get-Variable "Container1ID" -ErrorAction SilentlyContinue) {
+            Invoke-NativeCommand -Session $Session -CaptureOutput {
+                docker rm -f $Using:Container1ID
+            }
+            Remove-Variable "Container1ID"
+        }
+
+        Write-Host "Removing container 2"
+        if (Get-Variable "Container2ID" -ErrorAction SilentlyContinue) {
+            Invoke-NativeCommand -Session $Session -CaptureOutput {
+                docker rm -f $Using:Container2ID
+            }
+            Remove-Variable "Container2ID"
         }
 
         Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
-        if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
+        if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
             $ContrailNM.RemoveNetwork($ContrailNetwork)
+            Remove-Variable "ContrailNetwork"
         }
     }
 

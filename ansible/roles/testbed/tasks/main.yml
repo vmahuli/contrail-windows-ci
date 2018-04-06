@@ -40,12 +40,13 @@
 - name: Install Docker-EE
   win_shell: "Install-Package Docker -ProviderName DockerProvider -Force"
 
+# we use hardcoded iis tag because of this issue: https://github.com/Microsoft/iis-docker/issues/47
 - name: Pull docker images
   win_shell: "docker pull {{ item }}"
   with_items:
     - microsoft/nanoserver
     - microsoft/windowsservercore
-    - microsoft/iis
+    - microsoft/iis:windowsservercore-10.0.14393.1358
 
 - name: Install MS Visuall C++ Redist 14
   win_chocolatey:
