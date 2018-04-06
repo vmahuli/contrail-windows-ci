@@ -49,7 +49,6 @@ Describe "Single compute node protocol tests with utils" {
             rt.exe -c -v 1 -f 1 -e ff:ff:ff:ff:ff:ff -n 3
             rt.exe -c -v 1 -f 1 -e $Using:Container1NetInfo.MACAddress -n 1
             rt.exe -c -v 1 -f 1 -e $Using:Container2NetInfo.MACAddress -n 2
-
         }
     }
 
