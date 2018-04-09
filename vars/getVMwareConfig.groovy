@@ -10,13 +10,9 @@ def call(vmRole = null) {
     template = env.VM_TEMPLATE
   }
 
-  def baseVMParams = [vcenter_hostname: env.VC_HOSTNAME,
-                      vcenter_user: env.VC_USR,
+  def baseVMParams = [vcenter_user: env.VC_USR,
                       vcenter_password: env.VC_PSW,
-                      validate_certs: 'no',
-                      datacenter_name: env.VC_DATACENTER,
-                      datastore_cluster_name: env.VC_STORAGE_POD,
-                      cluster_name: env.VC_CLUSTER]
+                      validate_certs: 'no']
 
   if (folder) {
     baseVMParams.vmware_folder = folder

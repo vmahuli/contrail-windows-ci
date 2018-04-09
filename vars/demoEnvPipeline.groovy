@@ -11,6 +11,8 @@ def call(playbookToRun) {
             // strip credentials from logs in all child scopes (all stages).
             // Please do not move to `Prepare environment` stage.
             VC = credentials("vcenter")
+            DEMOENV_MGMT_NETWORK = "VM-Network"
+            VC_FOLDER = "WINCI"
         }
 
         stages {
@@ -20,7 +22,7 @@ def call(playbookToRun) {
                         vmwareConfig = getVMwareConfig()
                         testenvConfig = [
                             testenv_name: env.DEMOENV_NAME,
-                            testenv_vmware_folder: "WINCI",
+                            testenv_vmware_folder: env.VC_FOLDER,
                             testenv_mgmt_network: env.DEMOENV_MGMT_NETWORK,
                             testenv_data_network: env.DEMOENV_DATA_NETWORK
                         ]

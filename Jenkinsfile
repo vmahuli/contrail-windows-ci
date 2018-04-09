@@ -20,10 +20,6 @@ pipeline {
                 // Use the same repo and branch as was used to checkout Jenkinsfile:
                 checkout scm
 
-                script {
-                    mgmtNetwork = env.TESTENV_MGMT_NETWORK
-                }
-
                 stash name: "CIScripts", includes: "CIScripts/**"
                 stash name: "StaticAnalysis", includes: "StaticAnalysis/**"
                 stash name: "Ansible", includes: "ansible/**"
@@ -111,6 +107,8 @@ pipeline {
                 TESTBED = credentials('win-testbed')
                 TESTBED_TEMPLATE = "Template-testbed-201804050628"
                 CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin"
+                TESTENV_MGMT_NETWORK = "VLAN_501_Management"
+                VC_FOLDER = "WINCI/testenvs"
             }
 
             steps {
@@ -122,7 +120,7 @@ pipeline {
                         def testEnvConfig = [
                             testenv_name: testEnvName,
                             testenv_vmware_folder: env.VC_FOLDER,
-                            testenv_mgmt_network: mgmtNetwork,
+                            testenv_mgmt_network: env.TESTENV_MGMT_NETWORK,
                             testenv_data_network: testNetwork,
                             testenv_testbed_vmware_template: env.TESTBED_TEMPLATE,
                             testenv_controller_vmware_template: env.CONTROLLER_TEMPLATE
