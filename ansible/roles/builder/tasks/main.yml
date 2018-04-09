@@ -4,6 +4,10 @@
   include_role:
     name: jenkins-partition
 
+- name: Include windows-ntp role
+  include_role:
+    name: windows-ntp
+
 - name: Install .NET 3.5
   win_feature:
     name: NET-Framework-Core

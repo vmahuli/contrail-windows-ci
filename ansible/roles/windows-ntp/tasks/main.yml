@@ -1,0 +1,15 @@
+---
+- name: Set proper timezone
+  win_timezone:
+    timezone: "{{ windows_timezone }}"
+
+- name: Set NTP server
+  win_shell: w32tm /config /syncfromflags:manual /manualpeerlist:"{{ windows_ntp_server_fqdn }}"
+
+- name: Restart time service
+  win_service:
+    name: w32time
+    state: restarted
+
+- name: Force NTP resync
+  win_shell: w32tm /resync

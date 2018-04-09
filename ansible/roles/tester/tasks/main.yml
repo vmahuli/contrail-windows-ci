@@ -4,6 +4,10 @@
   include_role:
     name: jenkins-partition
 
+- name: Include windows-ntp role
+  include_role:
+    name: windows-ntp
+
 - name: Install git with chocolatey
   win_chocolatey:
     name: git
