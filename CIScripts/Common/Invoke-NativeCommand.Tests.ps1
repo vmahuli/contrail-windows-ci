@@ -81,6 +81,11 @@ Describe "Invoke-NativeCommand" {
             Get-WriteHostOutput | Should BeNullOrEmpty
         }
 
+        It "prints the error output of a failed command" {
+            { INC -CaptureOutput { whoami.exe /invalid } } | Should Throw
+            Get-WriteHostOutput | Should Not BeNullOrEmpty
+        }
+
         It "can capture multiline output" {
             (INC -CaptureOutput { whoami.exe /? }).Output.Count | Should BeGreaterThan 1
         }

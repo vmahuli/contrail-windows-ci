@@ -89,6 +89,9 @@ function Invoke-NativeCommand {
     $Global:LastExitCode = $null
 
     if ($AllowNonZero -eq $false -and $ExitCode -ne 0) {
+        if ($CaptureOutput) {
+            $Output | Write-Host
+        }
         throw "Command ``$ScriptBlock`` failed with exitcode: $ExitCode"
     }
 
