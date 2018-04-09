@@ -41,7 +41,7 @@ Describe "Single compute node protocol tests with Agent" {
         )
 
         Write-Host "Creating ContrailNetwork"
-        $NetworkName = "testnetxdddd"
+        $NetworkName = "testnetxxd"
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
@@ -58,7 +58,7 @@ Describe "Single compute node protocol tests with Agent" {
         Uninstall-Utils -Session $Session
 
         if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
-            $ContrailNM.RemoveNetwork($null, $ContrailNetwork)
+            $ContrailNM.RemoveNetwork($ContrailNetwork)
         }
     }
 
