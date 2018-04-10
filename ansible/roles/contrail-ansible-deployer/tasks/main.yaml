@@ -1,63 +1,47 @@
-- name: Clone contrail-ansible-deployer repository
-  git:
-    repo: 'https://github.com/Juniper/contrail-ansible-deployer'
-    dest: "{{ docker_provision_dir }}"
-    version: c59449e1887ed8128848032c846515584b47d7d4
-    force: yes
+---
 
 - name: Install build dependencies
   package:
     name: "{{ item }}"
-    state: latest
+    state: present
   become: true
   with_items:
     - ansible
+    - git
+
+- name: Clone contrail-ansible-deployer repository
+  git:
+    repo: 'https://github.com/Juniper/contrail-ansible-deployer'
+    dest: "{{ docker_provision_dir }}"
+    version: "{{contrail_ansible_deployer_version }}"
+    force: yes
 
 - name: Copy hosts template
   template:
-    src: inventory/hosts.j2
-    dest: "{{ docker_provision_dir }}/inventory/hosts"
+    src: instances.j2
+    dest: "{{ docker_provision_dir }}/config/instances.yaml"
 
-- name: Copy vars template
-  template:
-    src: "inventory/group_vars/{{ item }}.j2"
-    dest: "{{ docker_provision_dir }}/inventory/group_vars/{{ item }}"
-  with_items:
-    - all.yml
-    - container_hosts.yml
-
-- name: ensure SSH key is generated
-  command: ssh-keygen -t rsa -f /root/.ssh/id_rsa -N ''
-  args:
-    creates: /root/.ssh/id_rsa
-  become: True
-  become_user: root
-
-- name: add key to authorized keys
-  shell: |
-    cp /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
-    chmod 600 /root/.ssh/authorized_keys
-    chmod 600 /root/.ssh/id_rsa
-    chmod 600 /root/.ssh/id_rsa.pub
-    chmod 700 /root/.ssh
-  become: True
-  become_user: root
-
-- name: Provision Contrail with deploy.yml playbook
-  command: >
-    ansible-playbook -i inventory/ playbooks/deploy.yml -v
+- name: Configure instances with configure_instances.yml playbook
+  command: ansible-playbook -i inventory/ playbooks/configure_instances.yml -v
   args:
     chdir: "{{ docker_provision_dir }}"
   environment:
     ANSIBLE_HOST_KEY_CHECKING: 'False'
     ANSIBLE_STDOUT_CALLBACK: debug
   become: True
-  become_user: root
+
+- name: Provision instances with install_contrail.yml playbook
+  command: ansible-playbook -i inventory/ -e orchestrator=openstack playbooks/install_contrail.yml
+  args:
+    chdir: "{{ docker_provision_dir }}"
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: 'False'
+    ANSIBLE_STDOUT_CALLBACK: debug
+  become: True
 
 - name: Show the list of running containers
   command: docker ps -a
   become: True
-  become_user: root
 
 - name: Show processes
   command: ps aux --sort rss
@@ -65,37 +49,16 @@
 - name: Show memory usage
   command: free -m
 
-- name: cooldown
-  wait_for:
-    timeout: 120
-
-- name: Drop caches to give the vrouter contiguous memory to allocate
-  shell: "sync; echo 1 > /proc/sys/vm/drop_caches"
+- name: Check interfaces for addresses
+  command: ip addr
   become: True
-  become_user: root
 
-- name: wait for the vrouter initialization
-  wait_for:
-    host: github.com
-    port: 443
-    timeout: 3000
-    delay: 60
-    state: started
-
-- name: Restart agent after vrouter startup
-  command: docker restart {{ item }}
+- name: (Hack) get config_api container id
+  shell: docker ps | awk '/config_api/ { print $1 }'
+  register: config_api_container
   become: True
-  become_user: root
-  with_items:
-    - contrailvrouter_vrouter-agent_1
-    - vrouter_vrouter-agent_1
-  ignore_errors: true
 
-- name: Show the list of running containers
-  command: docker ps -a
+- name: (Hack) restart config_api container to fix issue with VNC API lib
+  command: docker restart {{ config_api_container.stdout }}
   become: True
-  become_user: root
-
-- name: Agent cooldown
-  wait_for:
-    timeout: 120
+  when: config_api_container.stdout is defined
