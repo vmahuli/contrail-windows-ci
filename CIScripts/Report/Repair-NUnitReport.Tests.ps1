@@ -79,6 +79,34 @@ Describe "Repair-NUnitReport" {
             NormalizeXmlString $ActualOutput | Should BeExactly $ExpectedOutput
         }
 
+        It "flattens ParameterizedTest test-suite nodes" {
+            $TestData = NormalizeXmlString -InputData @"
+<test-results>
+<test-suite name="real context">
+<results>
+    <test-suite name="parameterized" type="ParameterizedTest">
+    <results>
+        <test-case name="test-a" />
+        <test-case name="test-b" />
+    </results>
+    </test-suite>
+</results>
+</test-suite>
+</test-results>
+"@
+            $ExpectedOutput = NormalizeXmlString -InputData @"
+<test-results>
+<test-suite name="real context">
+<results>
+    <test-case name="test-a" />
+    <test-case name="test-b" />
+</results>
+</test-suite>
+</test-results>
+"@
+            $ActualOutput = Repair-NUnitReport -InputData $TestData
+            NormalizeXmlString $ActualOutput | Should BeExactly $ExpectedOutput
+        }
 
         It "removes case-less test suites when there is one with cases" {
             $TestData = NormalizeXmlString -InputData @"

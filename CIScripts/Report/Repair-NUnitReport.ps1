@@ -5,6 +5,8 @@
     $CaseNodes = Find-CaseNodes -XML $XML
     Set-DescriptionAndNameTheSameFor -Nodes $CaseNodes
 
+    FlattenParametrizedTests -Xml $XML
+
     $SuiteNodesWithCases = Get-DirectSuiteParentsOf -Nodes $CaseNodes
     $SuiteNodesWithCases | Foreach-Object { $XML.'test-results'.AppendChild($_) } | Out-Null
 
@@ -32,6 +34,14 @@ function Get-DirectSuiteParentsOf {
         $_.ParentNode.ParentNode
     }
     return ,$Arr
+}
+
+function FlattenParametrizedTests {
+    Param([Parameter(Mandatory = $true)] [xml] $XML)
+    $ParametrizedTests = $XML | Select-Xml -Xpath '//test-suite[@type="ParameterizedTest"]/results/*'
+    foreach ($TestCase in $ParametrizedTests | Foreach-Object { $_.Node }) {
+        $TestCase.ParentNode.ParentNode.ParentNode.AppendChild($TestCase) | Out-Null
+    }
 }
 
 function Set-DescriptionAndNameTheSameFor {
