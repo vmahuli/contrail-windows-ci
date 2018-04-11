@@ -1,0 +1,34 @@
+---
+- name: Construct provision_vm.py script argument list
+  set_fact:
+    provision_vm_argv:
+      - "{{ script_path.path }}/provision_vm.py"
+      - "--host '{{ vcenter_hostname }}'"
+      - "--user '{{ vcenter_user }}'"
+      - "--password '{{ vcenter_password }}'"
+      - "--datacenter '{{ datacenter_name }}'"
+      - "--datastore-cluster '{{ datastore_cluster_name }}'"
+      - "--template '{{ hostvars[inventory_hostname].template }}'"
+      - "--folder '{{ testenv_folder }}'"
+      - "--name '{{ inventory_hostname_short }}'"
+      - "--mgmt-network '{{ portgroup_mgmt }}'"
+      - "--data-network '{{ portgroup_contrail }}'"
+      - "--data-ip-address '{{ hostvars[inventory_hostname].ip }}'"
+      - "--data-netmask '{{ hostvars[inventory_hostname].netmask }}'"
+
+- name: Add vm-username parameter if defined
+  set_fact:
+    provision_vm_argv: "{{ provision_vm_argv }} + ['--vm-username {{ vm_username }}']"
+  when: vm_username is defined and vm_username
+
+- name: Add vm-password parameter if defined
+  set_fact:
+    provision_vm_argv: "{{ provision_vm_argv }} + ['--vm-password {{ vm_password }}']"
+  when: vm_password is defined and vm_password
+
+- name: Deploy testenv VMs
+  delegate_to: localhost
+  shell: "{{ provision_vm_argv | join(' ') }}"
+
+- name: Include common post-deploy tasks
+  include_tasks: "post_deploy.yml"

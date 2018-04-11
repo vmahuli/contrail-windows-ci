@@ -1,10 +1,12 @@
 ---
 - hosts: localhost
+  gather_facts: no
   connection: local
   roles:
   - testenv-inventory-build
 
 - hosts: localhost
+  gather_facts: no
   connection: local
   tasks:
   - name: Create temporary directory for Python scripts
@@ -34,7 +36,6 @@
 
 - hosts: testenv
   gather_facts: no
-  strategy: free
   any_errors_fatal: true
   roles:
   - role: vmware-vm
@@ -54,6 +55,7 @@
     - controller
 
 - hosts: localhost
+  gather_facts: no
   connection: local
   roles:
     - testenv-save-conf
