@@ -11,7 +11,7 @@
     folder: "{{ datacenter_name }}/vm/{{ testenv_folder }}"
     name: "{{ inventory_hostname_short }}"
   register: newvm
-  retries: 15
+  retries: 120
   delay: 60
   until: >
       newvm.instance.hw_eth0.ipaddresses | ipv4 | reject("match", "169.254.*") | list
