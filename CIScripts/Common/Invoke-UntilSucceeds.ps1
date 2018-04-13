@@ -43,7 +43,7 @@ function Invoke-UntilSucceeds {
     $StartTime = Get-Date
 
     while ($true) {
-        $LastCheck = ((Get-Date) - $StartTime).Seconds -ge $Duration
+        $LastCheck = ((Get-Date) - $StartTime).TotalSeconds -ge $Duration
 
         if ($Precondition -and -not (Invoke-Command $Precondition)) {
             throw New-Object -TypeName CITimeoutException("Precondition was false, waiting aborted early")

@@ -88,14 +88,14 @@ function Test-IsVRouterExtensionEnabled {
     return $($Ext.Enabled -and $Ext.Running)
 }
 
-function Enable-DockerDriver {
+function Start-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName,
            [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
            [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
            [Parameter(Mandatory = $false)] [int] $WaitTime = 60)
 
-    Write-Host "Enabling Docker Driver"
+    Write-Host "Starting Docker Driver"
 
     $Arguments = @(
         "-forceAsInteractive",
@@ -139,10 +139,10 @@ function Enable-DockerDriver {
     Start-Sleep -s $WaitTime
 }
 
-function Disable-DockerDriver {
+function Stop-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    Write-Host "Disabling Docker Driver"
+    Write-Host "Stopping Docker Driver"
 
     Stop-ProcessIfExists -Session $Session -ProcessName "contrail-windows-docker"
 
@@ -284,40 +284,19 @@ function Remove-AllUnusedDockerNetworks {
 
 function Wait-RemoteInterfaceIP {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [Int] $ifIndex)
+           [Parameter(Mandatory = $true)] [String] $AdapterName)
 
-    Invoke-Command -Session $Session -ScriptBlock {
-        $WAIT_TIME_FOR_DHCP_IN_SECONDS = 60
-
-        foreach ($i in 1..$WAIT_TIME_FOR_DHCP_IN_SECONDS) {
-            $Address = Get-NetIPAddress -InterfaceIndex $Using:ifIndex -ErrorAction SilentlyContinue `
+    Invoke-UntilSucceeds -Name "Waiting for IP on interface $AdapterName" -Duration 60 {
+        Invoke-Command -Session $Session {
+            Get-NetAdapter -Name $Using:AdapterName `
+                | Get-NetIPAddress -ErrorAction SilentlyContinue `
                 | Where-Object AddressFamily -eq IPv4 `
                 | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") }
-            if ($Address) {
-                return
-            }
-            Start-Sleep -Seconds 1
         }
-
-        throw "Waiting for IP on interface $($Using:ifIndex) timed out after $WAIT_TIME_FOR_DHCP_IN_SECONDS seconds"
-    }
+    } | Out-Null
 }
 
 function Initialize-DriverAndExtension {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
-        [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
-        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
-    )
-
-    Initialize-TestConfiguration -Session $Session `
-        -SystemConfig $SystemConfig `
-        -OpenStackConfig $OpenStackConfig `
-        -ControllerConfig $ControllerConfig
-}
-
-function Initialize-TestConfiguration {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
@@ -331,7 +310,7 @@ function Initialize-TestConfiguration {
     foreach ($i in 1..$NRetries) {
         # DockerDriver automatically enables Extension, so there is no need to enable it manually
 
-        Enable-DockerDriver -Session $Session `
+        Start-DockerDriver -Session $Session `
             -AdapterName $SystemConfig.AdapterName `
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig `
@@ -346,22 +325,21 @@ function Initialize-TestConfiguration {
                 Test-IsDockerDriverEnabled -Session $Session
             } | Invoke-UntilSucceeds -Duration 600 -Interval 5 -Precondition $TestProcessRunning
 
+            Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
+
             break
         }
         catch {
+            Write-Host $_
+
             if ($i -eq $NRetries) {
                 throw "Docker driver was not enabled."
             } else {
                 Write-Host "Docker driver was not enabled, retrying."
-                Stop-ProcessIfExists -Session $Session -ProcessName "contrail-windows-docker"
+                Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             }
         }
     }
-
-    $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
-            -Session $Session `
-            -AdapterName $SystemConfig.VHostName
-    Wait-RemoteInterfaceIP -Session $Session -ifIndex $HNSTransparentAdapter.ifIndex
 }
 
 function Clear-TestConfiguration {
@@ -372,7 +350,7 @@ function Clear-TestConfiguration {
 
     Remove-AllUnusedDockerNetworks -Session $Session
     Disable-AgentService -Session $Session
-    Disable-DockerDriver -Session $Session
+    Stop-DockerDriver -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
 }
 
@@ -437,7 +415,7 @@ function Initialize-ComputeServices {
             [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
         )
 
-        Initialize-TestConfiguration -Session $Session `
+        Initialize-DriverAndExtension -Session $Session `
             -SystemConfig $SystemConfig `
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig

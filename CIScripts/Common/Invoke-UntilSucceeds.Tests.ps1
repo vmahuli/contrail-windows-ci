@@ -156,7 +156,23 @@ Describe "Invoke-UntilSucceeds" {
         } -Duration 10 -Interval 5
 
         $Script:Counter | Should Be 2
-        ((Get-Date) - $StartDate).Seconds | Should Be 45
+        ((Get-Date) - $StartDate).TotalSeconds | Should Be 45
+    }
+
+    It "works with duration > 60" {
+        $Script:Counter = 0
+        $StartDate = (Get-Date)
+
+        {
+            Invoke-UntilSucceeds {
+                $Script:Counter += 1
+                $Script:Counter -eq 200
+            } -Duration 100 -Interval 1
+        } | Should Throw
+
+        $Script:Counter | Should BeGreaterThan 99
+        $Script:Counter | Should BeLessThan 200
+        ((Get-Date) - $StartDate).TotalSeconds | Should BeGreaterThan 99
     }
 
     BeforeEach {
