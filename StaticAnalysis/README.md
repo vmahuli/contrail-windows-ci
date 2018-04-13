@@ -1,4 +1,4 @@
-# Run all available linters
+# Run all available PowerShell linters
 
 To run all available linters, execute the following command in this directory:
 
@@ -12,4 +12,12 @@ To run using our settings:
 
 ```
 Invoke-ScriptAnalyzer .. -Recurse -Settings C:\Full\Path\To\contrail-windows-ci\StaticAnalysis\PSScriptAnalyzerSettings.psd1
+```
+
+## Run all available Ansible linters
+
+To run all available linters, execute the following command in root directory:
+
+```
+./StaticAnalysis/ansible_linter.py
 ```

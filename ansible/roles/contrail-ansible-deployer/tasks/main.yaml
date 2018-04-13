@@ -29,6 +29,9 @@
     ANSIBLE_HOST_KEY_CHECKING: 'False'
     ANSIBLE_STDOUT_CALLBACK: debug
   become: True
+  tags:
+    - skip_ansible_lint # ANSIBLE0012: Commands should not change things if nothing needs doing
+                        # Always run internal playbook: we cannot easily recognize here if it changed something.
 
 - name: Provision instances with install_contrail.yml playbook
   command: ansible-playbook -i inventory/ -e orchestrator=openstack playbooks/install_contrail.yml
@@ -38,25 +41,33 @@
     ANSIBLE_HOST_KEY_CHECKING: 'False'
     ANSIBLE_STDOUT_CALLBACK: debug
   become: True
+  tags:
+    - skip_ansible_lint # ANSIBLE0012: Commands should not change things if nothing needs doing
+                        # Always run internal playbook: we cannot easily recognize here if it changed something.
 
 - name: Show the list of running containers
   command: docker ps -a
   become: True
+  changed_when: False
 
 - name: Show processes
   command: ps aux --sort rss
+  changed_when: False
 
 - name: Show memory usage
   command: free -m
+  changed_when: False
 
 - name: Check interfaces for addresses
   command: ip addr
   become: True
+  changed_when: False
 
 - name: (Hack) get config_api container id
   shell: docker ps | awk '/config_api/ { print $1 }'
   register: config_api_container
   become: True
+  changed_when: False
 
 - name: (Hack) restart config_api container to fix issue with VNC API lib
   command: docker restart {{ config_api_container.stdout }}

@@ -1,4 +1,5 @@
 ansible==2.4.2.0
+ansible-lint==3.4.21
 
 # For management of windows nodes
 pywinrm>=0.2.2

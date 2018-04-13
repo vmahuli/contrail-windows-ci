@@ -27,7 +27,7 @@ pipeline {
             }
         }
 
-        stage ('Checkout projects') {
+        stage('Checkout projects') {
             agent { label 'builder' }
             environment {
                 DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
@@ -40,30 +40,44 @@ pipeline {
             }
         }
 
-        stage('Static analysis') {
-            agent { label 'builder' }
-            steps {
-                deleteDir()
-                unstash "StaticAnalysis"
-                unstash "SourceCode"
-                unstash "CIScripts"
-                powershell script: "./StaticAnalysis/Invoke-StaticAnalysisTools.ps1 -RootDir . -Config ${pwd()}/StaticAnalysis"
-            }
-        }
-
-        stage('Linux-test') {
-            when { expression { env.ghprbPullId } }
-            agent { label 'linux' }
-            options {
-                timeout time: 5, unit: 'MINUTES'
-            }
-            steps {
-                deleteDir()
-                unstash "Monitoring"
-                dir("monitoring") {
-                    sh "python3 -m tests.monitoring_tests"
+        stage('Static analysis ans tests') {
+            parallel {
+                stage('Static analysis on Windows') {
+                    agent { label 'builder' }
+                    steps {
+                        deleteDir()
+                        unstash "StaticAnalysis"
+                        unstash "SourceCode"
+                        unstash "CIScripts"
+                        powershell script: "./StaticAnalysis/Invoke-StaticAnalysisTools.ps1 -RootDir . -Config ${pwd()}/StaticAnalysis"
+                    }
                 }
-                runHelpersTests()
+
+                stage('Static analysis on Linux') {
+                    agent { label 'linux' }
+                    steps {
+                        deleteDir()
+                        unstash "StaticAnalysis"
+                        unstash "Ansible"
+                        sh "StaticAnalysis/ansible_linter.py"
+                    }
+                }
+
+                stage('CI test') {
+                    when { expression { env.ghprbPullId } }
+                    agent { label 'linux' }
+                    options {
+                        timeout time: 5, unit: 'MINUTES'
+                    }
+                    steps {
+                        deleteDir()
+                        unstash "Monitoring"
+                        dir("monitoring") {
+                            sh "python3 -m tests.monitoring_tests"
+                        }
+                        runHelpersTests()
+                    }
+                }
             }
         }
 
