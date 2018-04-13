@@ -41,3 +41,5 @@ Describe "vTest scenarios" {
         Uninstall-Extension -Session $Session
     }
 }
+
+Remove-PSSession $Sessions

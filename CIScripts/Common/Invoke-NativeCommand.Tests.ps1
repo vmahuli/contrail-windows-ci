@@ -151,3 +151,5 @@ Describe "Invoke-NativeCommand" {
         Invoke-FunctionalTests
     }
 }
+
+Remove-PSSession $Sessions

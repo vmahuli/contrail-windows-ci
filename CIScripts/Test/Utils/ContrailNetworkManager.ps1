@@ -40,7 +40,7 @@ class ContrailNetworkManager {
             $this.AddProject($TenantName)
         }
         catch {
-            if ($_.Exception -match "409.*conflict") {
+            if ($_.Exception -match "\(409\)") {
                 Write-Warning "The project $TenantName already exists"
             } else {
                 throw

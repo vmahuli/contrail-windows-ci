@@ -66,3 +66,5 @@ Describe "Docker Driver" {
         }
     }
 }
+
+Remove-PSSession $Sessions

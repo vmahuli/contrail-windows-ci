@@ -61,3 +61,5 @@ Describe "vRouter Agent MSI installer" {
         Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
     }
 }
+
+Remove-PSSession $Sessions
