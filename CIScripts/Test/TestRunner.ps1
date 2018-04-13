@@ -18,17 +18,20 @@ function Invoke-TestScenarios {
         FailedCount = 0;
     }
 
+    $DetailedLogDir = Join-Path $TestReportOutputDirectory "detailed"
+
     $TestPaths = Get-ChildItem -Recurse -Filter "*.Tests.ps1"
     $WhitelistedTestPaths = $TestPaths | Where-Object { !($_.Name -in $TestsBlacklist) }
-    $WhitelistedTestPaths | ForEach-Object {
+    foreach ($TestPath in $WhitelistedTestPaths) {
         $PesterScript = @{
-            Path=$_.FullName;
+            Path=$TestPath.FullName;
             Parameters= @{
-                TestenvConfFile=$TestenvConfFile
-            }; 
-            Arguments=@()
+                TestenvConfFile=$TestenvConfFile;
+                LogDir=$DetailedLogDir;
+            };
+            Arguments=@();
         }
-        $Basename = $_.Basename
+        $Basename = $TestPath.Basename
         $TestReportOutputPath = "$TestReportOutputDirectory\$Basename.xml"
         $Results = Invoke-Pester -PassThru -Script $PesterScript `
             -OutputFormat NUnitXml -OutputFile $TestReportOutputPath

@@ -198,6 +198,9 @@ pipeline {
                                     -TestReportDir ${env.WORKSPACE}/test_report/"""
                             } finally {
                                 stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
+                                dir('test_report/detailed') {
+                                    stash name: 'detailedLogs', allowEmpty: true
+                                }
                             }
                         }
                     }
@@ -246,6 +249,13 @@ pipeline {
 
                     dir('to_publish') {
                         unstash 'processedTestReport'
+
+                        dir('detailed_logs') {
+                            try {
+                                unstash 'detailedLogs'
+                            } catch (Exception err) {
+                            }
+                        }
 
                         def logFilename = 'log.txt.gz'
                         obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)

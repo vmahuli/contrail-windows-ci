@@ -3,7 +3,8 @@
     "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
 
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
 )
 
 . $PSScriptRoot\..\..\..\Common\Init.ps1
