@@ -86,12 +86,12 @@ function New-ReportsLocationsJson {
         }
 
         $Xmls = Get-ChildItem -Recurse -Filter '*.xml'
-        $XmlPaths = $Xmls | Foreach-Object { ConvertTo-RelativePath $_.FullName }
+        [String[]] $XmlPaths = $Xmls | Foreach-Object { ConvertTo-RelativePath $_.FullName }
 
         $IndexHtml = Get-ChildItem -Recurse -Filter 'Index.html'
 
         @{
-            xml_reports = , $XmlPaths
+            xml_reports = $XmlPaths
             html_report = ConvertTo-RelativePath $IndexHtml.FullName
         } | ConvertTo-Json -Depth 10 | Out-File "reports-locations.json" -Encoding "utf8"
     }

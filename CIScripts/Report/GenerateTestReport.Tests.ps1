@@ -135,7 +135,6 @@ Describe "Generating test report" {
             Join-Path $OutputDir "reports-locations.json" | Should Exist
         }
 
-        # TODO(sodar) enable the test after fixing it:
-        # Test-JsonFileForMonitoring "foo.xml", "bar.xml", "baz.xml"
+        Test-JsonFileForMonitoring "foo.xml", "bar.xml", "baz.xml"
     }
 }

@@ -212,6 +212,7 @@ pipeline {
     environment {
         LOG_SERVER = "logs.opencontrail.org"
         LOG_SERVER_USER = "zuul-win"
+        LOG_SERVER_FOLDER = "winci"
         LOG_ROOT_DIR = "/var/www/logs/winci"
     }
 
@@ -243,6 +244,7 @@ pipeline {
                     def logServer = [
                         addr: env.LOG_SERVER,
                         user: env.LOG_SERVER_USER,
+                        folder: env.LOG_SERVER_FOLDER,
                         rootDir: env.LOG_ROOT_DIR
                     ]
                     def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
@@ -262,12 +264,14 @@ pipeline {
 
                         publishToLogServer(logServer, ".", destDir)
                     }
-                }
 
-                build job: 'WinContrail/gather-build-stats', wait: false,
-                      parameters: [string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
-                                   string(name: 'MONITORED_JOB_NAME', value: env.JOB_NAME),
-                                   string(name: 'MONITORED_BUILD_URL', value: env.BUILD_URL)]
+                    def testReportsUrl = decideTestReportsUrl(logServer, 'reports-locations.json', env.ZUUL_UUID)
+                    build job: 'WinContrail/gather-build-stats', wait: false,
+                        parameters: [string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
+                                     string(name: 'MONITORED_JOB_NAME', value: env.JOB_NAME),
+                                     string(name: 'MONITORED_BUILD_URL', value: env.BUILD_URL),
+                                     string(name: 'TEST_REPORTS_JSON_URL', value: testReportsUrl)]
+                }
             }
         }
     }

@@ -1,21 +1,38 @@
 from collections import namedtuple
 
 
-BuildStats = namedtuple('BuildStats', [
-    'job_name',
-    'build_id',
-    'build_url',
-    'finished_at_secs',
-    'status',
-    'duration_millis',
-    'stages'
-])
+class BuildStats(object):
+    def __init__(self, job_name, build_id, build_url, finished_at_secs, status, duration_millis,
+                 stages, test_stats):
+        self.job_name = job_name
+        self.build_id = build_id
+        self.build_url = build_url
+        self.finished_at_secs = finished_at_secs
+        self.status = status
+        self.duration_millis = duration_millis
+        self.stages = stages
+        self.test_stats = test_stats
 
-BuildStats.is_build_finished = lambda self: self.status != 'IN_PROGRESS'
+    def is_build_finished(self):
+        return self.status != 'IN_PROGRESS'
 
 
 StageStats = namedtuple('StageStats', [
     'name',
     'status',
     'duration_millis'
+])
+
+
+TestStats = namedtuple('TestStats', [
+    'total',
+    'passed',
+    'errors',
+    'failures',
+    'not_run',
+    'inconclusive',
+    'ignored',
+    'skipped',
+    'invalid',
+    'report_url'
 ])

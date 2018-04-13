@@ -3,8 +3,37 @@ library "contrailWindows@$BRANCH_NAME"
 pipeline {
     agent none
     stages {
-        stage('Gather build stats') {
+        stage('Gather build and test stats') {
             agent { label 'ansible' }
+            when {
+                expression { env.TEST_REPORTS_JSON_URL }
+            }
+            environment {
+                MYSQL = credentials('monitoring-mysql')
+            }
+            steps {
+                deleteDir()
+                checkout scm
+
+                dir('monitoring') {
+                    shellCommand('python3', [
+                        './collect_and_push_build_stats.py',
+                        '--job-name', env.MONITORED_JOB_NAME,
+                        '--build-url', env.MONITORED_BUILD_URL,
+                        '--reports-json-url', env.TEST_REPORTS_JSON_URL,
+                        '--mysql-host', env.MYSQL_HOST,
+                        '--mysql-database', env.MYSQL_DATABASE,
+                        '--mysql-username', env.MYSQL_USR,
+                        '--mysql-password', env.MYSQL_PSW,
+                    ])
+                }
+            }
+        }
+        stage('Gather only build stats') {
+            agent { label 'ansible' }
+            when {
+                not { expression { env.TEST_REPORTS_JSON_URL } }
+            }
             environment {
                 MYSQL = credentials('monitoring-mysql')
             }

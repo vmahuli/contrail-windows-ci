@@ -4,10 +4,12 @@ from unittest.mock import MagicMock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from publishers.database_publisher_adapter import DatabasePublisherAdapter
-from publishers.database import Build, Stage, MonitoringBase
+from publishers.database import Build, Stage, Report, MonitoringBase
 from stats import BuildStats, StageStats
-from tests.common import get_test_build_stats, TEST_STAGE1_STATS, TEST_STAGE2_STATS
-from tests.common import assert_stage_matches_stage_stats, assert_build_matches_build_stats
+from tests.common import (get_test_build_stats, TEST_STAGE1_STATS, TEST_STAGE2_STATS,
+                          EXAMPLE_TESTS_STATS)
+from tests.common import (assert_stage_matches_stage_stats, assert_build_matches_build_stats,
+                          assert_report_matches_test_stats)
 
 
 class TestPublishing(unittest.TestCase):
@@ -64,6 +66,20 @@ class TestPublishing(unittest.TestCase):
         assert_stage_matches_stage_stats(self, build.stages[1], TEST_STAGE2_STATS)
         self.assertEqual(build.stages[1].build_id, build.build_id)
         self.assertEqual(build.stages[1].build, build)
+
+    def test_publish_build_stats_with_report(self):
+        self.assertEqual(self.session.query(Build).count(), 0)
+        self.assertEqual(self.session.query(Report).count(), 0)
+
+        build_stats = get_test_build_stats(test_stats=EXAMPLE_TESTS_STATS)
+        self.publisher.publish(build_stats)
+
+        self.assertEqual(self.session.query(Build).count(), 1)
+        self.assertEqual(self.session.query(Report).count(), 1)
+
+        build = self.session.query(Build).one()
+        assert_build_matches_build_stats(self, build, build_stats)
+        assert_report_matches_test_stats(self, build.report, EXAMPLE_TESTS_STATS)
 
 
 if __name__ == '__main__':
