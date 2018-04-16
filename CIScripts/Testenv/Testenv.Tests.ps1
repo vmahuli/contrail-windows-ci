@@ -2,6 +2,10 @@
 
 Describe "Testenv" {
 
+    It "should throw if filepath is invalid" {
+        { Read-OpenStackConfig -Path "./bad/path.yaml" } | Should -Throw
+    }
+
     Context "Example config" {
         It "can read OpenStack credentials config from a .yaml file" {
             $OpenStack = Read-OpenStackConfig -Path $YamlPath

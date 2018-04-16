@@ -4,7 +4,7 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
-Describe "Invoke-UntilSucceeds" {
+Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
     It "fails if ScriptBlock doesn't return anything" {
         { {} | Invoke-UntilSucceeds -Duration 3 } | Should Throw
     }
