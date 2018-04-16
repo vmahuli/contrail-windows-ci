@@ -1,3 +1,5 @@
 dependencies_dir: 'C:\BUILD_DEPENDENCIES'
 dependencies_source: '\\{{ hostvars[groups["drive"][0]]["inventory_hostname"]}}\SharedFiles'
 system_profile_dir: 'C:\Windows\system32\config\systemprofile'
+boost_dir: 'C:\boost_1_62'
+openssl_dir: 'C:\OpenSSL'

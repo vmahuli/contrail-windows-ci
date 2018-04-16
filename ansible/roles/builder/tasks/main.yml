@@ -155,11 +155,55 @@
     dest: '{{ dependencies_dir }}\third_party_cache'
     flags: /E /PURGE /MT:32
 
+- name: Install boost 1.62.0
+  win_chocolatey:
+    name: boost-msvc-14
+    source: 'https://www.myget.org/F/boost-msvc/'
+    version: '1.62.0'
+    install_args: '/DIR="{{ boost_dir }}"'
+    state: present
+
+- name: Set BOOST_ROOT variable
+  win_environment:
+    state: present
+    name: BOOST_ROOT
+    value: '{{ boost_dir }}'
+    level: machine
+
+- name: Install OpenSSL 1.0.2o
+  win_chocolatey:
+    name: win-openssl
+    source: 'https://www.myget.org/F/openssl'
+    version: '1.0.2-o'
+    install_args: '/DIR="{{ openssl_dir }}"'
+    state: present
+
+- name: Set OPENSSL_ROOT variable
+  win_environment:
+    state: present
+    name: OPENSSL_ROOT
+    value: '{{ openssl_dir }}'
+    level: machine
+
+- name: Ensure that Boost and OpenSSL includes are present in INCLUDE path
+  win_path:
+    name: INCLUDE
+    elements:
+    - '{{ boost_dir }}'
+    - '{{ openssl_dir }}\include'
+
 - name: Install VisualCPP Build Tools
   win_package:
     path: '{{ dependencies_source }}\visualcppbuildtools\visualcppbuildtools_full.exe'
     product_id: '{79750C81-714E-45F2-B5DE-42DEF00687B8}'
     arguments: /Quiet /NoWeb /InstallSelectableItems
+
+- name: Set MSBUILD variable
+  win_environment:
+    state: present
+    name: MSBUILD
+    value: 'C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe'
+    level: machine
 
 - name: Install Windows SDK
   win_package:

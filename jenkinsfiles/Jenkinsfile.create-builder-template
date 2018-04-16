@@ -6,6 +6,6 @@ prepareAndRunAnsiblePlaybook(config: createTemplateConfig,
                              vmware_folder: 'Templates/CI',
                              vm_hardware_memory_mb: '24576',
                              vm_hardware_num_cpus: '8',
-                             vm_hdd_size: '200',
+                             vm_hdd_size: '100',
                              vm_networks: [['name': 'VM-Network', 'type': 'dhcp']])
 
