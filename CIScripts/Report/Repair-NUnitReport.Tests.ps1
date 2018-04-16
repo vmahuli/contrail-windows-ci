@@ -3,7 +3,7 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
 . $PSScriptRoot/../Common/Init.ps1
-Describe "Repair-NUnitReport" -Tags CI, Unit {
+Describe "Repair-NUnitReport" {
 
     function NormalizeXmlString {
         Param([Parameter(Mandatory = $true)] [string] $InputData)

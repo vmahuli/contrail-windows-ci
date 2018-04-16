@@ -3,7 +3,7 @@
     "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
 
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
 )
 
@@ -16,14 +16,12 @@ Param (
 . $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
-Describe "vRouter Agent MSI installer" {
+$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+$Session = $Sessions[0]
 
-    BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-        $Session = $Sessions[0]
-        
-        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
-    }
+$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+
+Describe "vRouter Agent MSI installer" {
 
     function Test-AgentMSIBehaviourCorrect {
         Install-Agent -Session $Session

@@ -4,7 +4,7 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 . $PSScriptRoot/../../Common/Invoke-CommandInLocation.ps1
 
-Describe "PesterLogger" -Tags CI, Unit {
+Describe "PesterLogger" {
     Context "Initialize-PesterLogger" {
         It "registers a new global Write-Log function" {
             Initialize-PesterLogger -OutDir "TestDrive:\"

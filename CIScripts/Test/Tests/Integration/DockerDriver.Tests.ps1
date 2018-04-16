@@ -1,5 +1,5 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
 )
 
@@ -9,6 +9,9 @@ Param (
 
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 Initialize-PesterLogger -OutDir $LogDir
+
+$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+$Session = $Sessions[0]
 
 $TestsPath = "C:\Artifacts\"
 
@@ -50,15 +53,6 @@ function Save-DockerDriverUnitTestReport {
 $Modules = @("agent")
 
 Describe "Docker Driver" {
-    BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "Session",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $Session = $Sessions[0]
-    }
-
     foreach ($Module in $Modules) {
         Context "Tests for module $Module" {
             It "Tests are invoked" {

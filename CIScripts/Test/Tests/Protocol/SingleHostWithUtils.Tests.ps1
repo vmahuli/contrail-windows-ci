@@ -1,5 +1,5 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
 )
 
@@ -14,6 +14,14 @@ Param (
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1 # Get-RemoteNetAdapterInformation
 . $PSScriptRoot\..\..\Utils\DockerImageBuild.ps1 
+
+$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+$Session = $Sessions[0]
+
+$OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
+$ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+$IisTcpTestDockerImage = "iis-tcptest"
 
 Describe "Single compute node protocol tests with utils" {
 
@@ -153,19 +161,8 @@ Describe "Single compute node protocol tests with utils" {
         }
     }
 
+
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-        $Session = $Sessions[0]
-
-        $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
-        $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
-        $IisTcpTestDockerImage = "iis-tcptest"
-
         Initialize-DockerImage -Session $Session -DockerImageName $IisTcpTestDockerImage
 
         Install-DockerDriver -Session $Session

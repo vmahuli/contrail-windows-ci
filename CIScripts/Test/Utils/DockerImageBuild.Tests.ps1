@@ -1,25 +1,15 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
 )
 
 . $PSScriptRoot\DockerImageBuild.ps1
 
-Describe "Initialize-DockerImage" -Tags CI, Systest {
-    BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $Session = $Sessions[0]
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $DockerImageName = "iis-tcptest"
-    }
+$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+$Session = $Sessions[0]
+$DockerImageName = "iis-tcptest"
 
+Describe "Initialize-DockerImage" {
     It "Builds iis-tcptest image" {
         Initialize-DockerImage -Session $Session -DockerImageName $DockerImageName
         

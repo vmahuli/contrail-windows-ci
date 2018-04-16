@@ -1,5 +1,5 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
 )
 
@@ -12,6 +12,13 @@ Param (
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
+
+$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+$Session = $Sessions[0]
+
+$ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+$OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
+$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
 Describe "vRouter Agent service" {
     
@@ -100,25 +107,6 @@ Describe "vRouter Agent service" {
     }
 
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-        $Session = $Sessions[0]
-
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
-
         Install-DockerDriver -Session $Session
         Install-Agent -Session $Session
         Install-Extension -Session $Session

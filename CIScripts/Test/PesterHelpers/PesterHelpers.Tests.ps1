@@ -4,7 +4,7 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
-Describe "PesterHelpers" -Tags CI, Unit {
+Describe "PesterHelpers" {
     Context "Consistently" {
         It "works on trivial cases" {
             { Consistently { $true | Should Be $true } -Duration 3 } | Should Not Throw
