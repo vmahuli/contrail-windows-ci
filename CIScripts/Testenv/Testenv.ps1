@@ -31,31 +31,37 @@ class SystemConfig {
     }
 }
 
-function Read-OpenStackConfig {
+function Read-TestenvFile {
     Param ([Parameter(Mandatory=$true)] [string] $Path)
+    if (-not (Test-Path $Path)) {
+        throw [System.Management.Automation.ItemNotFoundException] "Testenv config file not found at specified location."
+    }
     $FileContents = Get-Content -Path $Path -Raw
     $Parsed = ConvertFrom-Yaml $FileContents
+    return $Parsed
+}
+
+function Read-OpenStackConfig {
+    Param ([Parameter(Mandatory=$true)] [string] $Path)
+    $Parsed = Read-TestenvFile -Path $Path
     return [OpenStackConfig] $Parsed.OpenStack
 }
 
 function Read-ControllerConfig {
     Param ([Parameter(Mandatory=$true)] [string] $Path)
-    $FileContents = Get-Content -Path $Path -Raw
-    $Parsed = ConvertFrom-Yaml $FileContents
+    $Parsed = Read-TestenvFile -Path $Path
     return [ControllerConfig] $Parsed.Controller
 }
 
 function Read-SystemConfig {
     Param ([Parameter(Mandatory=$true)] [string] $Path)
-    $FileContents = Get-Content -Path $Path -Raw
-    $Parsed = ConvertFrom-Yaml $FileContents
+    $Parsed = Read-TestenvFile -Path $Path
     return [SystemConfig] $Parsed.System
 }
 
 function Read-TestbedsConfig {
     Param ([Parameter(Mandatory=$true)] [string] $Path)
-    $FileContents = Get-Content -Path $Path -Raw
-    $Parsed = ConvertFrom-Yaml $FileContents
+    $Parsed = Read-TestenvFile -Path $Path
     $Testbeds = $Parsed.Testbeds
     # The comma forces return value to always be array
     return ,$Testbeds

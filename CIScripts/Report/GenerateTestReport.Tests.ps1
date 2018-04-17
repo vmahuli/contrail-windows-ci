@@ -1,7 +1,23 @@
 . $PSScriptRoot\..\Common\Init.ps1
 . $PSScriptRoot\GenerateTestReport.ps1
 
-Describe "Generating test report" {
+function Invoke-FakeReportunit {
+    Param([Parameter(Mandatory = $true)] [string] $NUnitDir)
+    $Files = Get-ChildItem -Path $NUnitDir -File
+    if ($Files.length -eq 0) {
+        throw "Empty directory"
+    }
+    if ($Files.length -gt 1) {
+        New-Item -Type File -Path (Join-Path $NUnitDir "Index.html")
+    }
+    $Files | ForEach-Object {
+        New-Item -Type File -Path (Join-Path $NUnitDir ($_.BaseName + ".html"))
+    }
+}
+
+function Invoke-ReportGenTests {
+    Param($ReportunitWrapperFunc)
+
     function NormalizeXmlString {
         Param([Parameter(Mandatory = $true)] [string] $InputData)
         ([Xml] $InputData).OuterXml
@@ -37,20 +53,6 @@ Describe "Generating test report" {
         }
     }
 
-    function Invoke-FakeReportunit {
-        Param([Parameter(Mandatory = $true)] [string] $NUnitDir)
-        $Files = Get-ChildItem -Path $NUnitDir -File
-        if ($Files.length -eq 0) {
-            throw "Empty directory"
-        }
-        if ($Files.length -gt 1) {
-            New-Item -Type File -Path (Join-Path $NUnitDir "Index.html")
-        }
-        $Files | ForEach-Object {
-            New-Item -Type File -Path (Join-Path $NUnitDir ($_.BaseName + ".html"))
-        }
-    }
-
     function Test-JsonFileForMonitoring {
         Param([Parameter(Mandatory = $true)] [String[]] $Xmls)
 
@@ -73,11 +75,9 @@ Describe "Generating test report" {
         BeforeAll {
             $InputDir, $OutputDir = New-TemporaryDirs
             New-DummyFile -Path (Join-Path $InputDir "foo.xml")
-            # TODO split this tests to unit & integration test, and use
-            # -GeneratorFunc (Get-Item function:Invoke-FakeReportunit)
-            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
+            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir -GeneratorFunc $ReportunitWrapperFunc
         }
-        
+
         AfterAll {
             Clear-TemporaryDirs -Dirs @($InputDir, $OutputDir)
         }
@@ -115,9 +115,7 @@ Describe "Generating test report" {
             New-DummyFile -Path (Join-Path $InputDir "foo.xml")
             New-DummyFile -Path (Join-Path $InputDir "bar.xml")
             New-DummyFile -Path (Join-Path $InputDir "baz.xml")
-            # TODO split this tests to unit & integration test, and use
-            # -GeneratorFunc (Get-Item function:Invoke-FakeReportunit)
-            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
+            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir -GeneratorFunc $ReportunitWrapperFunc
         }
 
         AfterAll {
@@ -137,4 +135,13 @@ Describe "Generating test report" {
 
         Test-JsonFileForMonitoring "foo.xml", "bar.xml", "baz.xml"
     }
+}
+
+
+Describe "Generating test report - Unit tests" -Tags CI, Unit {
+    Invoke-ReportGenTests -ReportunitWrapperFunc (Get-Item function:Invoke-FakeReportunit)
+}
+
+Describe "Generating test report - System tests" -Tags CI, Systest {
+    Invoke-ReportGenTests -ReportunitWrapperFunc (Get-Item function:Invoke-RealReportunit)
 }

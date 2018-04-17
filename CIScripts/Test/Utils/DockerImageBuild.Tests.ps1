@@ -1,15 +1,30 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
 )
 
 . $PSScriptRoot\DockerImageBuild.ps1
 
-$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-$Session = $Sessions[0]
-$DockerImageName = "iis-tcptest"
+Describe "Initialize-DockerImage" -Tags CI, Systest {
+    BeforeAll {
+        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments", "",
+            Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $Session = $Sessions[0]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments", "",
+            Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $DockerImageName = "iis-tcptest"
+    }
 
-Describe "Initialize-DockerImage" {
+    AfterAll {
+        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
+        Remove-PSSession $Sessions
+    }
+
     It "Builds iis-tcptest image" {
         Initialize-DockerImage -Session $Session -DockerImageName $DockerImageName
         
@@ -28,5 +43,3 @@ Describe "Initialize-DockerImage" {
         }
     }
 }
-
-Remove-PSSession $Sessions
