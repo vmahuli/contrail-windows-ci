@@ -1,3 +1,5 @@
+. $PSScriptRoot/../../Common/Aliases.ps1
+
 . $PSScriptRoot/Get-CurrentPesterScope.ps1
 
 function Initialize-PesterLogger {
@@ -21,7 +23,7 @@ function Initialize-PesterLogger {
         & $WriterFunc -Path $Outpath -Value $Message
     }.GetNewClosure()
 
-    Register-NewWriteLogFunc -Func $WriteLogFunc
+    Register-NewFunc -Name "Write-Log" -Func $WriteLogFunc
 }
 
 function Add-ContentForce {
@@ -32,10 +34,11 @@ function Add-ContentForce {
     Add-Content -Path $Path -Value $Value | Out-Null
 }
 
-function Register-NewWriteLogFunc {
-    Param($Func)
-    if (Get-Item function:Write-Log -ErrorAction SilentlyContinue) {
-        Remove-Item function:Write-Log
+function Register-NewFunc {
+    Param([Parameter(Mandatory = $true)] [string] $Name,
+          [Parameter(Mandatory = $true)] [ScriptBlock] $Func)
+    if (Get-Item function:$Name -ErrorAction SilentlyContinue) {
+        Remove-Item function:$Name
     }
-    New-Item -Path function:\ -Name Global:Write-Log -Value $Func | Out-Null
+    New-Item -Path function:\ -Name Global:$Name -Value $Func | Out-Null
 }
