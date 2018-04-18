@@ -1,2 +1,3 @@
 jenkins_agent_labels: "tester windows"
 jenkins_agent_num_executors: 4
+statistic_group: "testers"
