@@ -88,6 +88,23 @@ function Get-RemoteContainerNetAdapterInformation {
     return [ContainerNetAdapterInformation] $Ret
 }
 
+function Get-VrfStats {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    $VrfStats = Invoke-Command -Session $Session -ScriptBlock {
+        $vrfstatsOutput = $(vrfstats --get 2)
+        $mplsUdpPktCount = [regex]::new("Udp Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+        $mplsGrePktCount = [regex]::new("Gre Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+        $vxlanPktCount = [regex]::new("Vxlan Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+        return @{
+            MplsUdpPktCount = $mplsUdpPktCount
+            MplsGrePktCount = $mplsGrePktCount
+            VxlanPktCount = $vxlanPktCount
+        }
+    }
+    return $VrfStats
+}
+
 function Initialize-MPLSoGRE {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session1,

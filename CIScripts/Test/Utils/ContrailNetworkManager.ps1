@@ -72,4 +72,19 @@ class ContrailNetworkManager {
             -AuthToken $this.AuthToken `
             -NetworkUuid $Uuid
     }
+
+    [String] AddVirtualRouter([String] $RouterName, [String] $RouterIp) {
+        return Add-ContrailVirtualRouter `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -RouterName $RouterName `
+            -RouterIp $RouterIp
+    }
+
+    RemoveVirtualRouter([String] $RouterUuid) {
+        Remove-ContrailVirtualRouter `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -RouterUuid $RouterUuid
+    }
 }
