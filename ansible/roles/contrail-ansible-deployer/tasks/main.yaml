@@ -8,13 +8,6 @@
   with_items:
     - ansible
     - git
-    - python-pip
-
-- name: (HACK) Update MarkupSafe
-  pip:
-    name: MarkupSafe
-    version: 1.0.0
-  become: true
 
 - name: Clone contrail-ansible-deployer repository
   git:
