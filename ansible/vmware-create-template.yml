@@ -10,7 +10,7 @@
     - name: "Wait for new {{ vm_role }} template to become reachable"
       wait_for_connection:
         sleep: 5
-        timeout: 900
+        timeout: 1800
 
 - hosts: "{{ vm_role }}"
   roles:
