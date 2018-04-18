@@ -11,8 +11,19 @@
     state: shutdownguest
 
 - name: Give VM some time to shutdown
-  wait_for:
-    timeout: 30
+  register: vm
+  vmware_guest_facts:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ validate_certs }}"
+    datacenter: "{{ datacenter_name }}"
+    name: "{{ new_vm.instance.hw_name }}"
+    uuid: "{{ new_vm.instance.hw_product_uuid }}"
+  retries: 10
+  delay: 5
+  until: >
+      vm.instance.hw_power_status == "POWERED OFF"
 
 - name: Turn VM into a template
   delegate_to: localhost
