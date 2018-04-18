@@ -1,4 +1,5 @@
 . $PSScriptRoot\..\Testenv\Testenv.ps1
+. $PSScriptRoot\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
 
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
@@ -463,3 +464,16 @@ function Remove-Container {
         docker rm -f $Using:NameOrId | Out-Null
     }
 }
+
+function Remove-AllContainers {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        $Containers = docker ps -q
+        if($Containers) {
+            docker rm -f $Containers | Out-Null
+        }
+        Remove-Variable "Containers"
+    }
+}
+
