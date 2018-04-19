@@ -14,5 +14,10 @@
 - name: Add telegraf to PATH
   win_path:
     elements:
-    - 'C:\Program Files\telegraf'
+    - '{{ telegraf_path }}'
     state: present
+
+- name: Start telegraf service
+  win_service:
+    name: telegraf
+    state: started
