@@ -1,8 +1,11 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$false)] [string] $ReportDir,
     [switch] $SkipUnit,
     [switch] $SkipStaticAnalysis
 )
+
+. $PSScriptRoot/TestRunner/Invoke-PesterTests.ps1
 
 # NOTE TO DEVELOPERS
 # ------------------
@@ -35,7 +38,8 @@ if (-not $TestenvConfFile) {
 }
 
 Write-VisibleMessage "Including tags: $IncludeTags; Excluding tags: $ExcludeTags"
-Invoke-Pester -Tags $IncludeTags -ExcludeTag $ExcludeTags -Script @{Path="."; Parameters=@{TestenvConfFile=$TestenvConfFile};}
+$Results = Invoke-PesterTests -TestRootDir $pwd -ReportDir $ReportDir `
+    -IncludeTags $IncludeTags -ExcludeTags $ExcludeTags -AdditionalParams @{TestenvConfFile=$TestenvConfFile}
 
 if ($SkipStaticAnalysis) {
     Write-VisibleMessage "-SkipStaticAnalysis switch set, skipping static analysis"
@@ -48,3 +52,7 @@ if ($SkipStaticAnalysis) {
 }
 
 Write-VisibleMessage "done"
+
+if ($Results.FailedCount -gt 0) {
+    throw "Some tests failed"
+}
