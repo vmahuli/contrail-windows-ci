@@ -1,8 +1,35 @@
+Param (
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
+)
+
+. $PSScriptRoot/../../Common/Init.ps1
+. $PSScriptRoot/../../Common/VMUtils.ps1
+. $PSScriptRoot/../../Testenv/Testenv.ps1
+
+. $PSScriptRoot/Get-CurrentPesterScope.ps1
+
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
-Describe "RemoteLogCollector" {
+function Test-MultipleSourcesAndSessions {
+    It "works with multiple log sources and sessions" {
+        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
+        $Source2 = New-LogSource -Sessions $Sess1 -Path $DummyLog2
+        $Source3 = New-LogSource -Sessions $Sess2 -Path $DummyLog1
+        Initialize-PesterLogger -OutDir "TestDrive:\"
+        
+        # We pass -DontCleanUp because in the tests, both sessions point at the same computer.
+        Merge-Logs -DontCleanUp -LogSources @($Source1, $Source2, $Source3)
+        
+        $DescribeBlockName = (Get-CurrentPesterScope)[0]
+        $ContentRaw = Get-Content -Raw "TestDrive:\$DescribeBlockName.works with multiple log sources and sessions.log"
+        $ContentRaw | Should -BeLike "*$DummyLog1*$DummyLog2*$DummyLog1*"
+    }
+}
+
+Describe "RemoteLogCollector" -Tags CI, Unit {
     It "appends collected logs to correct output file" {
         $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
@@ -131,6 +158,8 @@ Describe "RemoteLogCollector" {
         $ContentRaw | Should -BeLike "*$DummyLog1*<FILE WAS EMPTY>*"
     }
 
+    Test-MultipleSourcesAndSessions
+
     BeforeEach {
         $DummyLog1 = ((Get-Item $TestDrive).FullName) + "\remotelog.txt"
         "remote log text" | Out-File $DummyLog1
@@ -146,19 +175,45 @@ Describe "RemoteLogCollector" {
     }
 
     BeforeAll {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "Sess1", Justification="Pester blocks are handled incorrectly by analyzer.")]
         $Sess1 = $null
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "Sess2", Justification="Pester blocks are handled incorrectly by analyzer.")]
         $Sess2 = $null
-        $IntegrationTest=$false # TODO: Will change when selfcheck PR is merged.
-        if ($IntegrationTest) {
-            $Sess1 = New-PSSession -ComputerName localhost
-            $Sess2 = New-PSSession -ComputerName localhost
-        }
+    }
+}
+
+Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
+
+    BeforeAll {
+        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "Sess1", Justification="Pester blocks are handled incorrectly by analyzer.")]
+        $Sess1 = $Sessions[0]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "Sess2", Justification="Pester blocks are handled incorrectly by analyzer.")]
+        $Sess2 = $Sessions[1]
     }
 
     AfterAll {
-        if ($IntegrationTest) {
-            Remove-PSSession $Sess1
-            Remove-PSSession $Sess2
+        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
+        Remove-PSSession $Sessions
+    }
+
+    BeforeEach {
+        $DummyLog1 = ((Get-Item $TestDrive).FullName) + "\remotelog.txt"
+        "remote log text" | Out-File $DummyLog1
+        $DummyLog2 = ((Get-Item $TestDrive).FullName) + "\remotelog_second.txt"
+        "another file content" | Out-File $DummyLog2
+    }
+
+    AfterEach {
+        Remove-Item "TestDrive:/*" 
+        if (Get-Item function:Write-Log -ErrorAction SilentlyContinue) {
+            Remove-Item function:Write-Log
         }
     }
+
+    Test-MultipleSourcesAndSessions
 }
