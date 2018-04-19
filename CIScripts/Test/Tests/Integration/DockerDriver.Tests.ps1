@@ -4,8 +4,8 @@ Param (
 )
 
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
-. $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\..\Common\Invoke-NativeCommand.ps1
+. $PSScriptRoot\..\..\..\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 Initialize-PesterLogger -OutDir $LogDir

@@ -1,5 +1,5 @@
-. $PSScriptRoot\Aliases.ps1
-. $PSScriptRoot\..\Testenv\Testenv.ps1
+. $PSScriptRoot\..\Common\Credentials.ps1
+. $PSScriptRoot\Testenv.ps1
 
 function Get-TestbedCredential {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText",
@@ -13,20 +13,6 @@ function Get-TestbedCredential {
         $VMPassword = $VM.Password | ConvertTo-SecureString -AsPlainText -Force
         return New-Object PSCredentialT($VMUsername, $VMPassword)
     }
-}
-
-function Get-MgmtCreds {
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText",
-    "", Justification="This env var is injected by Jenkins.")]
-    param()
-    $Username = Get-UsernameInWorkgroup -Username $Env:WINCIDEV_USR
-    $Password = $Env:WINCIDEV_PSW | ConvertTo-SecureString -asPlainText -Force
-    return New-Object PSCredentialT ($Username, $Password)
-}
-
-function Get-UsernameInWorkgroup {
-    Param ([Parameter(Mandatory = $true)] [string] $Username)
-    return "WORKGROUP\{0}" -f $Username
 }
 
 function New-RemoteSessions {
@@ -58,10 +44,4 @@ function New-RemoteSessions {
         $Sessions += $Sess
     }
     return $Sessions
-}
-
-function New-RemoteSessionsToTestbeds {
-    Param ([Parameter(Mandatory=$true)] [string] $TestenvConfFile)
-
-    return New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 }

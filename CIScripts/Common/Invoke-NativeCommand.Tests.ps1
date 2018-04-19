@@ -5,7 +5,7 @@ Param (
 
 . $PSScriptRoot/Init.ps1
 . $PSScriptRoot/../Testenv/Testenv.ps1
-. $PSScriptRoot/VMUtils.ps1
+. $PSScriptRoot/../Testenv/Testbed.ps1
 
 . $PSScriptRoot/Invoke-NativeCommand.ps1
 

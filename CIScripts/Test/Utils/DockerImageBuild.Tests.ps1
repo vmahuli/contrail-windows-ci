@@ -4,7 +4,8 @@ Param (
 )
 
 . $PSScriptRoot\DockerImageBuild.ps1
-
+. $PSScriptRoot\..\..\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\Testenv\Testbed.ps1
 Describe "Initialize-DockerImage" -Tags CI, Systest {
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
