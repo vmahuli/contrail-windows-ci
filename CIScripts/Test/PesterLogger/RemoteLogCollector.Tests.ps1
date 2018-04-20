@@ -4,7 +4,7 @@ Param (
 )
 
 . $PSScriptRoot/../../Common/Init.ps1
-. $PSScriptRoot/../../Common/VMUtils.ps1
+. $PSScriptRoot/../../Testenv/Testbed.ps1
 . $PSScriptRoot/../../Testenv/Testenv.ps1
 
 . $PSScriptRoot/Get-CurrentPesterScope.ps1
