@@ -1,38 +1,33 @@
 def call(playbookToRun) {
-    def vmwareConfig
     def testenvConfig
-    def ansibleExtraVars
 
     pipeline {
         agent { label "ansible" }
 
         environment {
-            // `VC` has to be defined in outer scope to properly
-            // strip credentials from logs in all child scopes (all stages).
-            // Please do not move to `Prepare environment` stage.
-            VC = credentials("vcenter")
+            DEMOENV_FOLDER = "WINCI"
             DEMOENV_MGMT_NETWORK = "VM-Network"
-            VC_FOLDER = "WINCI"
+            VCENTER_DATASTORE_CLUSTER = "WinCI-Datastores-SATA"
         }
 
         stages {
             stage("Run Ansible playbook") {
                 steps {
                     script {
-                        vmwareConfig = getVMwareConfig()
                         testenvConfig = [
                             testenv_name: env.DEMOENV_NAME,
-                            testenv_vmware_folder: env.VC_FOLDER,
+                            testenv_folder: env.DEMOENV_FOLDER,
                             testenv_mgmt_network: env.DEMOENV_MGMT_NETWORK,
-                            testenv_data_network: env.DEMOENV_DATA_NETWORK
+                            testenv_data_network: env.DEMOENV_DATA_NETWORK,
+                            testenv_testbed_template: env.TESTBED_TEMPLATE,
+                            testenv_controller_template: env.CONTROLLER_TEMPLATE,
+                            vcenter_datastore_cluster: env.VCENTER_DATASTORE_CLUSTER
                         ]
-
-                        ansibleExtraVars = vmwareConfig + testenvConfig
                     }
 
                     dir('ansible') {
                         ansiblePlaybook inventory: 'inventory.testenv',
-                                        extraVars: ansibleExtraVars,
+                                        extraVars: testenvConfig,
                                         playbook: playbookToRun
                     }
                 }
