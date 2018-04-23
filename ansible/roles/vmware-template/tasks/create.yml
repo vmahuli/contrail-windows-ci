@@ -1,41 +1,53 @@
 ---
-
-- name: Define templates' name and annotation
+- name: Define template's timestamp
   set_fact:
-    template_name: "Template-{{ vm_role }}-{{ '%Y%m%d%H%M' | strftime(ansible_date_time.epoch) }}"
-    template_annotation: "Template for {{ vm_role }} created on {{ '%Y-%m-%d %H:%M:%S' | strftime(ansible_date_time.epoch) }}"
+    template_timestamp: "{{ '%Y%m%d%H%M' | strftime(ansible_date_time.epoch) }}"
+
+- name: Define template's name and annotation
+  set_fact:
+    template_name: "Template-{{ vm_role }}-{{ template_timestamp }}"
+    template_annotation: "Template for {{ vm_role }} created on {{ template_timestamp }}"
+    template_folder: "{{ vcenter_datacenter }}/vm/{{ template_folder }}"
+
+- name: Show template's name
+  debug:
+    var: template_name
 
 - name: Create Template VM for {{ vm_role }}
   register: new_vm
   vmware_guest:
     hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_user }}"
+    username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
-    validate_certs: "{{ validate_certs }}"
-
-    datacenter: "{{ datacenter_name }}"
-    cluster: "{{ cluster_name }}"
-    folder: "{{ vmware_folder }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    cluster: "{{ vcenter_cluster }}"
 
     name: "{{ template_name }}"
+    folder: "{{ template_folder }}"
     annotation: "{{ template_annotation }}"
-    template: "{{ vm_template }}"
-    hardware: "{{ vm_hardware }}"
-    state: poweredon
+    template: "{{ base_template }}"
+    hardware: "{{ template_vars[vm_role].hardware }}"
+    networks: "{{ template_vars[vm_role].networks }}"
     customization:
       hostname: "tmpl-{{ vm_role }}"
-      password: "Contrail123!"
-
-    networks: "{{ vm_networks }}"
-
+      fullname: "{{ windows_customization_user }}"
+      password: "{{ windows_customization_pass }}"
+    state: poweredon
     wait_for_ip_address: yes
+
+# TODO: Windows sysprep initiates a reboot, which is recognized as false positive by wait_for_ip_address.
+#       Need to find a better way to handle waiting for customization
+- name: Wait for customization to finish
+  wait_for:
+    timeout: 300
 
 - name: Add additional disks
   when: vm_hdd is defined
   script: >
     add_disk_to_vm.py
     --host '{{ vcenter_hostname }}'
-    --user '{{ vcenter_user }}'
+    --user '{{ vcenter_username }}'
     --password '{{ vcenter_password }}'
     --uuid "{{ new_vm.instance.hw_product_uuid }}"
     --disk-type '{{ item.type }}'
@@ -45,27 +57,26 @@
 - name: Reboot VM
   vmware_guest:
     hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_user }}"
+    username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
-    validate_certs: "{{ validate_certs }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    cluster: "{{ vcenter_cluster }}"
 
-    datacenter: "{{ datacenter_name }}"
-    cluster: "{{ cluster_name }}"
-    folder: "{{ datacenter_name }}/vm/{{ vmware_folder }}"
     name: "{{ template_name }}"
-    state: rebootguest
+    folder: "{{ template_folder }}"
 
+    state: rebootguest
     wait_for_ip_address: yes
 
 - name: Get correct IP address of new {{ vm_role }}
   register: vm
   vmware_guest_facts:
     hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_user }}"
+    username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
-    validate_certs: "{{ validate_certs }}"
-
-    datacenter: "{{ datacenter_name }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
+    datacenter: "{{ vcenter_datacenter }}"
 
     uuid: "{{ new_vm.instance.hw_product_uuid }}"
   retries: 60
@@ -77,4 +88,4 @@
   add_host:
     name: "{{ vm.instance.hw_name }}"
     ansible_host: "{{ vm.instance.hw_eth0.ipaddresses | ipv4 | first }}"
-    groups: "{{ vm_role }}"
+    groups: "template,{{ vm_role }}"

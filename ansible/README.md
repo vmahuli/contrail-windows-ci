@@ -56,3 +56,21 @@ ansible-playbook -i inventory.testenv vmware-destroy-testenv.yml \
     -e testenv_name=NAME \
     -e testenv_folder=DIRECTORY
 ```
+
+
+### Create template
+
+```bash
+ansible-playbook -i inventory.infra vmware-create-template.yml \
+    -e vm_role=ROLE \
+    -e base_template=BASE_TEMPLATE
+```
+
+
+### Deploy template
+
+```bash
+ansible-playbook -i inventory.infra vmware-deploy-template.yml \
+    -e vm_role=ROLE \
+    -e base_template=TEMPLATE
+```

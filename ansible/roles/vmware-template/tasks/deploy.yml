@@ -1,50 +1,60 @@
 ---
-
 - name: Get highest VM number
   delegate_to: localhost
   register: get_vm_id
   script: >
     get_vm_id.py
     --host '{{ vcenter_hostname }}'
-    --user '{{ vcenter_user }}'
+    --user '{{ vcenter_username }}'
     --password '{{ vcenter_password }}'
     --vm-name "winci-{{ vm_role }}-"
 
-- name: "Deploy VM from Template: winci-{{ vm_role}}-{{ get_vm_id.stdout.strip() }}"
+- name: Set variables used in vmware modules
+  set_fact:
+    vm_name: "winci-{{ vm_role }}-{{ get_vm_id.stdout.strip() }}"
+    vm_annotation: "Template for {{ vm_role }} created on {{ '%Y-%m-%d %H:%M:%S' | strftime(ansible_date_time.epoch) }}"
+    vm_folder: "{{ vcenter_datacenter }}/vm/{{ vm_folder }}"
+
+- name: Show VM name
+  debug:
+    var: vm_name
+
+- name: "Deploy VM from Template"
   register: new_vm
   vmware_guest:
     hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_user }}"
+    username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
-    validate_certs: "{{ validate_certs }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    cluster: "{{ vcenter_cluster }}"
 
-    datacenter: "{{ datacenter_name }}"
-    cluster: "{{ cluster_name }}"
-    folder: "{{ vmware_folder }}"
-
-    name: "winci-{{ vm_role}}-{{ get_vm_id.stdout.strip() }}"
-    annotation: "Template for {{ vm_role }} created on {{ '%Y-%m-%d %H:%M:%S' | strftime(ansible_date_time.epoch) }}"
-    template: "{{ vm_template }}"
-    hardware: "{{ vm_hardware }}"
-    state: poweredon
+    name: "{{ vm_name }}"
+    folder: "{{ vm_folder }}"
+    annotation: "{{ vm_annotation }}"
+    template: "{{ base_template }}"
+    networks: "{{ vm_vars[vm_role].networks }}"
     customization:
-      hostname: "winci-{{ vm_role }}-{{ get_vm_id.stdout.strip() }}"
-      password: "Contrail123!"
-
-    networks: "{{ vm_networks }}"
-
+      hostname: "{{ vm_name }}"
+      fullname: "{{ windows_customization_user }}"
+      password: "{{ windows_customization_pass }}"
+    state: poweredon
     wait_for_ip_address: yes
+
+# TODO: Windows sysprep initiates a reboot, which is recognized as false positive by wait_for_ip_address.
+#       Need to find a better way to handle waiting for customization
+- name: Wait for customization to finish
+  wait_for:
+    timeout: 300
 
 - name: Get correct IP address of new {{ vm_role }}
   register: vm
   vmware_guest_facts:
     hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_user }}"
+    username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
-    validate_certs: "{{ validate_certs }}"
-
-    datacenter: "{{ datacenter_name }}"
-
+    validate_certs: "{{ vcenter_validate_certs }}"
+    datacenter: "{{ vcenter_datacenter }}"
     uuid: "{{ new_vm.instance.hw_product_uuid }}"
   retries: 60
   delay: 15
@@ -56,6 +66,6 @@
 
 - name: Add host to inventory
   add_host:
-    name: "winci-{{ vm_role }}-{{ get_vm_id.stdout.strip() }}"
+    name: "{{ vm_name }}"
     ansible_host: "{{ vm.instance.hw_eth0.ipaddresses | ipv4 | first }}"
-    groups: "{{ vm_role }}"
+    groups: "template,{{ vm_role }}"

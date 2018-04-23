@@ -1,10 +1,28 @@
 ---
+- hosts: localhost
+  gather_facts: no
+  connection: local
+  vars_prompt:
+    - name: vm_role
+      prompt: Provide 'vm_role'
+      private: no
+    - name: base_template
+      prompt: Provide 'base_template'
+      private: no
+  tasks:
+    - name: Preserve prompted parameters
+      set_fact:
+        vm_role: "{{ vm_role }}"
+        base_template: "{{ base_template }}"
 
 - hosts: localhost
+  connection: local
+  vars:
+    vm_folder: WINCI
   roles:
     - { role: vmware-template, stage: deploy }
 
-- hosts: "{{ vm_role }}"
+- hosts: template
   gather_facts: no
   tasks:
     - name: "Wait for new {{ vm_role }} to become reachable"
@@ -12,6 +30,6 @@
         sleep: 5
         timeout: 900
 
-- hosts: "{{ vm_role }}"
+- hosts: template
   roles:
     - wurbanski.jenkins-swarm-agent

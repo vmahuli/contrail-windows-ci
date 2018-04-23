@@ -2,6 +2,59 @@
 testenv_testbed_vmware_template: Template-testbed-201804050628
 testenv_controller_vmware_template: Template-CentOS-7.4
 
+# Definition of templates' hardware
+template_vars:
+  builder:
+    hardware:
+      num_cpus: 8
+      memory_mb: 24576
+    networks:
+      - name: VM-Network
+        type: dhcp
+  tester:
+    hardware:
+      num_cpus: 2
+      memory_mb: 8192
+    networks:
+      - name: VM-Network
+        type: dhcp
+      - name: Templates
+        type: static
+        ip: 1.2.3.4
+        netmask: 255.255.255.255
+  testbed:
+    hardware:
+      num_cpus: 2
+      memory_mb: 4096
+    networks:
+      - name: VM-Network
+        type: dhcp
+      - name: Templates
+        type: static
+        ip: 1.2.3.4
+        netmask: 255.255.255.255
+
+# Definition of slave VMs' hardware
+vm_vars:
+  builder:
+    networks:
+      - name: VM-Network
+        type: dhcp
+  tester:
+    networks:
+      - name: VM-Network
+        type: dhcp
+      - name: VLAN_501_Management
+        type: dhcp
+  testbed:
+    networks:
+      - name: VM-Network
+        type: dhcp
+      - name: Templates
+        type: static
+        ip: 1.2.3.4
+        netmask: 255.255.255.255
+
 # Testenv block definition
 testenv_block:
   name: "{{ testenv_name }}"
