@@ -1,14 +1,13 @@
 #!groovy
 library "contrailWindows@$BRANCH_NAME"
 
-def ansibleExtraVars
-
 pipeline {
     agent none
 
     options {
         timeout time: 5, unit: 'HOURS'
         timestamps()
+        lock label: 'testenv_pool', quantity: 1
     }
 
     stages {
@@ -40,7 +39,7 @@ pipeline {
             }
         }
 
-        stage('Static analysis ans tests') {
+        stage('Build, testenv provisioning and sanity checks') {
             parallel {
                 stage('Static analysis on Windows') {
                     agent { label 'builder' }
@@ -78,93 +77,80 @@ pipeline {
                         runHelpersTests()
                     }
                 }
-            }
-        }
 
-        stage('Build') {
-            agent { label 'builder' }
-            environment {
-                THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
-                DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
-                BUILD_IN_RELEASE_MODE = "false"
-                SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
-                CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
-                CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
-                COMPONENTS_TO_BUILD = "DockerDriver,Extension,Agent"
+                stage('Build') {
+                    agent { label 'builder' }
+                    environment {
+                        THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
+                        DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
+                        BUILD_IN_RELEASE_MODE = "false"
+                        SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
+                        CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
+                        CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
+                        COMPONENTS_TO_BUILD = "DockerDriver,Extension,Agent"
 
-                MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
-                WINCIDEV = credentials('winci-drive')
-            }
-            steps {
-                deleteDir()
+                        MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
+                        WINCIDEV = credentials('winci-drive')
+                    }
+                    steps {
+                        deleteDir()
 
-                unstash "CIScripts"
-                unstash "SourceCode"
+                        unstash "CIScripts"
+                        unstash "SourceCode"
 
-                powershell script: './CIScripts/BuildStage.ps1'
+                        powershell script: './CIScripts/BuildStage.ps1'
 
-                stash name: "Artifacts", includes: "output/**/*"
-            }
-            post {
-                always {
-                    deleteDir()
+                        stash name: "Artifacts", includes: "output/**/*"
+                    }
+                    post {
+                        always {
+                            deleteDir()
+                        }
+                    }
                 }
-            }
-        }
 
-        stage('Cleanup-Provision-Deploy-Test') {
-            agent none
-            when { environment name: "DONT_CREATE_TESTBEDS", value: null }
+                stage('Testenv provisioning') {
+                    agent { label 'ansible' }
+                    when { environment name: "DONT_CREATE_TESTBEDS", value: null }
 
-            environment {
-                VC = credentials('vcenter')
-                TESTBED = credentials('win-testbed')
-                TESTBED_TEMPLATE = "Template-testbed-201804050628"
-                CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin"
-                TESTENV_MGMT_NETWORK = "VLAN_501_Management"
-                VC_FOLDER = "WINCI/testenvs"
-            }
+                    environment {
+                        VC = credentials('vcenter')
+                        TESTBED = credentials('win-testbed')
+                        TESTBED_TEMPLATE = "Template-testbed-201804050628"
+                        CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin"
+                        TESTENV_MGMT_NETWORK = "VLAN_501_Management"
+                        VC_FOLDER = "WINCI/testenvs"
+                    }
 
-            steps {
-                script {
-                    lock(label: 'testenv_pool', quantity: 1) {
-                        def vmwareConfig = getVMwareConfig()
-                        def testNetwork = getLockedNetworkName()
-                        def testEnvName = getTestEnvName(testNetwork)
-                        def testEnvConfig = [
-                            testenv_name: testEnvName,
-                            testenv_vmware_folder: env.VC_FOLDER,
-                            testenv_mgmt_network: env.TESTENV_MGMT_NETWORK,
-                            testenv_data_network: testNetwork,
-                            testenv_testbed_vmware_template: env.TESTBED_TEMPLATE,
-                            testenv_controller_vmware_template: env.CONTROLLER_TEMPLATE
-                        ]
+                    steps {
+                        script {
+                            def vmwareConfig = getVMwareConfig()
+                            def testNetwork = getLockedNetworkName()
+                            def testEnvName = getTestEnvName(testNetwork)
+                            def testEnvConfig = [
+                                testenv_name: testEnvName,
+                                testenv_vmware_folder: env.VC_FOLDER,
+                                testenv_mgmt_network: env.TESTENV_MGMT_NETWORK,
+                                testenv_data_network: testNetwork,
+                                testenv_testbed_vmware_template: env.TESTBED_TEMPLATE,
+                                testenv_controller_vmware_template: env.CONTROLLER_TEMPLATE
+                            ]
 
-                        ansibleExtraVars = vmwareConfig + testEnvConfig
+                            def ansibleExtraVars = vmwareConfig + testEnvConfig
 
-                        // 'Cleanup' stage
-                        node(label: 'ansible') {
                             deleteDir()
                             unstash 'Ansible'
 
                             dir('ansible') {
+                                // Cleanup testenv before making a new one
                                 ansiblePlaybook inventory: 'inventory.testenv',
                                                 playbook: 'vmware-destroy-testenv.yml',
                                                 extraVars: ansibleExtraVars
-                            }
-                        }
 
-                        // 'Provision' stage
-                        node(label: 'ansible') {
-                            deleteDir()
-                            unstash 'Ansible'
-
-                            def testEnvConfPath = "${env.WORKSPACE}/testenv-conf.yaml"
-                            def provisioningExtraVars = ansibleExtraVars + [
-                                testenv_conf_file: testEnvConfPath
-                            ]
-
-                            dir('ansible') {
+                                def testEnvConfPath = "${env.WORKSPACE}/testenv-conf.yaml"
+                                def provisioningExtraVars = ansibleExtraVars + [
+                                    testenv_conf_file: testEnvConfPath
+                                ]
                                 ansiblePlaybook inventory: 'inventory.testenv',
                                                 playbook: 'vmware-deploy-testenv.yml',
                                                 extraVars: provisioningExtraVars
@@ -172,36 +158,43 @@ pipeline {
 
                             stash name: "TestenvConf", includes: "testenv-conf.yaml"
                         }
+                    }
+                }
+            }
+        }
 
-                        // 'Deploy' stage
-                        node(label: 'tester') {
-                            deleteDir()
+        stage('Deploy') {
+            agent { label 'tester' }
+            when { environment name: "DONT_CREATE_TESTBEDS", value: null }
+            steps {
+                deleteDir()
 
-                            unstash 'CIScripts'
-                            unstash 'Artifacts'
-                            unstash 'TestenvConf'
+                unstash 'CIScripts'
+                unstash 'Artifacts'
+                unstash 'TestenvConf'
 
-                            powershell script: """./CIScripts/Deploy.ps1 `
-                                -TestenvConfFile testenv-conf.yaml `
-                                -ArtifactsDir output"""
-                        }
+                powershell script: """./CIScripts/Deploy.ps1 `
+                    -TestenvConfFile testenv-conf.yaml `
+                    -ArtifactsDir output"""
+            }
+        }
 
-                        // 'Test' stage
-                        node(label: 'tester') {
-                            deleteDir()
-                            unstash 'CIScripts'
-                            unstash 'TestenvConf'
-
-                            try {
-                                powershell script: """./CIScripts/Test.ps1 `
-                                    -TestenvConfFile testenv-conf.yaml `
-                                    -TestReportDir ${env.WORKSPACE}/test_report/"""
-                            } finally {
-                                stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
-                                dir('test_report/detailed') {
-                                    stash name: 'detailedLogs', allowEmpty: true
-                                }
-                            }
+        stage('Test') {
+            agent { label 'tester' }
+            when { environment name: "DONT_CREATE_TESTBEDS", value: null }
+            steps {
+                deleteDir()
+                unstash 'CIScripts'
+                unstash 'TestenvConf'
+                script {
+                    try {
+                        powershell script: """./CIScripts/Test.ps1 `
+                            -TestenvConfFile testenv-conf.yaml `
+                            -TestReportDir ${env.WORKSPACE}/test_report/"""
+                    } finally {
+                        stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
+                        dir('test_report/detailed') {
+                            stash name: 'detailedLogs', allowEmpty: true
                         }
                     }
                 }
