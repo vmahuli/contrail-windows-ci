@@ -35,6 +35,8 @@ Extra variables are provided here only for documentation purposes.
 
 ### Deploy testenv
 
+Running this playbook will generate a YAML file named `testenv-SOMERANDOM.yml` with testenv configuration suitable for running CI systests.
+
 ```bash
 ansible-playbook -i inventory.testenv vmware-deploy-testenv.yml \
     -e testenv_name=NAME \
