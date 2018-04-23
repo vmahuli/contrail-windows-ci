@@ -5,7 +5,7 @@ testenv_controller_vmware_template: Template-CentOS-7.4
 # Testenv block definition
 testenv_block:
   name: "{{ testenv_name }}"
-  folder: "{{ testenv_vmware_folder }}"
+  folder: "{{ testenv_folder }}"
   portgroup_mgmt: "{{ testenv_mgmt_network }}"
   portgroup_contrail: "{{ testenv_data_network }}"
   vms:

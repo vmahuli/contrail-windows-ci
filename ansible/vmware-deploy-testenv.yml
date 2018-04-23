@@ -2,11 +2,42 @@
 - hosts: localhost
   gather_facts: no
   connection: local
+  vars_prompt:
+  - name: testenv_name
+    prompt: Provide 'testenv_name'
+    private: no
+  - name: testenv_folder
+    prompt: Provide 'testenv_folder'
+    private: no
+  - name: testenv_mgmt_network
+    prompt: Provide 'testenv_mgmt_network'
+    private: no
+  - name: testenv_data_network
+    prompt: Provide 'testenv_data_network'
+    private: no
+  - name: testenv_controller_template
+    prompt: Provide 'testenv_controller_template'
+    private: no
+  - name: testenv_testbed_template
+    prompt: Provide 'testenv_testbed_template'
+    private: no
+  tasks:
+  - name: Preserve prompted parameters
+    set_fact:
+      testenv_name: "{{ testenv_name }}"
+      testenv_folder: "{{ testenv_folder }}"
+      testenv_mgmt_network: "{{ testenv_mgmt_network }}"
+      testenv_data_network: "{{ testenv_data_network }}"
+      testenv_controller_template: "{{ testenv_controller_template }}"
+      testenv_testbed_template: "{{ testenv_testbed_template }}"
+
+- hosts: localhost
+  gather_facts: no
+  connection: local
   roles:
   - testenv-inventory-build
 
 - hosts: localhost
-  gather_facts: no
   connection: local
   tasks:
   - name: Create temporary directory for Python scripts
@@ -17,8 +48,8 @@
     copy:
       src: "files/{{ item }}"
       dest: "{{ script_path.path }}"
-      owner: jenkins
-      group: jenkins
+      owner: "{{ ansible_user_id }}"
+      group: "{{ ansible_user_id }}"
       mode: 0755
       force: yes
     with_items:

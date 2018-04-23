@@ -2,12 +2,32 @@
 - hosts: localhost
   gather_facts: no
   connection: local
+  vars_prompt:
+  - name: testenv_name
+    prompt: Provide 'testenv_name'
+    private: no
+  - name: testenv_folder
+    prompt: Provide 'testenv_folder'
+    private: no
+  tasks:
+  - name: Preserve prompted parameters
+    set_fact:
+      testenv_name: "{{ testenv_name }}"
+      testenv_folder: "{{ testenv_folder }}"
+      # TODO: Make testenv-inventory-build work without the following parameters
+      testenv_mgmt_network: "NOTUSED"
+      testenv_data_network: "NOTUSED"
+      testenv_controller_template: "NOTUSED"
+      testenv_testbed_template: "NOTUSED"
+
+- hosts: localhost
+  gather_facts: no
+  connection: local
   roles:
   - testenv-inventory-build
 
 - hosts: testenv
   gather_facts: no
-  strategy: free
   roles:
   - role: vmware-vm
     action: destroy
