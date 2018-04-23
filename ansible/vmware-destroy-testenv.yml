@@ -4,10 +4,8 @@
   connection: local
   vars_prompt:
   - name: testenv_name
-    prompt: Provide 'testenv_name'
     private: no
   - name: testenv_folder
-    prompt: Provide 'testenv_folder'
     private: no
   tasks:
   - name: Preserve prompted parameters
@@ -19,6 +17,7 @@
       testenv_data_network: "NOTUSED"
       testenv_controller_template: "NOTUSED"
       testenv_testbed_template: "NOTUSED"
+      vcenter_datastore_cluster: "NOTUSED"
 
 - hosts: localhost
   gather_facts: no

@@ -4,22 +4,18 @@
   connection: local
   vars_prompt:
   - name: testenv_name
-    prompt: Provide 'testenv_name'
     private: no
   - name: testenv_folder
-    prompt: Provide 'testenv_folder'
     private: no
   - name: testenv_mgmt_network
-    prompt: Provide 'testenv_mgmt_network'
     private: no
   - name: testenv_data_network
-    prompt: Provide 'testenv_data_network'
     private: no
   - name: testenv_controller_template
-    prompt: Provide 'testenv_controller_template'
     private: no
   - name: testenv_testbed_template
-    prompt: Provide 'testenv_testbed_template'
+    private: no
+  - name: vcenter_datastore_cluster
     private: no
   tasks:
   - name: Preserve prompted parameters
@@ -30,6 +26,7 @@
       testenv_data_network: "{{ testenv_data_network }}"
       testenv_controller_template: "{{ testenv_controller_template }}"
       testenv_testbed_template: "{{ testenv_testbed_template }}"
+      vcenter_datastore_cluster: "{{ vcenter_datastore_cluster }}"
 
 - hosts: localhost
   gather_facts: no
