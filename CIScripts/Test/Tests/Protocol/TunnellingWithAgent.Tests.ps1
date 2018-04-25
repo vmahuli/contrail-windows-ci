@@ -298,11 +298,8 @@ Describe "Tunnelling with Agent tests" {
     }
 
     AfterEach {
-        Write-Host "Removing container $Container1ID..."
-        Remove-Container -Session $Sessions[0] -NameOrId $Container1ID
-
-        Write-Host "Removing container $Container2ID..."
-        Remove-Container -Session $Sessions[1] -NameOrId $Container2ID
+        Write-Host "Removing all containers"
+        Remove-AllContainers -Sessions $Sessions
 
         Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
         Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig

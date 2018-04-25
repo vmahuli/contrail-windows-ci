@@ -124,21 +124,8 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     AfterEach {
-        Write-Host "Removing container 1"
-        if (Get-Variable "Container1ID" -ErrorAction SilentlyContinue) {
-            Invoke-NativeCommand -Session $Session -CaptureOutput {
-                docker rm -f $Using:Container1ID
-            }
-            Remove-Variable "Container1ID"
-        }
-
-        Write-Host "Removing container 2"
-        if (Get-Variable "Container2ID" -ErrorAction SilentlyContinue) {
-            Invoke-NativeCommand -Session $Session -CaptureOutput {
-                docker rm -f $Using:Container2ID
-            }
-            Remove-Variable "Container2ID"
-        }
+        Write-Host "Removing containers"
+        Remove-AllContainers -Session $Session
 
         Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
         if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {

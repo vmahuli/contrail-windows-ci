@@ -470,13 +470,15 @@ function Remove-Container {
 }
 
 function Remove-AllContainers {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
 
-    Invoke-Command -Session $Session -ScriptBlock {
-        $Containers = docker ps -q
-        if($Containers) {
-            docker rm -f $Containers | Out-Null
+    foreach ($Session in $Sessions) {
+        Invoke-Command -Session $Session -ScriptBlock {
+            $Containers = docker ps -aq
+                if($Containers) {
+                    docker rm -f $Containers | Out-Null
+                }
+            Remove-Variable "Containers"
         }
-        Remove-Variable "Containers"
     }
 }
