@@ -1,7 +1,3 @@
-# Default test env templates
-testenv_testbed_vmware_template: Template-testbed-201804050628
-testenv_controller_vmware_template: Template-CentOS-7.4
-
 # Testenv block definition
 testenv_block:
   name: "{{ testenv_name }}"
@@ -12,13 +8,13 @@ testenv_block:
     - name: "{{ testenv_name }}-controller"
       type: controller
       groups: controller
-      template: "{{ testenv_controller_vmware_template }}"
+      template: "{{ testenv_controller_template }}"
       ip: 172.16.0.1
       netmask: 255.255.0.0
     - name: "{{ testenv_name }}-wintb01"
       type: wintb
       groups: testbed,windows
-      template: "{{ testenv_testbed_vmware_template }}"
+      template: "{{ testenv_testbed_template }}"
       ip: 172.16.0.2
       netmask: 255.255.0.0
       vm_username: '{{ windows_customization_user }}'
@@ -26,7 +22,7 @@ testenv_block:
     - name: "{{ testenv_name }}-wintb02"
       type: wintb
       groups: testbed,windows
-      template: "{{ testenv_testbed_vmware_template }}"
+      template: "{{ testenv_testbed_template }}"
       ip: 172.16.0.3
       netmask: 255.255.0.0
       vm_username: '{{ windows_customization_user }}'
