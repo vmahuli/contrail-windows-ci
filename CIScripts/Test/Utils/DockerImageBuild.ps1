@@ -1,6 +1,12 @@
 . $PSScriptRoot\..\..\Common\Aliases.ps1
 $DockerfilesPath = "$PSScriptRoot\..\..\DockerFiles\"
 
+function Test-Dockerfile {
+    Param ([Parameter(Mandatory = $true)] [string] $DockerImageName)
+
+    Test-Path (Join-Path $DockerfilesPath $DockerImageName)
+}
+
 function Initialize-DockerImage  {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $DockerImageName

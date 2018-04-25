@@ -6,6 +6,7 @@ Param (
 . $PSScriptRoot\DockerImageBuild.ps1
 . $PSScriptRoot\..\..\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\Testenv\Testbed.ps1
+
 Describe "Initialize-DockerImage" -Tags CI, Systest {
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
@@ -27,20 +28,12 @@ Describe "Initialize-DockerImage" -Tags CI, Systest {
     }
 
     It "Builds iis-tcptest image" {
-        Initialize-DockerImage -Session $Session -DockerImageName $DockerImageName
+        $DockerOutput = Initialize-DockerImage -Session $Session -DockerImageName $DockerImageName
+        $DockerOutput | Should -Contain "Successfully tagged $( $DockerImageName ):latest"
+        $DockerOutput -Join "" | Should -BeLike "*Successfully built*"
         
         Invoke-Command -Session $Session {
             docker inspect $Using:DockerImageName
-        } | Should Not BeNullOrEmpty
-    }
-
-    BeforeEach {
-        # Invoke-Command used as a workaround for temporary ErrorActionPreference modification
-        Invoke-Command -Session $Session {
-            Invoke-Command {
-                $ErrorActionPreference = "SilentlyContinue"
-                docker image rm $Using:DockerImageName -f 2>$null
-            }
-        }
+        } | Should -Not -BeNullOrEmpty
     }
 }

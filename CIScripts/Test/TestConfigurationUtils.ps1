@@ -1,6 +1,7 @@
 . $PSScriptRoot\..\Testenv\Testenv.ps1
 . $PSScriptRoot\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
+. $PSScriptRoot\Utils\DockerImageBuild.ps1
 
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
 $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS = 2
@@ -444,18 +445,17 @@ function New-Container {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $NetworkName,
            [Parameter(Mandatory = $false)] [string] $Name,
-           [Parameter(Mandatory = $false)] [string] $Image)
-    if (-not $Image) {
-        $Image = "microsoft/nanoserver"
+           [Parameter(Mandatory = $false)] [string] $Image = "microsoft/nanoserver")
+           
+    if (Test-Dockerfile $Image) {
+        Initialize-DockerImage -Session $Session -DockerImageName $Image | Out-Null
     }
-    $ContainerID = Invoke-Command -Session $Session -ScriptBlock {
-        if ($Using:Name) {
-            return $(docker run --name $Using:Name --network $Using:NetworkName -id $Using:Image powershell)
-        }
-        else {
-            return $(docker run --network $Using:NetworkName -id $Using:Image powershell)
-        }
-    }
+
+    $Arguments = "run", "-di"
+    if ($Name) { $Arguments += "--name", $Name }
+    $Arguments += "--network", $NetworkName, $Image
+
+    $ContainerID = Invoke-Command -Session $Session { docker @Using:Arguments }
 
     return $ContainerID
 }
@@ -480,4 +480,3 @@ function Remove-AllContainers {
         Remove-Variable "Containers"
     }
 }
-

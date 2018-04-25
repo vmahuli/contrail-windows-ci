@@ -79,16 +79,6 @@ function Test-TCP {
     return $Res[-1]
 }
 
-function Remove-IISDockerImage {
-    Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session
-    )
-
-    Invoke-Command -Session $Session {
-        docker image rm $Using:IisTcpTestDockerImage -f 2>$null
-    }
-}
-
 function Install-Components {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session
@@ -209,9 +199,6 @@ Describe "Tunnelling with Agent tests" {
 
         $Sessions = New-RemoteSessions -VMs $VMs
 
-        Write-Host "Installing iis-tcptest docker image on testbed..."
-        Initialize-DockerImage -Session $Sessions[0] -DockerImageName $IisTcpTestDockerImage
-
         Write-Host "Installing components on testbeds..."
         Install-Components -Session $Sessions[0]
         Install-Components -Session $Sessions[1]
@@ -248,9 +235,6 @@ Describe "Tunnelling with Agent tests" {
 
     AfterAll {
         if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
-
-        Write-Host "Removing iis-tcptest docker image from testbed..."
-        Remove-IISDockerImage -Session $Sessions[0]
 
         if(Get-Variable "VRouter1Uuid" -ErrorAction SilentlyContinue) {
             Write-Host "Removing virtual router: $VRouter1Uuid"
