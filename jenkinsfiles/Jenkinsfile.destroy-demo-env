@@ -1,3 +1,29 @@
+#!groovy
 library "contrailWindows@$BRANCH_NAME"
 
-demoEnvPipeline('vmware-destroy-testenv.yml')
+pipeline {
+    agent { label "ansible" }
+
+    environment {
+        DEMOENV_FOLDER = "WINCI"
+    }
+
+    stages {
+        stage("Run Ansible playbook") {
+            steps {
+                script {
+                    testenvConfig = [
+                        testenv_name: env.DEMOENV_NAME,
+                        testenv_folder: env.DEMOENV_FOLDER
+                    ]
+                }
+
+                dir('ansible') {
+                    ansiblePlaybook inventory: 'inventory.testenv',
+                                    playbook: 'vmware-destroy-testenv.yml',
+                                    extraVars: testenvConfig
+                }
+            }
+        }
+    }
+}

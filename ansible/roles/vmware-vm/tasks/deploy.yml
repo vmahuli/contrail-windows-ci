@@ -4,10 +4,10 @@
     provision_vm_argv:
       - "{{ script_path.path }}/provision_vm.py"
       - "--host '{{ vcenter_hostname }}'"
-      - "--user '{{ vcenter_user }}'"
+      - "--user '{{ vcenter_username }}'"
       - "--password '{{ vcenter_password }}'"
-      - "--datacenter '{{ datacenter_name }}'"
-      - "--datastore-cluster '{{ datastore_cluster_name }}'"
+      - "--datacenter '{{ vcenter_datacenter }}'"
+      - "--datastore-cluster '{{ vcenter_datastore_cluster }}'"
       - "--template '{{ hostvars[inventory_hostname].template }}'"
       - "--folder '{{ testenv_folder }}'"
       - "--name '{{ inventory_hostname_short }}'"

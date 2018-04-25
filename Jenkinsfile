@@ -114,29 +114,31 @@ pipeline {
                     when { environment name: "DONT_CREATE_TESTBEDS", value: null }
 
                     environment {
-                        VC = credentials('vcenter')
                         TESTBED = credentials('win-testbed')
                         TESTBED_TEMPLATE = "Template-testbed-201804050628"
                         CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin"
                         TESTENV_MGMT_NETWORK = "VLAN_501_Management"
-                        VC_FOLDER = "WINCI/testenvs"
+                        TESTENV_FOLDER = "WINCI/testenvs"
+                        VCENTER_DATASTORE_CLUSTER = "WinCI-Datastores-SSD"
                     }
 
                     steps {
                         script {
-                            def vmwareConfig = getVMwareConfig()
                             def testNetwork = getLockedNetworkName()
                             def testEnvName = getTestEnvName(testNetwork)
-                            def testEnvConfig = [
+                            def destroyConfig = [
                                 testenv_name: testEnvName,
-                                testenv_vmware_folder: env.VC_FOLDER,
+                                testenv_folder: env.TESTENV_FOLDER
+                            ]
+                            def deployConfig = [
+                                testenv_name: testEnvName,
+                                testenv_folder: env.TESTENV_FOLDER,
                                 testenv_mgmt_network: env.TESTENV_MGMT_NETWORK,
                                 testenv_data_network: testNetwork,
-                                testenv_testbed_vmware_template: env.TESTBED_TEMPLATE,
-                                testenv_controller_vmware_template: env.CONTROLLER_TEMPLATE
+                                testenv_testbed_template: env.TESTBED_TEMPLATE,
+                                testenv_controller_template: env.CONTROLLER_TEMPLATE,
+                                vcenter_datastore_cluster: env.VCENTER_DATASTORE_CLUSTER,
                             ]
-
-                            def ansibleExtraVars = vmwareConfig + testEnvConfig
 
                             deleteDir()
                             unstash 'Ansible'
@@ -145,10 +147,10 @@ pipeline {
                                 // Cleanup testenv before making a new one
                                 ansiblePlaybook inventory: 'inventory.testenv',
                                                 playbook: 'vmware-destroy-testenv.yml',
-                                                extraVars: ansibleExtraVars
+                                                extraVars: destroyConfig
 
                                 def testEnvConfPath = "${env.WORKSPACE}/testenv-conf.yaml"
-                                def provisioningExtraVars = ansibleExtraVars + [
+                                def provisioningExtraVars = deployConfig + [
                                     testenv_conf_file: testEnvConfPath
                                 ]
                                 ansiblePlaybook inventory: 'inventory.testenv',

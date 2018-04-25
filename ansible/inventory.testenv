@@ -3,5 +3,10 @@ localhost
 [vmware:children]
 testenv
 
-# empty testenv block
-[testenv]
+[testenv:children]
+testbed
+controller
+
+[testbed]
+
+[controller]

@@ -18,6 +18,7 @@
     portgroup_contrail: "{{ testenv_block.portgroup_contrail }}"
     vm_username: "{{ item.vm_username | default(None) }}"
     vm_password: "{{ item.vm_password | default(None) }}"
+    vcenter_datastore_cluster: "{{ vcenter_datastore_cluster }}"
   with_items:
     "{{ testenv_block.vms }}"
   no_log: true
