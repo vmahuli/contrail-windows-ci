@@ -9,9 +9,9 @@
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_user }}"
     password: "{{ vcenter_password }}"
-    validate_certs: "{{ validate_certs }}"
-    datacenter: "{{ datacenter_name }}"
-    folder: "{{ datacenter_name }}/vm/{{ vmware_folder }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    folder: "{{ vcenter_datacenter }}/vm/{{ vmware_folder }}"
     name: "{{ new_vm.instance.hw_name }}"
     state: present
     snapshot_name: linked-clones-base # TODO: Move it to vars

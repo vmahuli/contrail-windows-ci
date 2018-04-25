@@ -5,7 +5,7 @@
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_user }}"
     password: "{{ vcenter_password }}"
-    validate_certs: "{{ validate_certs }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
     name: "{{ new_vm.instance.hw_name }}"
     uuid: "{{ new_vm.instance.hw_product_uuid }}"
     state: shutdownguest
@@ -16,9 +16,9 @@
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_user }}"
     password: "{{ vcenter_password }}"
-    validate_certs: "{{ validate_certs }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
 
-    datacenter: "{{ datacenter_name }}"
+    datacenter: "{{ vcenter_datacenter }}"
 
     uuid: "{{ new_vm.instance.hw_product_uuid }}"
   retries: 60
