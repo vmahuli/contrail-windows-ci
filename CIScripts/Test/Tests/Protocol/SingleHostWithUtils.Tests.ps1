@@ -137,7 +137,14 @@ Describe "Single compute node protocol tests with utils" {
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
-            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+            [LogSource[]] $LogSources = New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session
+            foreach ($ContainerVar in "Container1ID", "Container2ID") {
+                $Var = Get-Variable $ContainerVar -ErrorAction SilentlyContinue
+                if ($Var) {
+                    $LogSources += New-ContainerLogSource -Session $Session -Container $Var.Value
+                }
+            }
+            Merge-Logs -LogSources $LogSources
         }
     }
 
