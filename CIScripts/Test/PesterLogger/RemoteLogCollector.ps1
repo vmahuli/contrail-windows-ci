@@ -1,3 +1,5 @@
+. $PSScriptRoot/../../Common/Invoke-NativeCommand.ps1
+
 . $PSScriptRoot/PesterLogger.ps1
 
 class LogSource {
@@ -80,7 +82,12 @@ function Clear-FileLogContent {
 
 function Get-ContainerLogContent {
     param([PSSessionT] $Session, [String] $ContainerName)
-    throw "unimplemented"
+    $Command = Invoke-NativeCommand -Session $Session -CaptureOutput -AllowNonZero {
+        docker logs $Using:ContainerName
+    }
+    @{
+        "$ContainerName container logs" = $Command.Output
+    }
 }
 
 function Get-LogContent {

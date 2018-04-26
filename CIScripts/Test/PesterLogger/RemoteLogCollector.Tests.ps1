@@ -6,6 +6,7 @@ Param (
 . $PSScriptRoot/../../Common/Init.ps1
 . $PSScriptRoot/../../Testenv/Testenv.ps1
 . $PSScriptRoot/../../Testenv/Testbed.ps1
+. $PSScriptRoot/../TestConfigurationUtils.ps1
 
 . $PSScriptRoot/Get-CurrentPesterScope.ps1
 
@@ -216,4 +217,26 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
     }
 
     Test-MultipleSourcesAndSessions
+
+    Context "Docker logs" {
+        BeforeEach {
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+        }
+
+        It "captures logs of container" {
+            New-Container -Session $Sess1 -Name foo -Network nat
+
+            Merge-Logs (New-ContainerLogSource -Session $Sess1 -Container foo)
+            $ContentRaw = Get-Content -Raw "TestDrive:\*.Docker logs.captures logs of container.log"
+            $ContentRaw | Should -BeLike "*Microsoft Windows*"
+        }
+
+        It "handles nonexisting container" {
+            Merge-Logs (New-ContainerLogSource -Session $Sess1 -Container bar)
+        }
+
+        AfterEach {
+            Remove-AllContainers -Session $Sess1
+        }
+    }
 }
