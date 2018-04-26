@@ -24,7 +24,6 @@ actually_used_projects = [
     "Juniper/contrail-vrouter",
     "Juniper/contrail-build",
     "Juniper/contrail-third-party",
-    "Juniper/contrail-generateDS",
     "Juniper/contrail-sandesh",
     "Juniper/contrail-common",
 ]
