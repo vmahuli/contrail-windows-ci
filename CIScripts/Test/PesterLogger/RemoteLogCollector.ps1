@@ -1,13 +1,35 @@
 . $PSScriptRoot/PesterLogger.ps1
 
-function New-LogSource {
+class LogSource {
+    [PSSessionT] $Session
+
+    # @{ Path: path } or @{ Container: container }
+    [Hashtable] $Source
+}
+
+function New-ContainerLogSource {
+    Param([Parameter(Mandatory = $true)] [string[]] $ContainerNames,
+          [Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
+
+    return $Sessions | ForEach-Object {
+        $Session = $_
+        $ContainerNames | ForEach-Object {
+            [LogSource] @{
+                Session = $Session
+                Source = @{ Container = $_ }
+            }
+        }
+    }
+}
+
+function New-FileLogSource {
     Param([Parameter(Mandatory = $true)] [string] $Path,
           [Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
 
     return $Sessions | ForEach-Object {
-        @{
+        [LogSource] @{
             Session = $_
-            Path = $Path
+            Source = @{ Path = $Path }
         }
     }
 }
@@ -21,8 +43,8 @@ function Invoke-CommandRemoteOrLocal {
     }
 }
 
-function Get-LogContent {
-    param([System.Collections.Hashtable] $LogSource)
+function Get-FileLogContent {
+    param([PSSessionT] $Session, [String] $Path)
     $ContentGetterBody = {
         Param([Parameter(Mandatory = $true)] [string] $From)
         $Files = Get-ChildItem -Path $From -ErrorAction SilentlyContinue
@@ -41,11 +63,11 @@ function Get-LogContent {
         }
         return $Logs
     }
-    Invoke-CommandRemoteOrLocal -Func $ContentGetterBody -Session $LogSource.Session -Arguments $LogSource.Path
+    Invoke-CommandRemoteOrLocal -Func $ContentGetterBody -Session $Session -Arguments $Path
 }
 
-function Clear-LogContent {
-    param([System.Collections.Hashtable] $LogSource)
+function Clear-FileLogContent {
+    param([PSSessionT] $Session, [String] $Path)
     $LogCleanerBody = {
         Param([Parameter(Mandatory = $true)] [string] $What)
         $Files = Get-ChildItem -Path $What -ErrorAction SilentlyContinue
@@ -53,11 +75,36 @@ function Clear-LogContent {
             Remove-Item $File
         }
     }
-    Invoke-CommandRemoteOrLocal -Func $LogCleanerBody -Session $LogSource.Session -Arguments $LogSource.Path
+    Invoke-CommandRemoteOrLocal -Func $LogCleanerBody -Session $Session -Arguments $Path
+}
+
+function Get-ContainerLogContent {
+    param([PSSessionT] $Session, [String] $ContainerName)
+    throw "unimplemented"
+}
+
+function Get-LogContent {
+    param([LogSource] $LogSource)
+
+    if ($LogSource.Source['Path']) {
+        Get-FileLogContent -Session $LogSource.Session -Path $LogSource.Source.Path
+    } elseif ($LogSource.Source['Container']) {
+        Get-ContainerLogContent -Session $LogSource.Session -Container $LogSource.Source.Container
+    } else {
+        throw "Unkonwn LogSource source: $( $LogSource.Source )"
+    }
+}
+
+function Clear-LogContent {
+    param([LogSource] $LogSource)
+
+    if ($LogSource.Source['Path']) {
+        Clear-FileLogContent -Session $LogSource.Session -Path $LogSource.Source.Path
+    }
 }
 
 function Merge-Logs {
-    Param([Parameter(Mandatory = $true)] [System.Collections.Hashtable[]] $LogSources,
+    Param([Parameter(Mandatory = $true)] [LogSource[]] $LogSources,
           [Parameter(Mandatory = $false)] [switch] $DontCleanUp)
 
     foreach ($LogSource in $LogSources) {

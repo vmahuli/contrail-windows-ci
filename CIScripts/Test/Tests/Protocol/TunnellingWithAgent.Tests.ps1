@@ -482,7 +482,7 @@ Describe "Tunnelling with Agent tests" {
             Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
             Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
         } finally {
-            Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
+            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
         }
     }
 }

@@ -102,7 +102,7 @@ Describe "vRouter Agent service" {
                 Disable-AgentService -Session $Session
             }
         } finally {
-            Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
         }
     }
 
