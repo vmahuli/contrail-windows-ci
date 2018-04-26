@@ -15,6 +15,9 @@ Param (
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+
 Describe "Single compute node protocol tests with utils" {
 
     function Initialize-ContainersConnection {
@@ -26,7 +29,7 @@ Describe "Single compute node protocol tests with utils" {
             [Parameter(Mandatory = $true)] [PSSessionT] $Session
         )
 
-        Write-Host $("Setting a connection between " + $Container1NetInfo.MACAddress + `
+        Write-Log $("Setting a connection between " + $Container1NetInfo.MACAddress + `
         " and " + $Container2NetInfo.MACAddress + "...")
 
         Invoke-Command -Session $Session -ScriptBlock {
@@ -62,7 +65,7 @@ Describe "Single compute node protocol tests with utils" {
     It "TCP connection works" {
         Invoke-Command -Session $Session -ScriptBlock {
             $Container1IP = $Using:Container1NetInfo.IPAddress
-            docker exec $Using:Container2ID powershell "Invoke-WebRequest -Uri http://${Container1IP}:8080/ -ErrorAction Continue" | Write-Host
+            docker exec $Using:Container2ID powershell "Invoke-WebRequest -Uri http://${Container1IP}:8080/ -ErrorAction Continue" | Out-Null
             return $LASTEXITCODE
         } | Should Be 0
 
@@ -77,7 +80,7 @@ Describe "Single compute node protocol tests with utils" {
             "10.0.0.200"
         )
 
-        Write-Host "Creating ContrailNetwork"
+        Write-Log "Creating ContrailNetwork"
         $NetworkName = "testnet"
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -97,21 +100,21 @@ Describe "Single compute node protocol tests with utils" {
             -Name $NetworkName `
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
-        Write-Host "Creating container 1"
+        Write-Log "Creating container 1"
         $Container1ID = New-Container -Session $Session -NetworkName $NetworkName -Image iis-tcptest
 
-        Write-Host "Creating container 2"
+        Write-Log "Creating container 2"
         $Container2ID = New-Container -Session $Session -NetworkName $NetworkName
 
-        Write-Host "Getting VM NetAdapter Information"
+        Write-Log "Getting VM NetAdapter Information"
         $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
             -AdapterName $SystemConfig.AdapterName
 
-        Write-Host "Getting vHost NetAdapter Information"
+        Write-Log "Getting vHost NetAdapter Information"
         $VHostInfo = Get-RemoteNetAdapterInformation -Session $Session `
             -AdapterName $SystemConfig.VHostName
 
-        Write-Host "Getting Containers NetAdapter Information"
+        Write-Log "Getting Containers NetAdapter Information"
         $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
             -Session $Session -ContainerID $Container1ID
         $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
@@ -124,13 +127,17 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     AfterEach {
-        Write-Host "Removing containers"
-        Remove-AllContainers -Session $Session
-
-        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
-        if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
-            $ContrailNM.RemoveNetwork($ContrailNetwork)
-            Remove-Variable "ContrailNetwork"
+        try {
+            Write-Log "Removing containers"
+            Remove-AllContainers -Session $Session
+    
+            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+            if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
+                $ContrailNM.RemoveNetwork($ContrailNetwork)
+                Remove-Variable "ContrailNetwork"
+            }
+        } finally {
+            Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
         }
     }
 
@@ -145,6 +152,8 @@ Describe "Single compute node protocol tests with utils" {
             Justification="Analyzer doesn't understand relation of Pester blocks"
         )]
         $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+
+        Initialize-PesterLogger -OutDir $LogDir
 
         Install-DockerDriver -Session $Session
         Install-Extension -Session $Session

@@ -58,6 +58,11 @@ Describe "PesterLogger" -Tags CI, Unit {
             Write-Log "msg2"
             Get-Content "TestDrive:\PesterLogger.Write-Log.writes correct messages.log" | Should -Be @("msg1", "msg2")
         }
+
+        It "errors if test name contains : " {
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+            { Write-Log "msg1" } | Should -Throw
+        }
     }
 
     Context "Initializing in BeforeEach" {

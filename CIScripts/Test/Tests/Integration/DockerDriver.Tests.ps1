@@ -8,7 +8,7 @@ Param (
 . $PSScriptRoot\..\..\..\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
-Initialize-PesterLogger -OutDir $LogDir
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 $TestsPath = "C:\Artifacts\"
 
@@ -52,11 +52,12 @@ $Modules = @("agent")
 Describe "Docker Driver" {
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "Session",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "Session", Justification="Analyzer doesn't understand relation of Pester blocks"
         )]
         $Session = $Sessions[0]
+
+        Initialize-PesterLogger -OutDir $LogDir
     }
 
     AfterAll {
@@ -75,5 +76,9 @@ Describe "Docker Driver" {
                 Save-DockerDriverUnitTestReport -Session $Session -Component $Module
             }
         }
+    }
+
+    AfterEach {
+        Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
     }
 }

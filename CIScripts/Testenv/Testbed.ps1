@@ -45,3 +45,5 @@ function New-RemoteSessions {
     }
     return $Sessions
 }
+
+function Get-ComputeLogsPath { "C:/ProgramData/Contrail/var/log/contrail/*.log" }
