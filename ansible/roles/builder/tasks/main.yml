@@ -176,13 +176,10 @@
     value: '{{ boost_dir }}'
     level: machine
 
-- name: Install OpenSSL 1.0.2o
-  win_chocolatey:
-    name: win-openssl
-    source: 'https://www.myget.org/F/openssl'
-    version: '1.0.2-o'
-    install_args: '/DIR="{{ openssl_dir }}"'
-    state: present
+- name: Install prebuilded OpenSSL 1.0.2o
+  win_unzip:
+    src: '{{ dependencies_source }}\OpenSSL_1_0_2o.zip'
+    dest: '{{ openssl_dir }}'
 
 - name: Set OPENSSL_ROOT variable
   win_environment:
