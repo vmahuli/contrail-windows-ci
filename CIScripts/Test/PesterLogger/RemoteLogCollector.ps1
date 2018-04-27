@@ -1,9 +1,10 @@
+. $PSScriptRoot/../../Common/Aliases.ps1
 . $PSScriptRoot/../../Common/Invoke-NativeCommand.ps1
 
 . $PSScriptRoot/PesterLogger.ps1
 
 class LogSource {
-    [PSSessionT] $Session
+    [System.Management.Automation.Runspaces.PSSession] $Session
 
     # @{ Path: path } or @{ Container: container }
     [Hashtable] $Source
