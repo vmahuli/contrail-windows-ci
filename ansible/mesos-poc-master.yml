@@ -1,0 +1,88 @@
+---
+
+- hosts: 'ci-controller'
+  tags:
+    - 'swapfile'
+  tasks:
+    - name: 'Turn on swap'
+      command: '/usr/sbin/swapon /dev/centos/swap'
+      when: ansible_swaptotal_mb == 0
+
+    - name: 'Make swap persistent'
+      lineinfile:
+        line: '/dev/centos/swap   none    swap    sw    0   0'
+        path: '/etc/fstab'
+        state: 'present'
+      when: ansible_swaptotal_mb == 0
+
+- hosts: 'ci-controller'
+  tags:
+    - 'mesos'
+  vars:
+    zookeeper_name: 'mesos-poc-zookeeper'
+    zookeeper_image: 'netflixoss/exhibitor'
+    zookeeper_tag: '1.5.2'
+    mesos_master_name: 'mesos-poc-master'
+    mesos_master_image: 'mesosphere/mesos-master'
+    mesos_master_tag: '1.5.0'
+    marathon_name: 'mesos-poc-marathon'
+    marathon_image: 'mesosphere/marathon'
+    marathon_tag: 'v1.6.352'
+  gather_facts: false
+  tasks:
+    - name: 'Pull docker images'
+      docker_image:
+        name: '{{ item.name }}'
+        state: present
+        tag: '{{ item.tag }}'
+      with_items:
+        - name: '{{ zookeeper_image }}'
+          tag: '{{ zookeeper_tag }}'
+        - name: '{{ mesos_master_image }}'
+          tag: '{{ mesos_master_tag }}'
+        - name: '{{ marathon_image }}'
+          tag: '{{ marathon_tag }}'
+
+    - name: 'Start Zookeeper'
+      docker_container:
+        hostname: '{{ zookeeper_name }}'
+        image: '{{ zookeeper_image }}:{{ zookeeper_tag }}'
+        memory: '1g'
+        name: '{{ zookeeper_name }}'
+        state: 'started'
+      register: zookeeper_info
+
+    - name: 'Store Zookeeper IP in zookeeper_ip'
+      set_fact:
+        zookeeper_ip: '{{ zookeeper_info.ansible_facts.docker_container.NetworkSettings.IPAddress }}'
+
+    - name: 'Start Mesos Master'
+      docker_container:
+        env:
+          MESOS_PORT: '5050'
+          MESOS_ZK: 'zk://{{ zookeeper_ip }}:2181/mesos'
+          MESOS_QUORUM: '1'
+          MESOS_REGISTRY: 'in_memory'
+          MESOS_LOG_DIR: '/var/log/mesos'
+          MESOS_WORK_DIR: '/var/tmp/mesos'
+        hostname: '{{ mesos_master_name }}'
+        image: '{{ mesos_master_image }}:{{ mesos_master_tag }}'
+        memory: '1g'
+        name: '{{ mesos_master_name }}'
+        published_ports: '5050:5050'
+        state: 'started'
+      register: mesos_master_info
+
+    - name: 'Store Mesos Master IP in mesos_master_ip'
+      set_fact:
+        mesos_master_ip: '{{ mesos_master_info.ansible_facts.docker_container.NetworkSettings.IPAddress }}'
+
+    - name: 'Start Marathon'
+      docker_container:
+        command: '--master zk://{{ zookeeper_ip }}:2181/mesos --zk zk://{{ zookeeper_ip }}:2181/marathon'
+        hostname: '{{ marathon_name }}'
+        image: '{{ marathon_image }}:{{ marathon_tag }}'
+        memory: '1g'
+        name: '{{ marathon_name }}'
+        published_ports: '58080:8080'
+        state: 'started'
