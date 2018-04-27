@@ -1,6 +1,7 @@
 ---
 
 - hosts: localhost
+  connection: local
   roles:
     - { role: vmware-template, stage: create }
 
@@ -17,6 +18,7 @@
     - "{{ vm_role }}"
 
 - hosts: localhost
+  connection: local
   tasks:
     - name: Create snapshot
       include_role:
@@ -26,5 +28,6 @@
       when: vm_role == "testbed"
 
 - hosts: localhost
+  connection: local
   roles:
     - { role: vmware-template, stage: template }

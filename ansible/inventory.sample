@@ -1,3 +1,5 @@
+localhost
+
 [jenkins-slave:children]
 tester
 builder
