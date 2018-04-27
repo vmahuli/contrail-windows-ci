@@ -50,7 +50,12 @@ function Clear-LogContent {
         Param([Parameter(Mandatory = $true)] [string] $What)
         $Files = Get-ChildItem -Path $What -ErrorAction SilentlyContinue
         foreach ($File in $Files) {
-            Remove-Item $File
+            try {
+                Remove-Item $File
+            }
+            catch {
+                Write-Warning "$File was not removed due to $_"
+            }
         }
     }
     Invoke-CommandRemoteOrLocal -Func $LogCleanerBody -Session $LogSource.Session -Arguments $LogSource.Path
