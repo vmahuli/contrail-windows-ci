@@ -45,7 +45,8 @@
   win_shell: "docker pull {{ item }}"
   with_items:
     - microsoft/nanoserver
-    - microsoft/windowsservercore
+    - microsoft/windowsservercore:ltsc2016
+    - python:3.6.5-windowsservercore-ltsc2016
     - microsoft/iis:windowsservercore-10.0.14393.1358
 
 - name: Install MS Visuall C++ Redist 14
