@@ -13,16 +13,16 @@
     name: NET-Framework-Core
     state: present
 
-- name: Install Python launcher
-  win_package:
-    path: 'https://www.python.org/ftp/python/3.6.5/amd64/launcher.msi'
-    product_id: '{7A43CBD7-66F2-4BEB-9003-76EEE401947C}'
-    arguments: /Quiet ALLUSERS=1
-
 - name: Install python 2.7.13
   win_chocolatey:
     name: python2
     version: 2.7.13
+    state: present
+
+- name: Install Python 3.6.5
+  win_chocolatey:
+    name: python3
+    version: 3.6.5
     state: present
 
 - name: Install VC for Python 2.7
@@ -31,18 +31,28 @@
     version: 9.0.0.30729
     state: present
 
-- name: Install wheel support to python
-  win_command: pip install wheel
-  args:
-    creates: C:\Python27\Scripts\wheel.exe
+- name: Make sure that scons is not present for Python2
+  win_command: 'py -2 -m pip uninstall -y scons'
+  ignore_errors: yes
 
-- name: Copy windows-builder-requirements.txt file to builder
+- name: Install wheel support to Python 3
+  win_command: 'py -3 -m pip install wheel'
+
+- name: Copy windows-builder-py2-requirements.txt file to builder
   win_copy:
-    src: windows-builder-requirements.txt
-    dest: 'C:\requirements.txt'
+    src: 'windows-builder-py2-requirements.txt'
+    dest: 'C:\py2-requirements.txt'
 
-- name: Install required Python packages
-  win_command: 'pip install -r C:\requirements.txt'
+- name: Install required Python 2 packages
+  win_command: 'py -2 -m pip install -r C:\py2-requirements.txt'
+
+- name: Copy windows-builder-py3-requirements.txt file to builder
+  win_copy:
+    src: 'windows-builder-py3-requirements.txt'
+    dest: 'C:\py3-requirements.txt'
+
+- name: Install required Python 3 packages
+  win_command: 'py -3 -m pip install -r C:\py3-requirements.txt'
 
 - name: Install gnuwin32-coreutils
   win_chocolatey:
