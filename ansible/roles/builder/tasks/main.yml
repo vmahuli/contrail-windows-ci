@@ -31,10 +31,6 @@
     version: 9.0.0.30729
     state: present
 
-- name: Make sure that scons is not present for Python2
-  win_command: 'py -2 -m pip uninstall -y scons'
-  ignore_errors: yes
-
 - name: Install wheel support to Python 3
   win_command: 'py -3 -m pip install wheel'
 
