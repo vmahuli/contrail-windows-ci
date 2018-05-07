@@ -6,17 +6,17 @@
 class LogSource {
     [System.Management.Automation.Runspaces.PSSession] $Session
 
-    [Hashtable] GetLogContent() {
+    [Hashtable] GetContent() {
         throw "LogSource is an abstract class, use specific log source instead"
     }
 
-    ClearLogContent() {}
+    ClearContent() {}
 }
 
 class FileLogSource : LogSource {
     [String] $Path
 
-    [Hashtable] GetLogContent() {
+    [Hashtable] GetContent() {
         $ContentGetterBody = {
             Param([Parameter(Mandatory = $true)] [string] $From)
             $Files = Get-ChildItem -Path $From -ErrorAction SilentlyContinue
@@ -38,7 +38,7 @@ class FileLogSource : LogSource {
         return Invoke-CommandRemoteOrLocal -Func $ContentGetterBody -Session $this.Session -Arguments $this.Path
     }
 
-    ClearLogContent() {
+    ClearContent() {
         $LogCleanerBody = {
             Param([Parameter(Mandatory = $true)] [string] $What)
             $Files = Get-ChildItem -Path $What -ErrorAction SilentlyContinue
@@ -58,7 +58,7 @@ class FileLogSource : LogSource {
 class ContainerLogSource : LogSource {
     [String] $Container
 
-    [Hashtable] GetLogContent() {
+    [Hashtable] GetContent() {
         $Command = Invoke-NativeCommand -Session $this.Session -CaptureOutput -AllowNonZero {
             docker logs $Using:this.Container
         }
@@ -118,7 +118,7 @@ function Merge-Logs {
         Write-Log ("=" * 100)
         Write-Log $ComputerNamePrefix
 
-        $Logs = $LogSource.GetLogContent()
+        $Logs = $LogSource.GetContent()
         foreach ($Log in $Logs.GetEnumerator()) {
             $SourceFilenamePrefix = "Contents of $($Log.Key):"
             Write-Log ("-" * 100)
@@ -127,7 +127,7 @@ function Merge-Logs {
         }
         
         if (-not $DontCleanUp) {
-            $LogSource.ClearLogContent()
+            $LogSource.ClearContent()
         }
     }
 }
