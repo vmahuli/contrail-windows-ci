@@ -1,7 +1,7 @@
 . $PSScriptRoot\TestConfigurationUtils.ps1
 . $PSScriptRoot\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\Testenv\Testenv.ps1
-. $PSScriptRoot\..\..\TestRunner\Invoke-PesterTests.ps1
+. $PSScriptRoot\..\TestRunner\Invoke-PesterTests.ps1
 
 function Invoke-TestScenarios {
     Param (
