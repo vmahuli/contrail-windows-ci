@@ -1,4 +1,5 @@
 . $PSScriptRoot\..\..\Common\Aliases.ps1
+. $PSScriptRoot\..\PesterLogger\PesterLogger.ps1
 
 function Invoke-MsiExec {
     Param (
