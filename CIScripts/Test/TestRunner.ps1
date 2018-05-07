@@ -9,6 +9,7 @@ function Invoke-TestScenarios {
         [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
 
+    $DetailedLogDir = Join-Path $TestReportOutputDirectory "detailed"
     $AdditionalParams = @{
         TestenvConfFile=$TestenvConfFile;
         LogDir=$DetailedLogDir;
