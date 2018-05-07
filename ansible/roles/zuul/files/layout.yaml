@@ -104,10 +104,6 @@ projects:
     template:
       - name: ci-contrail-windows-template
 
-  - name: Juniper/contrail-generateDS
-    template:
-      - name: ci-contrail-windows-template
-
   - name: Juniper/contrail-sandesh
     template:
       - name: ci-contrail-windows-template
@@ -162,11 +158,19 @@ projects:
     template:
       - name: ci-contrail-windows-other-projects-template
 
+  - name: Juniper/contrail-docs
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
   - name: Juniper/contrail-dpdk
     template:
       - name: ci-contrail-windows-other-projects-template
 
   - name: Juniper/contrail-fabric-utils
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
+  - name: Juniper/contrail-generateDS
     template:
       - name: ci-contrail-windows-other-projects-template
 

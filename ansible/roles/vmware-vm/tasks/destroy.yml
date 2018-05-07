@@ -4,12 +4,10 @@
   delegate_to: localhost
   vmware_guest:
     hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_user }}"
+    username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
-    validate_certs: "{{ validate_certs }}"
-
-    folder: "{{ datacenter_name }}/vm/{{ testenv_folder }}"
-
+    validate_certs: "{{ vcenter_validate_certs }}"
+    folder: "{{ vcenter_datacenter }}/vm/{{ testenv_folder }}"
     name: "{{ inventory_hostname_short }}"
     state: absent
     force: yes

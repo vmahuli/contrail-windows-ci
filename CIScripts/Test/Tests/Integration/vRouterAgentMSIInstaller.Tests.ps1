@@ -16,13 +16,18 @@ Param (
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+
 Describe "vRouter Agent MSI installer" {
 
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
         $Session = $Sessions[0]
-        
+
         $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+
+        Initialize-PesterLogger -OutDir $LogDir
     }
 
     AfterAll {
@@ -65,6 +70,10 @@ Describe "vRouter Agent MSI installer" {
     }
 
     AfterEach {
-        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+        try {
+            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+        } finally {
+            Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+        }
     }
 }

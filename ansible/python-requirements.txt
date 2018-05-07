@@ -1,14 +1,28 @@
 ansible==2.4.2.0
 ansible-lint==3.4.21
-
-# For management of windows nodes
-pywinrm>=0.2.2
-pywinrm[credssp]
-
-# For templating in contrail-controller role
-netaddr
-
-# For vmware_* modules
-pyvmomi
-requests-credssp
-xmltodict
+asn1crypto==0.23.0
+bcrypt==3.1.4
+certifi==2017.7.27.1
+cffi==1.11.2
+chardet==3.0.4
+cryptography==2.1.2
+idna==2.6
+Jinja2==2.10
+MarkupSafe==1.0
+netaddr==0.7.19
+ntlm-auth==1.0.6
+paramiko==2.3.1
+pkg-resources==0.0.0
+pyasn1==0.3.7
+pycparser==2.18
+PyNaCl==1.1.2
+pyOpenSSL==17.3.0
+pyvmomi==6.5.0.2017.5.post1
+pywinrm==0.2.2
+PyYAML==3.12
+requests==2.18.4
+requests-credssp==0.1.0
+requests-ntlm==1.1.0
+six==1.11.0
+urllib3==1.22
+xmltodict==0.11.0

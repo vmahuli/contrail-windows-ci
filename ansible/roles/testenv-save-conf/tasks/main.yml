@@ -4,4 +4,25 @@
   when: testenv_conf_file is defined
   template:
     src: testenv-conf.yaml.j2
-    dest: '{{ testenv_conf_file }}'
+    dest: "{{ testenv_conf_file }}"
+
+- name: Generate temporary file for testenv configuration if path was not passed
+  when: testenv_conf_file is not defined
+  tempfile:
+    state: file
+    prefix: testenv-
+    suffix: .yml
+  register: testenv_conf_tempfile
+
+- name: Save testenv configuration to temporary file
+  when: testenv_conf_file is not defined
+  template:
+    src: testenv-conf.yaml.j2
+    dest: "{{ testenv_conf_tempfile.path }}"
+
+- name: Fetch testenv configuration from temporary file
+  when: testenv_conf_file is not defined
+  fetch:
+    src: "{{ testenv_conf_tempfile.path }}"
+    dest: "{{ testenv_conf_tempfile.path | basename }}"
+    flat: yes

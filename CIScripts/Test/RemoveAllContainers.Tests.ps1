@@ -14,13 +14,13 @@ Describe "Remove-AllContainers" {
     It "Removes single container if exists" {
         New-Container -Session $Session -NetworkName $NetworkName
         Invoke-Command -Session $Session -ScriptBlock {
-            docker ps -q
+            docker ps -aq
         } | Should Not BeNullOrEmpty
 
         Remove-AllContainers -Session $Session
 
         Invoke-Command -Session $Session -ScriptBlock {
-            docker ps -q
+            docker ps -aq
         } | Should BeNullOrEmpty
     }
 
@@ -29,13 +29,13 @@ Describe "Remove-AllContainers" {
         New-Container -Session $Session -NetworkName $NetworkName
         New-Container -Session $Session -NetworkName $NetworkName
         Invoke-Command -Session $Session -ScriptBlock {
-            docker ps -q
+            docker ps -aq
         } | Should Not BeNullOrEmpty
 
         Remove-AllContainers -Session $Session
 
         Invoke-Command -Session $Session -ScriptBlock {
-            docker ps -q
+            docker ps -aq
         } | Should BeNullOrEmpty
     }
 
@@ -43,7 +43,7 @@ Describe "Remove-AllContainers" {
         Remove-AllContainers -Session $Session
 
         Invoke-Command -Session $Session -ScriptBlock {
-            docker ps -q
+            docker ps -aq
         } | Should BeNullOrEmpty
     }
 

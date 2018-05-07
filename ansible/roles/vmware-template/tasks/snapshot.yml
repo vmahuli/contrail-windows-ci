@@ -1,0 +1,18 @@
+---
+
+- name: Shutdown VM
+  include_tasks: "shutdown.yml"
+
+# TODO: Check if `state: present` works after update to Ansible 2.5
+- name: Create snapshot
+  vmware_guest_snapshot:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    folder: "{{ vcenter_datacenter }}/vm/{{ vmware_folder }}"
+    name: "{{ new_vm.instance.hw_name }}"
+    state: present
+    snapshot_name: linked-clones-base # TODO: Move it to vars
+    description: 'Base snapshot for linked clones'

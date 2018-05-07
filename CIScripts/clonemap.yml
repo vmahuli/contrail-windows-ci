@@ -7,8 +7,6 @@ clonemap:
     dest: 'controller'
   - name: 'Juniper/contrail-vrouter'
     dest: 'vrouter'
-  - name: 'Juniper/contrail-generateDS'
-    dest: 'tools/generateds'
   - name: 'Juniper/contrail-third-party'
     dest: 'third_party'
   - name: 'Juniper/contrail-sandesh'

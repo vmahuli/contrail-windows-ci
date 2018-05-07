@@ -16,10 +16,10 @@
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_user }}"
     password: "{{ vcenter_password }}"
-    validate_certs: "{{ validate_certs }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
 
-    datacenter: "{{ datacenter_name }}"
-    cluster: "{{ cluster_name }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    cluster: "{{ vcenter_cluster }}"
     folder: "{{ vmware_folder }}"
 
     name: "winci-{{ vm_role}}-{{ get_vm_id.stdout.strip() }}"
@@ -41,9 +41,9 @@
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_user }}"
     password: "{{ vcenter_password }}"
-    validate_certs: "{{ validate_certs }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
 
-    datacenter: "{{ datacenter_name }}"
+    datacenter: "{{ vcenter_datacenter }}"
 
     uuid: "{{ new_vm.instance.hw_product_uuid }}"
   retries: 60

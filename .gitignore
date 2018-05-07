@@ -17,5 +17,8 @@ CIScripts/JenkinsTesterDSC/JenkinsTester
 *.pyc
 venv
 
-### Visual Studio Code
+### Visual Studio Code ###
 .vscode/
+
+### Ansible ###
+*.retry

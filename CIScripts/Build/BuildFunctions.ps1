@@ -66,9 +66,9 @@ function Invoke-DockerDriverBuild {
 
     $Job.Step("Contrail-go-api source code generation", {
         Invoke-NativeCommand -ScriptBlock {
-            python tools/generateds/generateDS.py -q -f `
-                                                  -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
-                                                  -g golang-api src/contrail-api-client/schema/vnc_cfg.xsd
+            py src/contrail-api-client/generateds/generateDS.py -q -f `
+                                    -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
+                                    -g golang-api src/contrail-api-client/schema/vnc_cfg.xsd
 
             # Workaround on https://github.com/golang/go/issues/18468
             Copy-Item -Path $srcPath/vendor/* -Destination $GoPath/src -Force -Container -Recurse

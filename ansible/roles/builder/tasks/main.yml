@@ -19,24 +19,36 @@
     version: 2.7.13
     state: present
 
+- name: Install Python 3.6.5
+  win_chocolatey:
+    name: python3
+    version: 3.6.5
+    state: present
+
 - name: Install VC for Python 2.7
   win_chocolatey:
     name: vcpython27
     version: 9.0.0.30729
     state: present
 
-- name: Install wheel support to python
-  win_command: pip install wheel
-  args:
-    creates: C:\Python27\Scripts\wheel.exe
+- name: Install wheel support to Python 3
+  win_command: 'py -3 -m pip install wheel'
 
-- name: Copy windows-builder-requirements.txt file to builder
+- name: Copy windows-builder-py2-requirements.txt file to builder
   win_copy:
-    src: windows-builder-requirements.txt
-    dest: 'C:\requirements.txt'
+    src: 'windows-builder-py2-requirements.txt'
+    dest: 'C:\py2-requirements.txt'
 
-- name: Install required Python packages
-  win_command: 'pip install -r C:\requirements.txt'
+- name: Install required Python 2 packages
+  win_command: 'py -2 -m pip install -r C:\py2-requirements.txt'
+
+- name: Copy windows-builder-py3-requirements.txt file to builder
+  win_copy:
+    src: 'windows-builder-py3-requirements.txt'
+    dest: 'C:\py3-requirements.txt'
+
+- name: Install required Python 3 packages
+  win_command: 'py -3 -m pip install -r C:\py3-requirements.txt'
 
 - name: Install gnuwin32-coreutils
   win_chocolatey:
@@ -170,13 +182,10 @@
     value: '{{ boost_dir }}'
     level: machine
 
-- name: Install OpenSSL 1.0.2o
-  win_chocolatey:
-    name: win-openssl
-    source: 'https://www.myget.org/F/openssl'
-    version: '1.0.2-o'
-    install_args: '/DIR="{{ openssl_dir }}"'
-    state: present
+- name: Install prebuilded OpenSSL 1.0.2o
+  win_unzip:
+    src: '{{ dependencies_source }}\OpenSSL_1_0_2o.zip'
+    dest: '{{ openssl_dir }}'
 
 - name: Set OPENSSL_ROOT variable
   win_environment:

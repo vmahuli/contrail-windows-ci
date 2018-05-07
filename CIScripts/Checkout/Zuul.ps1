@@ -24,7 +24,6 @@ function Get-ZuulRepos {
         "Juniper/contrail-build",
         "Juniper/contrail-controller",
         "Juniper/contrail-vrouter",
-        "Juniper/contrail-generateDS",
         "Juniper/contrail-third-party",
         "Juniper/contrail-sandesh",
         "Juniper/contrail-common"

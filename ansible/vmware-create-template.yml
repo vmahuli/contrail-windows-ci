@@ -17,5 +17,14 @@
     - "{{ vm_role }}"
 
 - hosts: localhost
+  tasks:
+    - name: Create snapshot
+      include_role:
+        name: vmware-template
+      vars:
+        stage: snapshot
+      when: vm_role == "testbed"
+
+- hosts: localhost
   roles:
     - { role: vmware-template, stage: template }

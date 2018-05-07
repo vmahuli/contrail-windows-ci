@@ -6,19 +6,19 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 Describe "PesterLogger" -Tags CI, Unit {
     Context "Initialize-PesterLogger" {
-        It "registers a new global Write-Log function" {
+        It "registers a new global Write-LogImpl function" {
             Initialize-PesterLogger -OutDir "TestDrive:\"
-            Get-Item function:Write-Log -ErrorAction SilentlyContinue | Should -Not -BeNullOrEmpty
+            Get-Item function:Write-LogImpl -ErrorAction SilentlyContinue | Should -Not -BeNullOrEmpty
         }
 
-        It "unregisters previous Write-Log function and registers a new one" {
+        It "unregisters previous Write-LogImpl function and registers a new one" {
             function OldImpl {}
             Mock OldImpl {}
-            New-Item function:Write-Log -Value OldImpl
+            New-Item function:Write-LogImpl -Value OldImpl
             Write-Log "test"
 
             Initialize-PesterLogger -OutDir "TestDrive:\"
-            Get-Item function:Write-Log -ErrorAction SilentlyContinue | Should -Not -BeNullOrEmpty
+            Get-Item function:Write-LogImpl -ErrorAction SilentlyContinue | Should -Not -BeNullOrEmpty
 
             Write-Log "test2"
             Assert-MockCalled OldImpl -Exactly -Times 1
@@ -58,6 +58,11 @@ Describe "PesterLogger" -Tags CI, Unit {
             Write-Log "msg2"
             Get-Content "TestDrive:\PesterLogger.Write-Log.writes correct messages.log" | Should -Be @("msg1", "msg2")
         }
+
+        It "errors if test name contains : " {
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+            { Write-Log "msg1" } | Should -Throw
+        }
     }
 
     Context "Initializing in BeforeEach" {
@@ -72,8 +77,8 @@ Describe "PesterLogger" -Tags CI, Unit {
     }
 
     AfterEach {
-        if (Get-Item function:Write-Log -ErrorAction SilentlyContinue) {
-            Remove-Item function:Write-Log
+        if (Get-Item function:Write-LogImpl -ErrorAction SilentlyContinue) {
+            Remove-Item function:Write-LogImpl
         }
     }
 }

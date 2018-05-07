@@ -1,0 +1,4 @@
+localhost
+
+[controller]
+ci-controller ansible_host=CHANGEME

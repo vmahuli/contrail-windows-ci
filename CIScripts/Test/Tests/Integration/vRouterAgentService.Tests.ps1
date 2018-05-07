@@ -13,6 +13,9 @@ Param (
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+
 Describe "vRouter Agent service" {
     
     Context "disabling" {
@@ -93,9 +96,13 @@ Describe "vRouter Agent service" {
     }
 
     AfterEach {
-        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
-        if ((Get-AgentServiceStatus -Session $Session) -eq "Running") {
-            Disable-AgentService -Session $Session
+        try {
+            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+            if ((Get-AgentServiceStatus -Session $Session) -eq "Running") {
+                Disable-AgentService -Session $Session
+            }
+        } finally {
+            Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
         }
     }
 
@@ -118,6 +125,8 @@ Describe "vRouter Agent service" {
             Justification="Analyzer doesn't understand relation of Pester blocks"
         )]
         $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+
+        Initialize-PesterLogger -OutDir $LogDir
 
         Install-DockerDriver -Session $Session
         Install-Agent -Session $Session
