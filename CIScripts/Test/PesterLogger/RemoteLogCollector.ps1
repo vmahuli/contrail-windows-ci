@@ -6,8 +6,66 @@
 class LogSource {
     [System.Management.Automation.Runspaces.PSSession] $Session
 
-    # @{ Path: path } or @{ Container: container }
-    [Hashtable] $Source
+    [Hashtable] GetLogContent() {
+        throw "LogSource is an abstract class, use specific log source instead"
+    }
+
+    ClearLogContent() {}
+}
+
+class FileLogSource : LogSource {
+    [String] $Path
+
+    [Hashtable] GetLogContent() {
+        $ContentGetterBody = {
+            Param([Parameter(Mandatory = $true)] [string] $From)
+            $Files = Get-ChildItem -Path $From -ErrorAction SilentlyContinue
+            $Logs = @{}
+            if (-not $Files) {
+                $Logs[$From] = "<FILE NOT FOUND>"
+            } else {
+                foreach ($File in $Files) {
+                    $Content = Get-Content -Raw $File
+                    $Logs[$File.FullName] = if ($Content) {
+                        $Content
+                    } else {
+                        "<FILE WAS EMPTY>"
+                    }
+                }
+            }
+            return $Logs
+        }
+        return Invoke-CommandRemoteOrLocal -Func $ContentGetterBody -Session $this.Session -Arguments $this.Path
+    }
+
+    ClearLogContent() {
+        $LogCleanerBody = {
+            Param([Parameter(Mandatory = $true)] [string] $What)
+            $Files = Get-ChildItem -Path $What -ErrorAction SilentlyContinue
+            foreach ($File in $Files) {
+                try {
+                    Remove-Item $File
+                }
+                catch {
+                    Write-Warning "$File was not removed due to $_"
+                }
+            }
+        }
+        Invoke-CommandRemoteOrLocal -Func $LogCleanerBody -Session $this.Session -Arguments $this.Path
+    }
+}
+
+class ContainerLogSource : LogSource {
+    [String] $Container
+
+    [Hashtable] GetLogContent() {
+        $Command = Invoke-NativeCommand -Session $this.Session -CaptureOutput -AllowNonZero {
+            docker logs $Using:this.Container
+        }
+        return @{
+            "$( $this.Container ) container logs" = $Command.Output
+        }
+    }
 }
 
 function New-ContainerLogSource {
@@ -17,9 +75,9 @@ function New-ContainerLogSource {
     return $Sessions | ForEach-Object {
         $Session = $_
         $ContainerNames | ForEach-Object {
-            [LogSource] @{
+            [ContainerLogSource] @{
                 Session = $Session
-                Source = @{ Container = $_ }
+                Container = $_
             }
         }
     }
@@ -30,9 +88,9 @@ function New-FileLogSource {
           [Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
 
     return $Sessions | ForEach-Object {
-        [LogSource] @{
+        [FileLogSource] @{
             Session = $_
-            Source = @{ Path = $Path }
+            Path = $Path
         }
     }
 }
@@ -43,76 +101,6 @@ function Invoke-CommandRemoteOrLocal {
         Invoke-Command -Session $Session $Func -ArgumentList $Arguments
     } else {
         Invoke-Command $Func -ArgumentList $Arguments
-    }
-}
-
-function Get-FileLogContent {
-    param([PSSessionT] $Session, [String] $Path)
-    $ContentGetterBody = {
-        Param([Parameter(Mandatory = $true)] [string] $From)
-        $Files = Get-ChildItem -Path $From -ErrorAction SilentlyContinue
-        $Logs = @{}
-        if (-not $Files) {
-            $Logs[$From] = "<FILE NOT FOUND>"
-        } else {
-            foreach ($File in $Files) {
-                $Content = Get-Content -Raw $File
-                $Logs[$File.FullName] = if ($Content) {
-                    $Content
-                } else {
-                    "<FILE WAS EMPTY>"
-                }
-            }
-        }
-        return $Logs
-    }
-    Invoke-CommandRemoteOrLocal -Func $ContentGetterBody -Session $Session -Arguments $Path
-}
-
-function Clear-FileLogContent {
-    param([PSSessionT] $Session, [String] $Path)
-    $LogCleanerBody = {
-        Param([Parameter(Mandatory = $true)] [string] $What)
-        $Files = Get-ChildItem -Path $What -ErrorAction SilentlyContinue
-        foreach ($File in $Files) {
-            try {
-                Remove-Item $File
-            }
-            catch {
-                Write-Warning "$File was not removed due to $_"
-            }
-        }
-    }
-    Invoke-CommandRemoteOrLocal -Func $LogCleanerBody -Session $Session -Arguments $Path
-}
-
-function Get-ContainerLogContent {
-    param([PSSessionT] $Session, [String] $ContainerName)
-    $Command = Invoke-NativeCommand -Session $Session -CaptureOutput -AllowNonZero {
-        docker logs $Using:ContainerName
-    }
-    @{
-        "$ContainerName container logs" = $Command.Output
-    }
-}
-
-function Get-LogContent {
-    param([LogSource] $LogSource)
-
-    if ($LogSource.Source['Path']) {
-        Get-FileLogContent -Session $LogSource.Session -Path $LogSource.Source.Path
-    } elseif ($LogSource.Source['Container']) {
-        Get-ContainerLogContent -Session $LogSource.Session -Container $LogSource.Source.Container
-    } else {
-        throw "Unkonwn LogSource source: $( $LogSource.Source )"
-    }
-}
-
-function Clear-LogContent {
-    param([LogSource] $LogSource)
-
-    if ($LogSource.Source['Path']) {
-        Clear-FileLogContent -Session $LogSource.Session -Path $LogSource.Source.Path
     }
 }
 
@@ -130,7 +118,7 @@ function Merge-Logs {
         Write-Log ("=" * 100)
         Write-Log $ComputerNamePrefix
 
-        $Logs = Get-LogContent -LogSource $LogSource
+        $Logs = $LogSource.GetLogContent()
         foreach ($Log in $Logs.GetEnumerator()) {
             $SourceFilenamePrefix = "Contents of $($Log.Key):"
             Write-Log ("-" * 100)
@@ -139,7 +127,7 @@ function Merge-Logs {
         }
         
         if (-not $DontCleanUp) {
-            Clear-LogContent -LogSource $LogSource
+            $LogSource.ClearLogContent()
         }
     }
 }
