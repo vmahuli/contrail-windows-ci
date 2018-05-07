@@ -8,6 +8,7 @@ Param (
 . $PSScriptRoot/../../Testenv/Testbed.ps1
 . $PSScriptRoot/../TestConfigurationUtils.ps1
 
+. $PSScriptRoot/PesterLogger.ps1
 . $PSScriptRoot/Get-CurrentPesterScope.ps1
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -170,8 +171,8 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 
     AfterEach {
         Remove-Item "TestDrive:/*" 
-        if (Get-Item function:Write-Log -ErrorAction SilentlyContinue) {
-            Remove-Item function:Write-Log
+        if (Get-Item function:Write-LogImpl -ErrorAction SilentlyContinue) {
+            Remove-Item function:Write-LogImpl
         }
     }
 

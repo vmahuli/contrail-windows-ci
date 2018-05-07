@@ -1,4 +1,6 @@
 . $PSScriptRoot\..\..\Common\Aliases.ps1
+. $PSScriptRoot\..\PesterLogger\PesterLogger.ps1
+
 $DockerfilesPath = "$PSScriptRoot\..\..\DockerFiles\"
 
 function Test-Dockerfile {

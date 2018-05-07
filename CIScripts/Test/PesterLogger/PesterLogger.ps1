@@ -32,7 +32,7 @@ function Initialize-PesterLogger {
         & $WriterFunc -Path $Outpath -Value $Message
     }.GetNewClosure()
 
-    Register-NewFunc -Name "Write-Log" -Func $WriteLogFunc
+    Register-NewFunc -Name "Write-LogImpl" -Func $WriteLogFunc
 }
 
 function Add-ContentForce {
@@ -50,4 +50,12 @@ function Register-NewFunc {
         Remove-Item function:$Name
     }
     New-Item -Path function:\ -Name Global:$Name -Value $Func | Out-Null
+}
+
+function Write-Log {
+    if (Get-Item function:Write-LogImpl -ErrorAction SilentlyContinue) {
+        Write-LogImpl @Args
+    } else {
+        Write-Host @Args
+    }
 }
