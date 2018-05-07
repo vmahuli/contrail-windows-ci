@@ -212,8 +212,8 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
 
     AfterEach {
         Remove-Item "TestDrive:/*" 
-        if (Get-Item function:Write-Log -ErrorAction SilentlyContinue) {
-            Remove-Item function:Write-Log
+        if (Get-Item function:Write-LogImpl -ErrorAction SilentlyContinue) {
+            Remove-Item function:Write-LogImpl
         }
     }
 
