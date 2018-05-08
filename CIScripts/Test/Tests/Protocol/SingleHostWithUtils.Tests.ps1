@@ -18,6 +18,9 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
+$Container1ID = "jolly-lumberjack"
+$Container2ID = "juniper-tree"
+
 Describe "Single compute node protocol tests with utils" {
 
     function Initialize-ContainersConnection {
@@ -101,10 +104,10 @@ Describe "Single compute node protocol tests with utils" {
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
         Write-Log "Creating container 1"
-        $Container1ID = New-Container -Session $Session -NetworkName $NetworkName -Image iis-tcptest
+        New-Container -Session $Session -NetworkName $NetworkName -Name $Container1ID -Image iis-tcptest | Out-Null
 
         Write-Log "Creating container 2"
-        $Container2ID = New-Container -Session $Session -NetworkName $NetworkName
+        New-Container -Session $Session -NetworkName $NetworkName -Name $Container2ID | Out-Null
 
         Write-Log "Getting VM NetAdapter Information"
         $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
@@ -138,12 +141,7 @@ Describe "Single compute node protocol tests with utils" {
             }
         } finally {
             [LogSource[]] $LogSources = New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session
-            foreach ($ContainerVar in "Container1ID", "Container2ID") {
-                $Var = Get-Variable $ContainerVar -ErrorAction SilentlyContinue
-                if ($Var) {
-                    $LogSources += New-ContainerLogSource -Sessions $Session -ContainerNames $Var.Value
-                }
-            }
+            $LogSources += New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $Container1ID, $Container2ID
             Merge-Logs -LogSources $LogSources
         }
     }
