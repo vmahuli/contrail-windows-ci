@@ -176,7 +176,7 @@ function Stop-EchoServerInContainer {
         return $Output
     }
 
-    Write-Host "Output from UDP echo server running in remote session: $Output"
+    Write-Log "Output from UDP echo server running in remote session: $Output"
 }
 
 function Start-UDPListenerInContainer {
@@ -214,7 +214,7 @@ function Stop-UDPListenerInContainerAndFetchResult {
         $ReceivedMessage = Receive-Job -Job $UDPListenerJob
         return $ReceivedMessage
     }
-    Write-Host "UDP listener output from remote session: $Message"
+    Write-Log "UDP listener output from remote session: $Message"
     return $Message
 }
 
@@ -240,7 +240,7 @@ function Send-UDPFromContainer {
     $Output = Invoke-Command -Session $Session -ScriptBlock {
         docker exec $Using:ContainerName powershell "$Using:UDPSendCommand"
     }
-    Write-Host "Send UDP output from remote session: $Output"
+    Write-Log "Send UDP output from remote session: $Output"
 }
 
 function Test-UDP {
@@ -256,20 +256,20 @@ function Test-UDP {
         [Parameter(Mandatory=$true)] [Int16] $UDPClientPort
     )
 
-    Write-Host "Starting UDP Echo server on container $Container1Name ..."
+    Write-Log "Starting UDP Echo server on container $Container1Name ..."
     Start-UDPEchoServerInContainer `
         -Session $Session1 `
         -ContainerName $Container1Name `
         -ServerPort $UDPServerPort `
         -ClientPort $UDPClientPort
 
-    Write-Host "Starting UDP listener on container $Container2Name..."
+    Write-Log "Starting UDP listener on container $Container2Name..."
     Start-UDPListenerInContainer `
         -Session $Session2 `
         -ContainerName $Container2Name `
         -ListenerPort $UDPClientPort
 
-    Write-Host "Sending UDP packet from container $Container2Name..."
+    Write-Log "Sending UDP packet from container $Container2Name..."
     Send-UDPFromContainer `
         -Session $Session2 `
         -ContainerName $Container2Name `
@@ -279,12 +279,12 @@ function Test-UDP {
         -NumberOfAttempts 10 `
         -WaitSeconds 1
 
-    Write-Host "Fetching results from listener job..."
+    Write-Log "Fetching results from listener job..."
     $ReceivedMessage = Stop-UDPListenerInContainerAndFetchResult -Session $Session2
     Stop-EchoServerInContainer -Session $Session1
 
-    Write-Host "Sent message: $Message"
-    Write-Host "Received message: $ReceivedMessage"
+    Write-Log "Sent message: $Message"
+    Write-Log "Received message: $ReceivedMessage"
     if ($ReceivedMessage -eq $Message) {
         return $true
     } else {
