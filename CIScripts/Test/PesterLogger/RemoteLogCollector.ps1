@@ -10,7 +10,9 @@ class LogSource {
         throw "LogSource is an abstract class, use specific log source instead"
     }
 
-    ClearContent() {}
+    ClearContent() {
+        throw "LogSource is an abstract class, use specific log source instead"
+    }
 }
 
 class FileLogSource : LogSource {
@@ -65,6 +67,11 @@ class ContainerLogSource : LogSource {
         return @{
             "$( $this.Container ) container logs" = $Command.Output
         }
+    }
+
+    ClearContent() {
+        # It's not possible to clear docker container logs,
+        # but the --since flag may be used in GetContent instead.
     }
 }
 
