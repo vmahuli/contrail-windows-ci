@@ -234,6 +234,9 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
 
         It "handles nonexisting container" {
             Merge-Logs (New-ContainerLogSource -Sessions $Sess1 -ContainerNames bar)
+            # Should not throw.
+            # We're not using actual `Should -Not -Throw` here,
+            # because it doesn't show exception's location in case of failure.
         }
 
         AfterEach {
