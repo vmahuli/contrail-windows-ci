@@ -137,4 +137,6 @@ function Merge-Logs {
             $LogSource.ClearContent()
         }
     }
+
+    Write-Log ("=" * 100)
 }
