@@ -227,13 +227,13 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
         It "captures logs of container" {
             New-Container -Session $Sess1 -Name foo -Network nat
 
-            Merge-Logs (New-ContainerLogSource -Session $Sess1 -Container foo)
+            Merge-Logs (New-ContainerLogSource -Sessions $Sess1 -ContainerNames foo)
             $ContentRaw = Get-Content -Raw "TestDrive:\*.Docker logs.captures logs of container.log"
             $ContentRaw | Should -BeLike "*Microsoft Windows*"
         }
 
         It "handles nonexisting container" {
-            Merge-Logs (New-ContainerLogSource -Session $Sess1 -Container bar)
+            Merge-Logs (New-ContainerLogSource -Sessions $Sess1 -ContainerNames bar)
         }
 
         AfterEach {

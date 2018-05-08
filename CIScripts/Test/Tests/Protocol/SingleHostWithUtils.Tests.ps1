@@ -141,7 +141,7 @@ Describe "Single compute node protocol tests with utils" {
             foreach ($ContainerVar in "Container1ID", "Container2ID") {
                 $Var = Get-Variable $ContainerVar -ErrorAction SilentlyContinue
                 if ($Var) {
-                    $LogSources += New-ContainerLogSource -Session $Session -Container $Var.Value
+                    $LogSources += New-ContainerLogSource -Sessions $Session -ContainerNames $Var.Value
                 }
             }
             Merge-Logs -LogSources $LogSources
