@@ -477,8 +477,8 @@ Describe "Tunnelling with Agent tests" {
     AfterEach {
         try {
             Merge-Logs -LogSources (
-                New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $Container1ID,
-                New-ContainerLogSource -Sessions $Sessions[1] -ContainerNames $Container2ID
+                (New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $Container1ID),
+                (New-ContainerLogSource -Sessions $Sessions[1] -ContainerNames $Container2ID)
             )
 
             Write-Log "Removing all containers"
