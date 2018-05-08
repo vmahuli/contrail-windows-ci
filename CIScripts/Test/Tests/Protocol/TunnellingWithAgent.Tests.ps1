@@ -476,16 +476,18 @@ Describe "Tunnelling with Agent tests" {
 
     AfterEach {
         try {
+            Merge-Logs -LogSources (
+                New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $Container1ID,
+                New-ContainerLogSource -Sessions $Sessions[1] -ContainerNames $Container2ID
+            )
+
             Write-Log "Removing all containers"
             Remove-AllContainers -Sessions $Sessions
     
             Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
             Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
         } finally {
-            [LogSource[]] $LogSources = New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions
-            $LogSources += New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $Container1ID
-            $LogSources += New-ContainerLogSource -Sessions $Sessions[1] -ContainerNames $Container2ID
-            Merge-Logs -LogSources $LogSources
+            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
         }
     }
 }

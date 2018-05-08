@@ -131,18 +131,18 @@ Describe "Single compute node protocol tests with utils" {
 
     AfterEach {
         try {
+            Merge-Logs -LogSources (New-ContainerLogSource -Sessions $Session -ContainerNames $Container1ID, $Container2ID)
+
             Write-Log "Removing containers"
             Remove-AllContainers -Session $Session
-    
+
             Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
                 $ContrailNM.RemoveNetwork($ContrailNetwork)
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
-            [LogSource[]] $LogSources = New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session
-            $LogSources += New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $Container1ID, $Container2ID
-            Merge-Logs -LogSources $LogSources
+            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
         }
     }
 
