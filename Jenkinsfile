@@ -215,15 +215,17 @@ pipeline {
     post {
         always {
             node('master') {
-                if (env.ghprbPullId) {
-                    def body="""{
-                            "body": "Nice change",
-                            "commit_id": "{env.ghprbActualCommit}",
-                            "path": "/",
-                            "position": 0
-                    }"""
-                    def yourCredential = credentials('codijenkinsbothttprequest')
-                    httpRequest authentication: '${yourCredential}', httpMode: 'POST', requestBody: body,  url: "https://api.github.com/repos/${env.ghprbGhRepository}/issues/${env.ghprbPullId}/comments"
+                script {
+                    if (env.ghprbPullId) {
+                        def body="""{
+                                "body": "Nice change",
+                                "commit_id": "{env.ghprbActualCommit}",
+                                "path": "/",
+                                "position": 0
+                        }"""
+                        def yourCredential = credentials('codijenkinsbothttprequest')
+                        httpRequest authentication: '${yourCredential}', httpMode: 'POST', requestBody: body,  url: "https://api.github.com/repos/${env.ghprbGhRepository}/issues/${env.ghprbPullId}/comments"
+                    }
                 }
             }
             // node('tester') {
