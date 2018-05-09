@@ -206,10 +206,10 @@ pipeline {
     }
 
     environment {
-    //     LOG_SERVER = "logs.opencontrail.org"
-    //     LOG_SERVER_USER = "zuul-win"
-    //     LOG_SERVER_FOLDER = "winci"
-    //     LOG_ROOT_DIR = "/var/www/logs/winci"
+        LOG_SERVER = "logs.opencontrail.org"
+        LOG_SERVER_USER = "zuul-win"
+        LOG_SERVER_FOLDER = "winci"
+        LOG_ROOT_DIR = "/var/www/logs/winci"
     }
 
     post {
