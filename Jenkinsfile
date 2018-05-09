@@ -222,6 +222,7 @@ pipeline {
                             "path": "/",
                             "position": 0
                     }"""
+                    def yourCredential = credentials('codijenkinsbothttprequest')
                     httpRequest authentication: '${yourCredential}', httpMode: 'POST', requestBody: body,  url: "https://api.github.com/repos/${env.ghprbGhRepository}/issues/${env.ghprbPullId}/comments"
                 }
             }
