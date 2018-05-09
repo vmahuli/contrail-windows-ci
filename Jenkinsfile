@@ -210,24 +210,13 @@ pipeline {
     //     LOG_SERVER_USER = "zuul-win"
     //     LOG_SERVER_FOLDER = "winci"
     //     LOG_ROOT_DIR = "/var/www/logs/winci"
-        GITHUB_API_CREDS = credentials('codijenkinsbot')
     }
 
     post {
         always {
             node('master') {
                 script {
-                    if (env.ghprbPullId) {
-                        def body="""{
-                                "body": "Nice change",
-                                "commit_id": "{env.ghprbActualCommit}",
-                                "path": "/",
-                                "position": 0
-                        }"""
-                        def response = httpRequest authentication: "codijenkinsbot", httpMode: 'POST', requestBody: body,  url: "https://api.github.com/repos/${env.ghprbGhRepository}/issues/${env.ghprbPullId}/comments"
-                        println("Status: "+response.status)
-                        println("Content: "+response.content)
-                    }
+                    sendGithubComment("Hello, world!")
                 }
             }
             // node('tester') {
