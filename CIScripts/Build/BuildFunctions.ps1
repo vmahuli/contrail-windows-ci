@@ -12,10 +12,6 @@ function Initialize-BuildEnvironment {
             Copy-Item -Destination third_party\ -Recurse -Force
     })
 
-    $Job.Step("Symlinking boost", {
-        New-Item -Path "third_party\boost_1_62_0" -ItemType SymbolicLink -Value "$ThirdPartyCache\boost_1_62_0" | Out-Null
-    })
-
     $Job.Step("Copying SConstruct from tools\build", {
         Copy-Item tools\build\SConstruct .
     })
