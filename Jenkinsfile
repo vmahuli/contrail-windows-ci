@@ -205,12 +205,13 @@ pipeline {
     //     }
     }
 
-    // environment {
+    environment {
     //     LOG_SERVER = "logs.opencontrail.org"
     //     LOG_SERVER_USER = "zuul-win"
     //     LOG_SERVER_FOLDER = "winci"
     //     LOG_ROOT_DIR = "/var/www/logs/winci"
-    // }
+        GITHUB_API_CREDS = credentials('codijenkinsbothttprequest')
+    }
 
     post {
         always {
@@ -223,8 +224,7 @@ pipeline {
                                 "path": "/",
                                 "position": 0
                         }"""
-                        def yourCredential = credentials('codijenkinsbothttprequest')
-                        httpRequest authentication: '${yourCredential}', httpMode: 'POST', requestBody: body,  url: "https://api.github.com/repos/${env.ghprbGhRepository}/issues/${env.ghprbPullId}/comments"
+                        httpRequest authentication: '${env.GITHUB_API_CREDS}', httpMode: 'POST', requestBody: body,  url: "https://api.github.com/repos/${env.ghprbGhRepository}/issues/${env.ghprbPullId}/comments"
                     }
                 }
             }
