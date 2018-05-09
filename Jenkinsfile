@@ -210,7 +210,7 @@ pipeline {
     //     LOG_SERVER_USER = "zuul-win"
     //     LOG_SERVER_FOLDER = "winci"
     //     LOG_ROOT_DIR = "/var/www/logs/winci"
-        GITHUB_API_CREDS = credentials('codijenkinsbothttprequest')
+        GITHUB_API_CREDS = credentials('codijenkinsbot')
     }
 
     post {
