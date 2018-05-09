@@ -13,7 +13,7 @@ function Invoke-TestScenarios {
     $AdditionalParams = @{
         TestenvConfFile=$TestenvConfFile;
         LogDir=$DetailedLogDir;
-    };
+    }
     $Results = Invoke-PesterTests -TestRootDir $pwd -ReportDir $TestReportOutputDirectory `
         -ExcludeTags CI -AdditionalParams $AdditionalParams
     if ($Results.FailedCount -gt 0) {

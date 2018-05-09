@@ -20,7 +20,7 @@ function Invoke-PesterTests {
     foreach ($TestPath in $TestPaths) {
         $PesterScript = @{
             Path=$TestPath.FullName;
-            Parameters=($Params + $AdditionalParams);
+            Parameters=$AdditionalParams;
             Arguments=@();
         }
         $Basename = $TestPath.Basename

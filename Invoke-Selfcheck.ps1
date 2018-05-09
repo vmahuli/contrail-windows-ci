@@ -39,7 +39,8 @@ if (-not $TestenvConfFile) {
 
 Write-VisibleMessage "Including tags: $IncludeTags; Excluding tags: $ExcludeTags"
 $Results = Invoke-PesterTests -TestRootDir $pwd -ReportDir $ReportDir `
-    -IncludeTags $IncludeTags -ExcludeTags $ExcludeTags -AdditionalParams @{TestenvConfFile=$TestenvConfFile}
+    -IncludeTags $IncludeTags -ExcludeTags $ExcludeTags `
+    -AdditionalParams @{TestenvConfFile=$TestenvConfFile}
 
 if ($SkipStaticAnalysis) {
     Write-VisibleMessage "-SkipStaticAnalysis switch set, skipping static analysis"
