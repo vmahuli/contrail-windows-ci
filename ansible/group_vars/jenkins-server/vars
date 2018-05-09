@@ -12,6 +12,7 @@ jenkins_plugins:
   - github-branch-source
   - ghprb
   - html5-notifier-plugin
+  - http_request
   - jobConfigHistory
   - lockable-resources
   - pipeline-github-lib
