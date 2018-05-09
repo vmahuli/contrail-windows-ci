@@ -224,7 +224,9 @@ pipeline {
                                 "path": "/",
                                 "position": 0
                         }"""
-                        httpRequest authentication: "${env.GITHUB_API_CREDS}", httpMode: 'POST', requestBody: body,  url: "https://api.github.com/repos/${env.ghprbGhRepository}/issues/${env.ghprbPullId}/comments"
+                        def response = httpRequest authentication: "${env.GITHUB_API_CREDS}", httpMode: 'POST', requestBody: body,  url: "https://api.github.com/repos/${env.ghprbGhRepository}/issues/${env.ghprbPullId}/comments"
+                        println("Status: "+response.status)
+                        println("Content: "+response.content)
                     }
                 }
             }
