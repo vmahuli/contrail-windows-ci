@@ -18,6 +18,9 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
+$Container1ID = "jolly-lumberjack"
+$Container2ID = "juniper-tree"
+
 Describe "Single compute node protocol tests with utils" {
 
     function Initialize-ContainersConnection {
@@ -101,10 +104,10 @@ Describe "Single compute node protocol tests with utils" {
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
         Write-Log "Creating container 1"
-        $Container1ID = New-Container -Session $Session -NetworkName $NetworkName -Image iis-tcptest
+        New-Container -Session $Session -NetworkName $NetworkName -Name $Container1ID -Image iis-tcptest | Out-Null
 
         Write-Log "Creating container 2"
-        $Container2ID = New-Container -Session $Session -NetworkName $NetworkName
+        New-Container -Session $Session -NetworkName $NetworkName -Name $Container2ID | Out-Null
 
         Write-Log "Getting VM NetAdapter Information"
         $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
@@ -128,16 +131,18 @@ Describe "Single compute node protocol tests with utils" {
 
     AfterEach {
         try {
+            Merge-Logs -LogSources (New-ContainerLogSource -Sessions $Session -ContainerNames $Container1ID, $Container2ID)
+
             Write-Log "Removing containers"
             Remove-AllContainers -Session $Session
-    
+
             Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
                 $ContrailNM.RemoveNetwork($ContrailNetwork)
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
-            Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
         }
     }
 

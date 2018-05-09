@@ -79,6 +79,6 @@ Describe "Docker Driver" {
     }
 
     AfterEach {
-        Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+        Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
     }
 }

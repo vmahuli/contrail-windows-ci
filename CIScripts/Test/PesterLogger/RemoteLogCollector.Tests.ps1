@@ -6,6 +6,7 @@ Param (
 . $PSScriptRoot/../../Common/Init.ps1
 . $PSScriptRoot/../../Testenv/Testenv.ps1
 . $PSScriptRoot/../../Testenv/Testbed.ps1
+. $PSScriptRoot/../TestConfigurationUtils.ps1
 
 . $PSScriptRoot/PesterLogger.ps1
 . $PSScriptRoot/Get-CurrentPesterScope.ps1
@@ -16,9 +17,9 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 function Test-MultipleSourcesAndSessions {
     It "works with multiple log sources and sessions" {
-        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
-        $Source2 = New-LogSource -Sessions $Sess1 -Path $DummyLog2
-        $Source3 = New-LogSource -Sessions $Sess2 -Path $DummyLog1
+        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
+        $Source2 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog2
+        $Source3 = New-FileLogSource -Sessions $Sess2 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
         
         # We pass -DontCleanUp because in the tests, both sessions point at the same computer.
@@ -32,7 +33,7 @@ function Test-MultipleSourcesAndSessions {
 
 Describe "RemoteLogCollector" -Tags CI, Unit {
     It "appends collected logs to correct output file" {
-        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
+        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
         Write-Log "first message"
 
@@ -44,7 +45,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     }
 
     It "cleans logs in source directory" {
-        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
+        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         Merge-Logs -LogSources $Source1
@@ -53,7 +54,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     }
 
     It "doesn't clean logs in source directory if DontCleanUp flag passed" {
-        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
+        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         Merge-Logs -DontCleanUp -LogSources $Source1
@@ -62,7 +63,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     }
 
     It "adds a prefix describing source directory" {
-        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
+        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
         Write-Log "first message"
 
@@ -76,7 +77,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     It "works with multiple lines in remote logs" {
         "second line" | Add-Content $DummyLog1
         "third line" | Add-Content $DummyLog1
-        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
+        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         Merge-Logs -LogSources $Source1
@@ -87,7 +88,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 
     It "works when specifying a wildcard path" {
         $WildcardPath = ((Get-Item $TestDrive).FullName) + "\*.txt"
-        $WildcardSource = New-LogSource -Sessions $Sess1 -Path $WildcardPath
+        $WildcardSource = New-FileLogSource -Sessions $Sess1 -Path $WildcardPath
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         Merge-Logs -LogSources $WildcardSource
@@ -98,7 +99,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     }
 
     It "works with multiple sessions in single log source" {
-        $Source2 = New-LogSource -Sessions @($Sess1, $Sess2) -Path $DummyLog1
+        $Source2 = New-FileLogSource -Sessions @($Sess1, $Sess2) -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
         Write-Log "first message"
 
@@ -112,8 +113,8 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     }
 
     It "works with multiple log sources" {
-        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
-        $Source2 = New-LogSource -Sessions $Sess1 -Path $DummyLog2
+        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
+        $Source2 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog2
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         # We pass -DontCleanUp because in the tests, both sessions point at the same computer.
@@ -126,7 +127,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 
     It "inserts warning message if filepath was not found" {
         Remove-Item $DummyLog1
-        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
+        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         Merge-Logs -LogSources $Source1
@@ -139,7 +140,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
         Remove-Item $DummyLog1
         Remove-Item $DummyLog2
         $WildcardPath = ((Get-Item $TestDrive).FullName) + "\*.txt"
-        $WildcardSource = New-LogSource -Sessions $Sess1 -Path $WildcardPath
+        $WildcardSource = New-FileLogSource -Sessions $Sess1 -Path $WildcardPath
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         Merge-Logs -LogSources $WildcardSource
@@ -150,7 +151,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 
     It "inserts a message if log file was empty" {
         Clear-Content $DummyLog1
-        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
+        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         Merge-Logs -LogSources $Source1
@@ -211,10 +212,35 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
 
     AfterEach {
         Remove-Item "TestDrive:/*" 
-        if (Get-Item function:Write-Log -ErrorAction SilentlyContinue) {
-            Remove-Item function:Write-Log
+        if (Get-Item function:Write-LogImpl -ErrorAction SilentlyContinue) {
+            Remove-Item function:Write-LogImpl
         }
     }
 
     Test-MultipleSourcesAndSessions
+
+    Context "Docker logs" {
+        BeforeEach {
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+        }
+
+        It "captures logs of container" {
+            New-Container -Session $Sess1 -Name foo -Network nat
+
+            Merge-Logs (New-ContainerLogSource -Sessions $Sess1 -ContainerNames foo)
+            $ContentRaw = Get-Content -Raw "TestDrive:\*.Docker logs.captures logs of container.log"
+            $ContentRaw | Should -BeLike "*Microsoft Windows*"
+        }
+
+        It "handles nonexisting container" {
+            Merge-Logs (New-ContainerLogSource -Sessions $Sess1 -ContainerNames bar)
+            # Should not throw.
+            # We're not using actual `Should -Not -Throw` here,
+            # because it doesn't show exception's location in case of failure.
+        }
+
+        AfterEach {
+            Remove-AllContainers -Session $Sess1
+        }
+    }
 }
