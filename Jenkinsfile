@@ -261,9 +261,8 @@ pipeline {
                         publishToLogServer(logServer, ".", destDir)
                     }
 
-                    sendGithubComment("Full logs link: ${destDir}")
-
                     def testReportsUrl = decideTestReportsUrl(logServer, 'reports-locations.json', env.ZUUL_UUID)
+                    sendGithubComment("Full logs URL: ${testReportsUrl}")
                     build job: 'WinContrail/gather-build-stats', wait: false,
                         parameters: [string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
                                      string(name: 'MONITORED_JOB_NAME', value: env.JOB_NAME),
