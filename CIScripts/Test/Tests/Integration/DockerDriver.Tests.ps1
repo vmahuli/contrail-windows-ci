@@ -46,8 +46,8 @@ function Save-DockerDriverUnitTestReport {
     Copy-Item -FromSession $Session -Path ($TestsPath + $Component + "_junit.xml") -ErrorAction SilentlyContinue
 }
 
-# TODO: these modules should also be tested: controller, hns, hnsManager, driver
-$Modules = @("agent")
+# TODO: these modules should also be tested: controller, hns, hnsManager, driver, networking_acl
+$Modules = @("agent", "configuration")
 
 Describe "Docker Driver" {
     BeforeAll {
