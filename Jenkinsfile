@@ -262,7 +262,10 @@ pipeline {
                     }
 
                     def testReportsUrl = getLogsURL(logServer, env.ZUUL_UUID)
-                    sendGithubComment("Full logs URL: ${testReportsUrl}")
+
+                    if (isGithub()) {
+                        sendGithubComment("Full logs URL: ${testReportsUrl}")
+                    }
 
                     def reportLocationsFile = "${testReportsUrl}/reports-locations.json"
                     build job: 'WinContrail/gather-build-stats', wait: false,
