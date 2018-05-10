@@ -37,6 +37,12 @@ Note: to make sure that system tests pass, some requirements must be met.
 .\Invoke-Selfcheck.ps1 -SkipUnit
 ```
 
+## Generate NUnit reports
+
+```
+.\Invoke-Selfcheck.ps1 -ReportDir .\some_dir\
+```
+
 ------------------
 
 ## Note to developers
