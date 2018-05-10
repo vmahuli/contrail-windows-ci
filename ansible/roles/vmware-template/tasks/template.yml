@@ -8,6 +8,6 @@
   script: >
     mark_vm_as_template.py
     --host '{{ vcenter_hostname }}'
-    --user '{{ vcenter_user }}'
+    --user '{{ vcenter_username }}'
     --password '{{ vcenter_password }}'
-    --uuid "{{ new_vm.instance.hw_product_uuid }}"
+    --uuid "{{ template_vm_uuid }}"

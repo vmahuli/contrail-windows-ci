@@ -13,6 +13,7 @@ This will not add more than 15 disks to a VM
 To do that the VM needs an additional scsi controller
 and I have not yet worked through that
 """
+from __future__ import print_function
 from pyVmomi import vim
 from pyVmomi import vmodl
 from pyVim.connect import SmartConnectNoSSL, Disconnect
@@ -99,7 +100,7 @@ def add_disk(vm, si, disk_size, disk_type):
                 if unit_number == 7:
                     unit_number += 1
                 if unit_number >= 16:
-                    print "we don't support this many disks"
+                    print("we don't support this many disks")
                     return
             if isinstance(dev, vim.vm.device.VirtualSCSIController):
                 controller = dev
@@ -121,7 +122,7 @@ def add_disk(vm, si, disk_size, disk_type):
         dev_changes.append(disk_spec)
         spec.deviceChange = dev_changes
         vm.ReconfigVM_Task(spec=spec)
-        print "%sGB disk added to %s" % (disk_size, vm.config.name)
+        print("%sGB disk added to %s" % (disk_size, vm.config.name))
 
 
 def main():
@@ -148,7 +149,7 @@ def main():
         add_disk(vm, si, args.disk_size, args.disk_type)
         return 0
     else:
-        print "VM not found"
+        print("VM not found")
         return 1
 
 

@@ -1,34 +1,72 @@
 ---
 
-- name: Define templates' name and annotation
+- name: Define templates' variables
   set_fact:
     template_name: "Template-{{ vm_role }}-{{ '%Y%m%d%H%M' | strftime(ansible_date_time.epoch) }}"
     template_annotation: "Template for {{ vm_role }} created on {{ '%Y-%m-%d %H:%M:%S' | strftime(ansible_date_time.epoch) }}"
+    template_folder: "{{ vcenter_datacenter }}/vm/{{ vmware_folder }}"
+    template_source: "{{ vm_template }}"
 
-- name: Create Template VM for {{ vm_role }}
-  register: new_vm
+- name: Create template VM from base template
   vmware_guest:
     hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_user }}"
+    username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     validate_certs: "{{ vcenter_validate_certs }}"
-
     datacenter: "{{ vcenter_datacenter }}"
     cluster: "{{ vcenter_cluster }}"
-    folder: "{{ vmware_folder }}"
 
+    folder: "{{ template_folder }}"
     name: "{{ template_name }}"
+    template: "{{ template_source }}"
     annotation: "{{ template_annotation }}"
-    template: "{{ vm_template }}"
     hardware: "{{ vm_hardware }}"
     state: poweredon
     customization:
       hostname: "tmpl-{{ vm_role }}"
       password: "Contrail123!"
-
     networks: "{{ vm_networks }}"
 
-    wait_for_ip_address: yes
+- name: Wait for VMware tools to come up after cloning base template
+  vmware_guest_tools_wait:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
+    folder: "{{ template_folder }}"
+    name: "{{ template_name }}"
+
+# NOTE: "Workaround". One way to check if customization has finished is to check hostname through
+#       VMware Tools, but vmware_guest_facts does not support this.
+#       Need to research it.
+- name: Wait for customization to finish (workaround by sleeping)
+  wait_for:
+    timeout: 900
+
+- name: Power off template VM
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    folder: "{{ template_folder }}"
+    name: "{{ template_name }}"
+    state: shutdownguest
+
+- name: Wait until template VM is powered off
+  vmware_guest_facts:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    folder: "{{ template_folder }}"
+    name: "{{ template_name }}"
+  register: vm
+  retries: 60
+  delay: 15
+  until: vm.instance.hw_power_status == "poweredOff"
 
 - name: Add additional disks
   when: vm_hdd is defined
@@ -37,44 +75,55 @@
     --host '{{ vcenter_hostname }}'
     --user '{{ vcenter_user }}'
     --password '{{ vcenter_password }}'
-    --uuid "{{ new_vm.instance.hw_product_uuid }}"
+    --uuid "{{ vm.instance.hw_product_uuid }}"
     --disk-type '{{ item.type }}'
     --disk-size '{{ item.size }}'
   with_items: "{{ vm_hdd }}"
 
-- name: Reboot VM
+- name: Power on template VM
   vmware_guest:
     hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_user }}"
+    username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     validate_certs: "{{ vcenter_validate_certs }}"
-
     datacenter: "{{ vcenter_datacenter }}"
-    cluster: "{{ vcenter_cluster }}"
-    folder: "{{ vcenter_datacenter }}/vm/{{ vmware_folder }}"
+    folder: "{{ template_folder }}"
     name: "{{ template_name }}"
-    state: rebootguest
+    state: poweredon
 
-    wait_for_ip_address: yes
+- name: Wait for VMware tools to come up after adding disk
+  vmware_guest_tools_wait:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
+    folder: "{{ template_folder }}"
+    name: "{{ template_name }}"
 
-- name: Get correct IP address of new {{ vm_role }}
-  register: vm
+- name: Wait for correct IP address
   vmware_guest_facts:
     hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_user }}"
+    username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     validate_certs: "{{ vcenter_validate_certs }}"
-
     datacenter: "{{ vcenter_datacenter }}"
-
-    uuid: "{{ new_vm.instance.hw_product_uuid }}"
+    folder: "{{ template_folder }}"
+    name: "{{ template_name }}"
+  register: vm
   retries: 60
   delay: 15
   until: >
       vm.instance.hw_eth0.ipaddresses | ipv4 | reject("match", "169.254.*") | list
 
+- name: Remember facts about the VM
+  set_fact:
+    template_vm_ip: "{{ vm.instance.hw_eth0.ipaddresses | ipv4 | first }}"
+    template_vm_uuid: "{{ vm.instance.hw_product_uuid }}"
+
+# TODO: Maybe add host to inventory before creating/provisiong template?
+#       Plays would be run for this host and vmware modules would delegated to localhost
 - name: Add host to inventory
   add_host:
-    name: "{{ vm.instance.hw_name }}"
-    ansible_host: "{{ vm.instance.hw_eth0.ipaddresses | ipv4 | first }}"
+    name: "{{ template_name }}"
     groups: "{{ vm_role }}"
+    ansible_host: "{{ template_vm_ip }}"

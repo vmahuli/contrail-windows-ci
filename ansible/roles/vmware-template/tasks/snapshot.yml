@@ -7,12 +7,12 @@
 - name: Create snapshot
   vmware_guest_snapshot:
     hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_user }}"
+    username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     validate_certs: "{{ vcenter_validate_certs }}"
     datacenter: "{{ vcenter_datacenter }}"
-    folder: "{{ vcenter_datacenter }}/vm/{{ vmware_folder }}"
-    name: "{{ new_vm.instance.hw_name }}"
+    folder: "{{ template_folder }}"
+    name: "{{ template_name }}"
     state: present
     snapshot_name: linked-clones-base # TODO: Move it to vars
     description: 'Base snapshot for linked clones'

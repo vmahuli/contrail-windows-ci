@@ -9,6 +9,7 @@ Github: https://github.com/wurbanski
 to provide other functionality (mark as template).
 
 """
+from __future__ import print_function
 from pyVmomi import vim
 from pyVmomi import vmodl
 from pyVim.connect import SmartConnectNoSSL, Disconnect
@@ -94,10 +95,10 @@ def main():
 
     if vm:
         vm.MarkAsTemplate()
-        print "VM %s marked as template." % args.vm_name
+        print("VM %s marked as template." % args.vm_name)
         return 0
     else:
-        print "VM not found"
+        print("VM not found")
         return 1
 
 

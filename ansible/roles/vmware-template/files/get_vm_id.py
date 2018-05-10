@@ -9,6 +9,7 @@ Github: https://github.com/wurbanski
 to provide other functionality (get multiple vms with a name).
 
 """
+from __future__ import print_function
 from pyVmomi import vim
 from pyVmomi import vmodl
 from pyVim.connect import SmartConnectNoSSL, Disconnect
@@ -91,7 +92,7 @@ def main():
     content = si.RetrieveContent()
     id = get_first_free_id(content, [vim.VirtualMachine], args.vm_name)
 
-    print id
+    print(id)
     return 0
 
 
