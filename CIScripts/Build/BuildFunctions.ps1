@@ -85,7 +85,7 @@ function Invoke-DockerDriverBuild {
         Invoke-NativeCommand -ScriptBlock {
             ginkgo build -r $srcPath
         }
-        Get-ChildItem -Recurse -Filter "*.test" | ForEach-Object { Move-Item $_.FullName ./ }
+        Get-ChildItem -Recurse -Path $srcPath -Filter "*.test" | ForEach-Object { Move-Item $_.FullName ./ }
     })
 
     $Job.Step("Building MSI", {
