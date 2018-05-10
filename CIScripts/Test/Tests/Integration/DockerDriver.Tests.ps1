@@ -46,9 +46,6 @@ function Save-DockerDriverUnitTestReport {
     Copy-Item -FromSession $Session -Path ($TestsPath + $Component + "_junit.xml") -ErrorAction SilentlyContinue
 }
 
-# TODO: these modules should also be tested: controller, hns, hnsManager, driver
-$Modules = @("agent")
-
 Describe "Docker Driver" {
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
@@ -58,6 +55,9 @@ Describe "Docker Driver" {
         $Session = $Sessions[0]
 
         Initialize-PesterLogger -OutDir $LogDir
+
+        $Modules = Get-ChildItem -Recurse -Filter "*.test.exe"
+        Write-Log "Discovered test modules: $Modules"
     }
 
     AfterAll {
