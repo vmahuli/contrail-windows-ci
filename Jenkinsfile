@@ -30,6 +30,7 @@ pipeline {
             agent { label 'builder' }
             environment {
                 DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
+                DRIVER_BRANCH = "disable-tests"
             }
             steps {
                 deleteDir()
