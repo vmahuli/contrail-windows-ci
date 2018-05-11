@@ -14,6 +14,7 @@ $Job = [Job]::new("Deploy")
 
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 Copy-ArtifactsToTestbeds -Sessions $Sessions -ArtifactsDir $ArtifactsDir
+Remove-PSSession $Sessions
 
 $Job.Done()
 
