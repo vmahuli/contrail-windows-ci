@@ -47,7 +47,6 @@
     - microsoft/nanoserver
     - microsoft/windowsservercore:ltsc2016
     - python:3.6.5-windowsservercore-ltsc2016
-    - microsoft/iis:windowsservercore-10.0.14393.1358
 
 - name: Install MS Visuall C++ Redist 14
   win_chocolatey:
