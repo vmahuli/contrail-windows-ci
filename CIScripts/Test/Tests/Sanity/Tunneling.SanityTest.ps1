@@ -1,7 +1,14 @@
-Context "Tunneling" {
+. $PSScriptRoot\..\..\Utils\Container.ps1
+
+. $PSScriptRoot\..\..\TestPrimitives\TestTCP.ps1
+. $PSScriptRoot\..\..\TestPrimitives\TestUDP.ps1
+. $PSScriptRoot\..\..\TestPrimitives\TestPing.ps1
+. $PSScriptRoot\..\..\TestPrimitives\TestEncapsulation.ps1
+
+Context "Tunneling with Agent" {
     $IisTcpTestDockerImage = "iis-tcptest"
-    $Container1ID = "jolly-lumberjack"
-    $Container2ID = "juniper-tree"
+    $Container1Name = "jolly-lumberjack"
+    $Container2Name = "juniper-tree"
     $NetworkName = "testnet12"
     $Subnet = [SubnetConfiguration]::new(
         "10.0.5.0",
@@ -14,23 +21,23 @@ Context "Tunneling" {
     It "ICMP - Ping between containers on separate compute nodes succeeds" {
         Test-Ping `
             -Session $Sessions[0] `
-            -SrcContainerName $Container1ID `
-            -DstContainerName $Container2ID `
-            -DstContainerIP $Container2NetInfo.IPAddress | Should Be 0
+            -SrcContainerName $Container1.GetName() `
+            -DstContainerName $Container2.GetName() `
+            -DstContainerIP $Container2.GetIPAddress() | Should Be 0
 
         Test-Ping `
             -Session $Sessions[1] `
-            -SrcContainerName $Container2ID `
-            -DstContainerName $Container1ID `
-            -DstContainerIP $Container1NetInfo.IPAddress | Should Be 0
+            -SrcContainerName $Container2.GetName() `
+            -DstContainerName $Container1.GetName() `
+            -DstContainerIP $Container1.GetIPAddress() | Should Be 0
     }
 
     It "TCP - HTTP connection between containers on separate compute nodes succeeds" {
         Test-TCP `
             -Session $Sessions[1] `
-            -SrcContainerName $Container2ID `
-            -DstContainerName $Container1ID `
-            -DstContainerIP $Container1NetInfo.IPAddress | Should Be 0
+            -SrcContainerName $Container2.GetName() `
+            -DstContainerName $Container1.GetName() `
+            -DstContainerIP $Container1.GetIPAddress() | Should Be 0
     }
 
     It "UDP" {
@@ -41,10 +48,10 @@ Context "Tunneling" {
         Test-UDP `
             -Session1 $Sessions[0] `
             -Session2 $Sessions[1] `
-            -Container1Name $Container1ID `
-            -Container2Name $Container2ID `
-            -Container1IP $Container1NetInfo.IPAddress `
-            -Container2IP $Container2NetInfo.IPAddress `
+            -Container1Name $Container1.GetName() `
+            -Container2Name $Container2.GetName() `
+            -Container1IP $Container1.GetIPAddress() `
+            -Container2IP $Container2.GetIPAddress() `
             -Message $MyMessage `
             -UDPServerPort $UDPServerPort `
             -UDPClientPort $UDPClientPort | Should Be $true
@@ -55,56 +62,32 @@ Context "Tunneling" {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "ContrailNetwork",
-            Justification="It's actually used."
+            Justification = "It's actually used."
         )]
-        #$ContrailNetwork = $ContrailNM.AddNetwork($null, $NetworkName, $Subnet)
+        $ContrailNetwork = $ContrailNM.AddNetwork($null, $NetworkName, $Subnet)
 
-        $NetworkID = New-DockerNetwork -Session $Sessions[0] `
-            -TenantName $ControllerConfig.DefaultProject `
-            -Name $NetworkName `
-            -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
-
-        Write-Log "Created network id: $NetworkID"
-        $NetworkID = New-DockerNetwork -Session $Sessions[1] `
-            -TenantName $ControllerConfig.DefaultProject `
-            -Name $NetworkName `
-            -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
-
-        Write-Log "Created network id: $NetworkID"
+        foreach ($Session in $Sessions) {
+            $NetworkID = New-DockerNetwork -Session $Session `
+                -TenantName $ControllerConfig.DefaultProject `
+                -Name $NetworkName `
+                -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
+            Write-Log "Created network id: $NetworkID"
+        }
 
         Write-Log "Creating containers"
-        Write-Log "Creating container: $Container1ID"
-        New-Container `
-            -Session $Sessions[0] `
-            -NetworkName $NetworkName `
-            -Name $Container1ID `
-            -Image $IisTcpTestDockerImage
-        Write-Log "Creating container: $Container2ID"
-        New-Container `
-            -Session $Sessions[1] `
-            -NetworkName $NetworkName `
-            -Name $Container2ID `
-            -Image "microsoft/windowsservercore"
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "Container1",
+            Justification = "It's actually used."
+        )]
+        $Container1 = [Container]::new($Sessions[0], $Container1Name, $NetworkName, $IisTcpTestDockerImage)
 
-        Write-Log "Getting containers' NetAdapter Information"
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
-            "Container1NetInfo",
-            Justification="It's actually used."
+            "Container2",
+            Justification = "It's actually used."
         )]
-        $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
-            -Session $Sessions[0] -ContainerID $Container1ID
-        $IP = $Container1NetInfo.IPAddress
-        Write-Log "IP of ${Container1ID}: $IP"
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments",
-            "Container2NetInfo",
-            Justification="It's actually used."
-        )]
-        $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
-            -Session $Sessions[1] -ContainerID $Container2ID
-            $IP = $Container2NetInfo.IPAddress
-            Write-Log "IP of ${Container2ID}: $IP"
+        $Container2 = [Container]::new($Sessions[1], $Container2Name, $NetworkName, $IisTcpTestDockerImage)
     }
 
     AfterEach {
