@@ -13,6 +13,7 @@ Param (
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\..\Utils\DockerImageBuild.ps1
+. $PSScriptRoot\..\..\Utils\Container.ps1
 
 . $PSScriptRoot\..\..\TestPrimitives\TestTCP.ps1
 . $PSScriptRoot\..\..\TestPrimitives\TestUDP.ps1
@@ -58,15 +59,15 @@ Describe "Tunnelling with Agent tests" {
         It "ICMP - Ping between containers on separate compute nodes succeeds" {
             Test-Ping `
                 -Session $Sessions[0] `
-                -SrcContainerName $Container1ID `
-                -DstContainerName $Container2ID `
-                -DstContainerIP $Container2NetInfo.IPAddress | Should Be 0
+                -SrcContainerName $Container1.GetName()`
+                -DstContainerName $Container2.GetName() `
+                -DstContainerIP $Container2.GetIPAddress() | Should Be 0
 
             Test-Ping `
                 -Session $Sessions[1] `
-                -SrcContainerName $Container2ID `
-                -DstContainerName $Container1ID `
-                -DstContainerIP $Container1NetInfo.IPAddress | Should Be 0
+                -SrcContainerName $Container2.GetName() `
+                -DstContainerName $Container1.GetName() `
+                -DstContainerIP $Container1.GetIPAddress() | Should Be 0
 
             # TODO: Uncomment these checks once we can actually control tunneling type.
             # Test-MPLSoGRE -Session $Sessions[0] | Should Be $true
@@ -76,9 +77,9 @@ Describe "Tunnelling with Agent tests" {
         It "TCP - HTTP connection between containers on separate compute nodes succeeds" {
             Test-TCP `
                 -Session $Sessions[1] `
-                -SrcContainerName $Container2ID `
-                -DstContainerName $Container1ID `
-                -DstContainerIP $Container1NetInfo.IPAddress | Should Be 0
+                -SrcContainerName $Container2.GetName() `
+                -DstContainerName $Container1.GetName() `
+                -DstContainerIP $Container1.GetIPAddress() | Should Be 0
 
             # TODO: Uncomment these checks once we can actually control tunneling type.
             # Test-MPLSoGRE -Session $Sessions[0] | Should Be $true
@@ -93,10 +94,10 @@ Describe "Tunnelling with Agent tests" {
             Test-UDP `
                 -Session1 $Sessions[0] `
                 -Session2 $Sessions[1] `
-                -Container1Name $Container1ID `
-                -Container2Name $Container2ID `
-                -Container1IP $Container1NetInfo.IPAddress `
-                -Container2IP $Container2NetInfo.IPAddress `
+                -Container1Name $Container1.GetName() `
+                -Container2Name $Container2.GetName() `
+                -Container1IP $Container1.GetIPAddress() `
+                -Container2IP $Container2.GetIPAddress() `
                 -Message $MyMessage `
                 -UDPServerPort $UDPServerPort `
                 -UDPClientPort $UDPClientPort | Should Be $true
@@ -112,15 +113,15 @@ Describe "Tunnelling with Agent tests" {
         It "ICMP - Ping between containers on separate compute nodes succeeds (MPLSoUDP)" -Pending {
             Test-Ping `
                 -Session $Sessions[0] `
-                -SrcContainerName $Container1ID `
-                -DstContainerName $Container2ID `
-                -DstContainerIP $Container2NetInfo.IPAddress | Should Be 0
+                -SrcContainerName $Container1.GetName() `
+                -DstContainerName $Container2.GetName() `
+                -DstContainerIP $Container2.GetIPAddress() | Should Be 0
 
             Test-Ping `
                 -Session $Sessions[1] `
-                -SrcContainerName $Container2ID `
-                -DstContainerName $Container1ID `
-                -DstContainerIP $Container1NetInfo.IPAddress | Should Be 0
+                -SrcContainerName $Container2.GetName() `
+                -DstContainerName $Container1.GetName() `
+                -DstContainerIP $Container1.GetIPAddress() | Should Be 0
 
             Test-MPLSoUDP -Session $Sessions[0] | Should Be $true
             Test-MPLSoUDP -Session $Sessions[1] | Should Be $true
@@ -132,16 +133,16 @@ Describe "Tunnelling with Agent tests" {
         It "ICMP - Ping with big buffer succeeds" -Pending {
             Test-Ping `
                 -Session $Sessions[0] `
-                -SrcContainerName $Container1ID `
-                -DstContainerName $Container2ID `
-                -DstContainerIP $Container2NetInfo.IPAddress `
+                -SrcContainerName $Container1.GetName() `
+                -DstContainerName $Container2.GetName() `
+                -DstContainerIP $Container2.GetIPAddress() `
                 -BufferSize 1473 | Should Be 0
 
             Test-Ping `
                 -Session $Sessions[1] `
-                -SrcContainerName $Container2ID `
-                -DstContainerName $Container1ID `
-                -DstContainerIP $Container1NetInfo.IPAddress `
+                -SrcContainerName $Container2.GetName() `
+                -DstContainerName $Container1.GetName() `
+                -DstContainerIP $Container1.GetIPAddress() `
                 -BufferSize 1473 | Should Be 0
         }
 
@@ -154,10 +155,10 @@ Describe "Tunnelling with Agent tests" {
             Test-UDP `
                 -Session1 $Sessions[0] `
                 -Session2 $Sessions[1] `
-                -Container1Name $Container1ID `
-                -Container2Name $Container2ID `
-                -Container1IP $Container1NetInfo.IPAddress `
-                -Container2IP $Container2NetInfo.IPAddress `
+                -Container1Name $Container1.GetName()`
+                -Container2Name $Container2.GetName() `
+                -Container1IP $Container1.GetIPAddress() `
+                -Container2IP $Container2.GetIPAddress()  `
                 -Message $MyMessage `
                 -UDPServerPort $UDPServerPort `
                 -UDPClientPort $UDPClientPort | Should Be $true
@@ -238,38 +239,19 @@ Describe "Tunnelling with Agent tests" {
         Initialize-ComputeNode -Session $Sessions[1] -Subnet $Subnet
 
         Write-Log "Creating containers"
-        Write-Log "Creating container: $Container1ID"
-        New-Container `
-            -Session $Sessions[0] `
-            -NetworkName $NetworkName `
-            -Name $Container1ID `
-            -Image $IisTcpTestDockerImage
-        Write-Log "Creating container: $Container2ID"
-        New-Container `
-            -Session $Sessions[1] `
-            -NetworkName $NetworkName `
-            -Name $Container2ID `
-            -Image "microsoft/windowsservercore"
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "Container1",
+            Justification = "It's actually used."
+        )]
+        $Container1 = [Container]::new($Sessions[0], $Container1Name, $NetworkName, $IisTcpTestDockerImage)
 
-        Write-Log "Getting containers' NetAdapter Information"
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
-            "Container1NetInfo",
-            Justification="It's actually used."
+            "Container2",
+            Justification = "It's actually used."
         )]
-        $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
-            -Session $Sessions[0] -ContainerID $Container1ID
-        $IP = $Container1NetInfo.IPAddress
-        Write-Log "IP of ${Container1ID}: $IP"
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments",
-            "Container2NetInfo",
-            Justification="It's actually used."
-        )]
-        $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
-            -Session $Sessions[1] -ContainerID $Container2ID
-            $IP = $Container2NetInfo.IPAddress
-            Write-Log "IP of ${Container2ID}: $IP"
+        $Container2 = [Container]::new($Sessions[1], $Container2Name, $NetworkName, $IisTcpTestDockerImage)
     }
 
     AfterEach {
