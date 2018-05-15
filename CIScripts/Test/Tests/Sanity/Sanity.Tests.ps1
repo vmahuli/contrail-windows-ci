@@ -69,7 +69,7 @@ Describe "Sanity tests" {
                 Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             }
         } finally {
-            Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
+            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
         }
 
         if(Get-Variable "VRouter1Uuid" -ErrorAction SilentlyContinue) {
