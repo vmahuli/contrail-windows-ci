@@ -30,7 +30,7 @@ function Invoke-DockerDriverUnitTest {
         [Parameter(Mandatory=$true)] [string] $TestModulePath
     )
 
-    $Command = @($TestModulePath, "--ginkgo.noisyPendings", "--ginkgo.failFast", "--ginkgo.progress", "--ginkgo.v", "--ginkgo.trace")
+    $Command = @($TestModulePath, "--ginkgo.succinct", "--ginkgo.failFast")
     $Command = $Command -join " "
 
     $Res = Invoke-NativeCommand -CaptureOutput -AllowNonZero -Session $Session {
