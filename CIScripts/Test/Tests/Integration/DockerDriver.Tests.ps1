@@ -12,6 +12,18 @@ Param (
 
 $TestsPath = "C:\Artifacts\"
 
+function Find-DockerDriverTests {
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
+        [Parameter(Mandatory=$true)] [string] $RootTestModulePath
+    )
+    $TestModules = Invoke-Command -Session $Session {
+        Get-ChildItem -Recurse -Filter "*.test.exe" -Path $Using:RootTestModulePath
+    }
+    Write-Log "Discovered test modules: $TestModules"
+    return $TestModules
+}
+
 function Invoke-DockerDriverUnitTest {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
@@ -55,9 +67,6 @@ Describe "Docker Driver" {
         $Session = $Sessions[0]
 
         Initialize-PesterLogger -OutDir $LogDir
-
-        $TestModules = Get-ChildItem -Recurse -Filter "*.test.exe"
-        Write-Log "Discovered test modules: $TestModules"
     }
 
     AfterAll {
@@ -65,7 +74,7 @@ Describe "Docker Driver" {
         Remove-PSSession $Sessions
     }
 
-    foreach ($TestModule in $TestModules) {
+    foreach ($TestModule in (Find-DockerDriverTests -TestModulePath "C:\Artifacts\" -Session $Session)) {
         Context "Tests for module $TestModule" {
             It "Tests are invoked" {
                 $TestResult = Invoke-DockerDriverUnitTest -Session $Session -TestModulePath $TestModule
