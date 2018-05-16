@@ -15,11 +15,10 @@ $TestsPath = "C:\Artifacts\"
 function Invoke-DockerDriverUnitTest {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [string] $Component
+        [Parameter(Mandatory=$true)] [string] $TestModulePath
     )
 
-    $TestFilePath = ".\" + $Component + ".test.exe"
-    $Command = @($TestFilePath, "--ginkgo.noisyPendings", "--ginkgo.failFast", "--ginkgo.progress", "--ginkgo.v", "--ginkgo.trace")
+    $Command = @($TestModulePath, "--ginkgo.noisyPendings", "--ginkgo.failFast", "--ginkgo.progress", "--ginkgo.v", "--ginkgo.trace")
     $Command = $Command -join " "
 
     $Res = Invoke-NativeCommand -CaptureOutput -AllowNonZero -Session $Session {
@@ -39,11 +38,12 @@ function Invoke-DockerDriverUnitTest {
 function Save-DockerDriverUnitTestReport {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [string] $Component
+        [Parameter(Mandatory=$true)] [string] $TestModulePath
     )
 
     # TODO Where are these files copied to?
-    Copy-Item -FromSession $Session -Path ($TestsPath + $Component + "_junit.xml") -ErrorAction SilentlyContinue
+    # TODO2: Fix JUnit reporters first....
+    # Copy-Item -FromSession $Session -Path ($TestsPath + $TestModulePath + "_junit.xml") -ErrorAction SilentlyContinue
 }
 
 Describe "Docker Driver" {
@@ -56,8 +56,8 @@ Describe "Docker Driver" {
 
         Initialize-PesterLogger -OutDir $LogDir
 
-        $Modules = Get-ChildItem -Recurse -Filter "*.test.exe"
-        Write-Log "Discovered test modules: $Modules"
+        $TestModules = Get-ChildItem -Recurse -Filter "*.test.exe"
+        Write-Log "Discovered test modules: $TestModules"
     }
 
     AfterAll {
@@ -65,15 +65,15 @@ Describe "Docker Driver" {
         Remove-PSSession $Sessions
     }
 
-    foreach ($Module in $Modules) {
-        Context "Tests for module $Module" {
+    foreach ($TestModule in $TestModules) {
+        Context "Tests for module $TestModule" {
             It "Tests are invoked" {
-                $TestResult = Invoke-DockerDriverUnitTest -Session $Session -Component $Module
+                $TestResult = Invoke-DockerDriverUnitTest -Session $Session -TestModulePath $TestModule
                 $TestResult | Should Be 0
             }
 
             AfterEach {
-                Save-DockerDriverUnitTestReport -Session $Session -Component $Module
+                Save-DockerDriverUnitTestReport -Session $Session -TestModulePath $TestModule
             }
         }
     }
