@@ -18,7 +18,8 @@ function Find-DockerDriverTests {
         [Parameter(Mandatory=$true)] [string] $RootTestModulePath
     )
     $TestModules = Invoke-Command -Session $Session {
-        Get-ChildItem -Recurse -Filter "*.test.exe" -Path $Using:RootTestModulePath
+        Get-ChildItem -Recurse -Filter "*.test.exe" -Path $Using:RootTestModulePath `
+            | Select-Object FullName
     }
     Write-Log "Discovered test modules: $TestModules"
     return $TestModules
@@ -78,8 +79,8 @@ Describe "Docker Driver" {
     }
 
     foreach ($TestModule in $FoundTestModules) {
-        Context "Tests for module $TestModule" {
-            It "Tests are invoked" {
+        Context "Tests for module in $TestModule" {
+            It "passes tests" {
                 $TestResult = Invoke-DockerDriverUnitTest -Session $Session -TestModulePath $TestModule
                 $TestResult | Should Be 0
             }
