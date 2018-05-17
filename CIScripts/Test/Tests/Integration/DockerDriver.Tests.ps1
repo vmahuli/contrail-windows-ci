@@ -74,7 +74,7 @@ Describe "Docker Driver" {
         Remove-PSSession $Sessions
     }
 
-    foreach ($TestModule in (Find-DockerDriverTests -TestModulePath "C:\Artifacts\" -Session $Session)) {
+    foreach ($TestModule in (Find-DockerDriverTests -RootTestModulePath "C:\Artifacts\" -Session $Session)) {
         Context "Tests for module $TestModule" {
             It "Tests are invoked" {
                 $TestResult = Invoke-DockerDriverUnitTest -Session $Session -TestModulePath $TestModule
