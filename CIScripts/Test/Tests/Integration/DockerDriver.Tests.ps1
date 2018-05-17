@@ -60,7 +60,7 @@ function Save-DockerDriverUnitTestReport {
 
 Describe "Docker Driver" {
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)\
+        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
         $Session = $Sessions[0]
 
         Initialize-PesterLogger -OutDir $LogDir
