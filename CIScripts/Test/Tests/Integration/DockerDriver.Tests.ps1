@@ -60,13 +60,16 @@ function Save-DockerDriverUnitTestReport {
 
 Describe "Docker Driver" {
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "Session", Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
+        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)\
         $Session = $Sessions[0]
 
         Initialize-PesterLogger -OutDir $LogDir
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments", "",
+            Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $FoundTestModules = Find-DockerDriverTests -RootTestModulePath "C:\Artifacts\" -Session $Session
     }
 
     AfterAll {
@@ -74,7 +77,7 @@ Describe "Docker Driver" {
         Remove-PSSession $Sessions
     }
 
-    foreach ($TestModule in (Find-DockerDriverTests -RootTestModulePath "C:\Artifacts\" -Session $Session)) {
+    foreach ($TestModule in $FoundTestModules) {
         Context "Tests for module $TestModule" {
             It "Tests are invoked" {
                 $TestResult = Invoke-DockerDriverUnitTest -Session $Session -TestModulePath $TestModule
