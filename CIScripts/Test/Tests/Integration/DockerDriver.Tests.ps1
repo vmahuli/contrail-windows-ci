@@ -79,7 +79,8 @@ Describe "Docker Driver" {
     }
 
     foreach ($TestModule in $FoundTestModules) {
-        Context "Tests for module in $TestModule" {
+        $ModuleName = Split-Path $TestModule -LeafBase
+        Context "Tests for module in $ModuleName" {
             It "passes tests" {
                 $TestResult = Invoke-DockerDriverUnitTest -Session $Session -TestModulePath $TestModule
                 $TestResult | Should Be 0
