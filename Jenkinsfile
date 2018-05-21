@@ -42,7 +42,44 @@ pipeline {
 
         stage('Build, testenv provisioning and sanity checks') {
             parallel {
-                stage('Static analysis on Windows') {
+
+                stage('CI selfcheck - Windows') {
+                    agent { label 'tester' }
+                    steps {
+                        deleteDir()
+                        unstash "CIScripts"
+                        unstash "CISelfcheck"
+                        script {
+                            try {
+                                powershell script: """./Invoke-Selfcheck.ps1 `
+                                    -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck"""
+                            } finally {
+                                stash name: 'testReportsRaw', includes: 'testReportsRaw/**', allowEmpty: true
+                            }
+                        }
+                    }
+                }
+
+                stage('CI selfcheck - Linux') {
+                    when { expression { env.ghprbPullId } }
+                    agent { label 'linux' }
+                    options {
+                        timeout time: 5, unit: 'MINUTES'
+                    }
+                    steps {
+                        deleteDir()
+                        unstash "CIScripts"
+
+                        unstash "Monitoring"
+                        dir("monitoring") {
+                            sh "python3 -m tests.monitoring_tests"
+                        }
+
+                        runHelpersTests()
+                    }
+                }
+
+                stage('Static analysis - Windows') {
                     agent { label 'builder' }
                     steps {
                         deleteDir()
@@ -53,17 +90,7 @@ pipeline {
                     }
                 }
 
-                stage('Static analysis on Linux') {
-                    agent { label 'linux' }
-                    steps {
-                        deleteDir()
-                        unstash "StaticAnalysis"
-                        unstash "Ansible"
-                        sh "StaticAnalysis/ansible_linter.py"
-                    }
-                }
-
-                stage('CI selfcheck') {
+                stage('Static analysis - Linux') {
                     when { expression { env.ghprbPullId } }
                     agent { label 'linux' }
                     options {
@@ -72,23 +99,9 @@ pipeline {
                     steps {
                         deleteDir()
 
-                        unstash "CISelfcheck"
-                        unstash "CIScripts"
-
-                        script {
-                            try {
-                                powershell script: """./Invoke-Selfcheck.ps1 `
-                                    -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck"""
-                            } finally {
-                                stash name: 'testReportsRaw', includes: 'testReportsRaw/**', allowEmpty: true
-                            }
-                        }
-
-                        unstash "Monitoring"
-                        dir("monitoring") {
-                            sh "python3 -m tests.monitoring_tests"
-                        }
-                        runHelpersTests()
+                        unstash "StaticAnalysis"
+                        unstash "Ansible"
+                        sh "StaticAnalysis/ansible_linter.py"
                     }
                 }
 
