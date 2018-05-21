@@ -255,7 +255,7 @@ pipeline {
                             -XmlsDir testReportsRaw/CISelfcheck `
                             -OutputDir processedTestReports/CISelfcheck'''
 
-                        powershell script: "New-ChildItem -Type Directory -Path processedTestReports/_detailedLogs"
+                        powershell script: "New-Item -Type Directory -Path processedTestReports/_detailedLogs"
 
                         powershell script: """Copy-Item -Recurse -Filter '*.log' -Path processedTestReports/ -Destination processedTestReports/_detailedLogs"""
 
