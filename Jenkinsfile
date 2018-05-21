@@ -20,6 +20,7 @@ pipeline {
                 checkout scm
 
                 stash name: "CIScripts", includes: "CIScripts/**"
+                stash name: "CISelfcheck", includes: "Invoke-Selfcheck.ps1"
                 stash name: "StaticAnalysis", includes: "StaticAnalysis/**"
                 stash name: "Ansible", includes: "ansible/**"
                 stash name: "Monitoring", includes: "monitoring/**"
@@ -62,7 +63,7 @@ pipeline {
                     }
                 }
 
-                stage('CI test') {
+                stage('CI selfcheck') {
                     when { expression { env.ghprbPullId } }
                     agent { label 'linux' }
                     options {
@@ -70,6 +71,22 @@ pipeline {
                     }
                     steps {
                         deleteDir()
+
+                        unstash "CISelfcheck"
+                        unstash "CIScripts"
+
+                        script {
+                            try {
+                                powershell script: """./Invoke-Selfcheck.ps1 `
+                                    -ReportDir ${env.WORKSPACE}/testReportCI/"""
+                            } finally {
+                                stash name: 'testReportCI', includes: 'testReportCI/*.xml', allowEmpty: true
+                                dir('testReportCI/detailed') {
+                                    stash name: 'detailedLogs', allowEmpty: true
+                                }
+                            }
+                        }
+
                         unstash "Monitoring"
                         dir("monitoring") {
                             sh "python3 -m tests.monitoring_tests"
@@ -192,10 +209,10 @@ pipeline {
                     try {
                         powershell script: """./CIScripts/Test.ps1 `
                             -TestenvConfFile testenv-conf.yaml `
-                            -TestReportDir ${env.WORKSPACE}/test_report/"""
+                            -TestReportDir ${env.WORKSPACE}/testReport/"""
                     } finally {
-                        stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
-                        dir('test_report/detailed') {
+                        stash name: 'testReport', includes: 'testReport/*.xml', allowEmpty: true
+                        dir('testReport/detailed') {
                             stash name: 'detailedLogs', allowEmpty: true
                         }
                     }
@@ -219,12 +236,17 @@ pipeline {
                 script {
                     try {
                         unstash 'testReport'
+                        unstash 'testReportCI'
                     } catch (Exception err) {
                         echo "No test report to parse"
                     } finally {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir test_report `
-                            -OutputDir processed_reports'''
+                            -XmlsDir testReport `
+                            -OutputDir processed_reports/WindowsCompute'''
+
+                        powershell script: '''./CIScripts/GenerateTestReport.ps1 `
+                            -XmlsDir testReportCI `
+                            -OutputDir processed_reports/WindowsCI'''
 
                         dir("processed_reports") {
                             stash name: 'processedTestReport', allowEmpty: true
