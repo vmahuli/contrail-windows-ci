@@ -257,7 +257,8 @@ pipeline {
 
                         powershell script: "New-Item -Type Directory -Path processedTestReports/_detailedLogs"
 
-                        powershell script: """Copy-Item -Recurse -Filter '*.log' -Path processedTestReports/ -Destination processedTestReports/_detailedLogs"""
+                        // Using robocopy to workaround 260 chars path length limitation.
+                        powershell script: "robocopy ${pwd()}/processedTestReports/ ${pwd()}/processedTestReports/_detailedLogs *.log /S"
 
                         stash name: 'processedTestReports', includes: 'processedTestReports/**', allowEmpty: true
                     }
