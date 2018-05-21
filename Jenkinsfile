@@ -54,7 +54,7 @@ pipeline {
                                 powershell script: """./Invoke-Selfcheck.ps1 `
                                     -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck"""
                             } finally {
-                                stash name: 'testReportsRaw', includes: 'testReportsRaw/**', allowEmpty: true
+                                stash name: 'testReportsCISelfcheck', includes: 'testReportsRaw/**', allowEmpty: true
                             }
                         }
                     }
@@ -221,7 +221,7 @@ pipeline {
                             -TestenvConfFile testenv-conf.yaml `
                             -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute"""
                     } finally {
-                        stash name: 'testReportsRaw', includes: 'testReportsRaw/**', allowEmpty: true
+                        stash name: 'testReportsWindowsCompute', includes: 'testReportsRaw/**', allowEmpty: true
                     }
                 }
             }
@@ -242,7 +242,8 @@ pipeline {
                 unstash 'CIScripts'
                 script {
                     try {
-                        unstash 'testReportsRaw'
+                        unstash 'testReportsWindowsCompute'
+                        unstash 'testReportsCISelfcheck'
                     } catch (Exception err) {
                         echo "No test report to parse"
                     } finally {
