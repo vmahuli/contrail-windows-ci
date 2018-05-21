@@ -78,12 +78,9 @@ pipeline {
                         script {
                             try {
                                 powershell script: """./Invoke-Selfcheck.ps1 `
-                                    -ReportDir ${env.WORKSPACE}/testReportCI/"""
+                                    -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck"""
                             } finally {
-                                stash name: 'testReportCI', includes: 'testReportCI/*.xml', allowEmpty: true
-                                dir('testReportCI/detailed') {
-                                    stash name: 'detailedLogs', allowEmpty: true
-                                }
+                                stash name: 'testReportsRaw', includes: 'testReportsRaw/**', allowEmpty: true
                             }
                         }
 
@@ -209,12 +206,9 @@ pipeline {
                     try {
                         powershell script: """./CIScripts/Test.ps1 `
                             -TestenvConfFile testenv-conf.yaml `
-                            -TestReportDir ${env.WORKSPACE}/testReport/"""
+                            -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute"""
                     } finally {
-                        stash name: 'testReport', includes: 'testReport/*.xml', allowEmpty: true
-                        dir('testReport/detailed') {
-                            stash name: 'detailedLogs', allowEmpty: true
-                        }
+                        stash name: 'testReportsRaw', includes: 'testReportsRaw/**', allowEmpty: true
                     }
                 }
             }
@@ -235,22 +229,23 @@ pipeline {
                 unstash 'CIScripts'
                 script {
                     try {
-                        unstash 'testReport'
-                        unstash 'testReportCI'
+                        unstash 'testReportsRaw'
                     } catch (Exception err) {
                         echo "No test report to parse"
                     } finally {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir testReport `
-                            -OutputDir processed_reports/WindowsCompute'''
+                            -XmlsDir testReportsRaw/WindowsCompute `
+                            -OutputDir processedTestReports/WindowsCompute'''
 
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir testReportCI `
-                            -OutputDir processed_reports/WindowsCI'''
+                            -XmlsDir testReportsRaw/CISelfcheck `
+                            -OutputDir processedTestReports/CISelfcheck'''
 
-                        dir("processed_reports") {
-                            stash name: 'processedTestReport', allowEmpty: true
-                        }
+                        powershell script: "New-ChildItem -Type Directory -Path processedTestReports/_detailedLogs"
+
+                        powershell script: """Copy-Item -Recurse -Filter '*.log' -Path processedTestReports/ -Destination processedTestReports/_detailedLogs"""
+
+                        stash name: 'processedTestReports', includes: 'processedTestReports/**', allowEmpty: true
                     }
                 }
             }
@@ -267,18 +262,9 @@ pipeline {
                     def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
 
                     dir('to_publish') {
-                        unstash 'processedTestReport'
-
-                        dir('detailed_logs') {
-                            try {
-                                unstash 'detailedLogs'
-                            } catch (Exception err) {
-                            }
-                        }
-
+                        unstash 'processedTestReports'
                         def logFilename = 'log.txt.gz'
                         obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
-
                         publishToLogServer(logServer, ".", destDir)
                     }
 
