@@ -255,11 +255,9 @@ pipeline {
                             -XmlsDir testReportsRaw/CISelfcheck `
                             -OutputDir TestReports/CISelfcheck'''
 
-                        // powershell script: "New-Item -Type Directory -Path TestReports/_detailedLogs"
-
                         // Using robocopy to workaround 260 chars path length limitation.
-                        powershell script: "robocopy ${pwd()}/testReportsRaw/WindowsCompute/detailed/ ${pwd()}/TestReports/WindowsCompute/detailedLogs *.log /S"
-                        powershell script: "robocopy ${pwd()}/testReportsRaw/CISelfcheck/detailed/ ${pwd()}/TestReports/CISelfcheck/detailedLogs *.log /S"
+                        robocopy("${pwd()}/testReportsRaw/WindowsCompute/detailed/", "${pwd()}/TestReports/WindowsCompute/detailedLogs", "*.log")
+                        robocopy("${pwd()}/testReportsRaw/CISelfcheck/detailed/", "${pwd()}/TestReports/CISelfcheck/detailedLogs", "*.log")
 
                         stash name: 'processedTestReports', includes: 'TestReports/**', allowEmpty: true
                     }
