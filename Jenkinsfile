@@ -209,6 +209,9 @@ pipeline {
         LOG_SERVER_USER = "zuul-win"
         LOG_SERVER_FOLDER = "winci"
         LOG_ROOT_DIR = "/var/www/logs/winci"
+        MYSQL = credentials('monitoring-mysql')
+        MYSQL_HOST = "10.84.12.52"
+        MYSQL_DATABASE = "monitoring_test"
     }
 
     post {
@@ -266,12 +269,18 @@ pipeline {
                         sendGithubComment("Full logs URL: ${testReportsUrl}")
                     }
 
-                    def reportLocationsFile = "${testReportsUrl}/reports-locations.json"
-                    build job: 'WinContrail/gather-build-stats', wait: false,
-                        parameters: [string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
-                                     string(name: 'MONITORED_JOB_NAME', value: env.JOB_NAME),
-                                     string(name: 'MONITORED_BUILD_URL', value: env.BUILD_URL),
-                                     string(name: 'TEST_REPORTS_JSON_URL', value: reportLocationsFile)]
+                    dir('monitoring') {
+                        shellCommand('python3', [
+                            './collect_and_push_build_stats.py',
+                            '--job-name', env.JOB_NAME,
+                            '--job-status', currentBuild.currentResult,
+                            '--build-url', env.BUILD_URL,
+                            '--mysql-host', env.MYSQL_HOST,
+                            '--mysql-database', env.MYSQL_DATABASE,
+                            '--mysql-username', env.MYSQL_USR,
+                            '--mysql-password', env.MYSQL_PSW,
+                        ] + getReportsLocationParam(testReportsUrl))
+                    }
                 }
             }
         }

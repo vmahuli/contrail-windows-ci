@@ -1,8 +1,12 @@
 # contrail-windows-ci monitoring
 
+# Deployment 
+
 ### Dependencies
 
-- Required Python: `>= 3.5.2`
+Requirements:
+- Linux
+- Python: `>= 3.5.2`
 - Install the following packages:
 
     ```
@@ -17,7 +21,9 @@
     (venv) $ pip install -r requirements.txt
     ```
 
-### Provisioning database
+Note: To run tests Windows, use `requirements_windows.txt` instead of `requirements.txt`.
+
+### Provisioning production database
 
 - `provision_mysql_database.py` script deploys schema on provided database
 
@@ -29,14 +35,21 @@
         --mysql-database MYSQL_DATABASE
     ```
 
+# Development
+
 ### Running tests
 
-- Tests are written using `unittest` module from Python's standard library.
-  To run tests, just execute the following command:
+Tests are written using `unittest` module from Python's standard library.
+
+- See Dependencies chapter for requirements
+- To run tests, execute the following command:
 
     ```
     $ python3 -m tests.monitoring_tests
     ```
+
+Note: part of the test suite will fail on Windows. However, it's possible to develop
+platform independent parts of the script and run most of the unit tests.
 
 ### Grafana dashboards
 

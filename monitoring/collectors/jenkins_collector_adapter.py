@@ -5,8 +5,9 @@ from stats import BuildStats, StageStats
 
 class JenkinsCollectorAdapter(object):
 
-    def __init__(self, job_name, build_url):
+    def __init__(self, job_name, job_status, build_url):
         self.job_name = job_name
+        self.job_status = job_status
         self.url = build_url
 
 
@@ -42,7 +43,7 @@ class JenkinsCollectorAdapter(object):
             build_url = self.url,
             build_id = raw_stats['id'],
             finished_at_secs = timestamp,
-            status = raw_stats['status'],
+            status = self.job_status,
             duration_millis = raw_stats['durationMillis'],
             stages = stages_stats,
             test_stats = []
