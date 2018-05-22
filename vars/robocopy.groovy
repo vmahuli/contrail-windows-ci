@@ -1,4 +1,3 @@
-
 def call(String srcDir, String destDir, String filter) {
     def status = powershell script: "robocopy ${srcDir} ${destDir} ${filter} /S"
     if (status != 1) {
