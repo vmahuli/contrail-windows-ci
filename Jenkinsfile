@@ -282,6 +282,31 @@ pipeline {
                     ] + getReportsLocationParam(testReportsUrl))
                 }
             }
+
+            node('ansible') {
+                script {
+                    deleteDir()
+                    def logServer = [
+                        addr: env.LOG_SERVER,
+                        user: env.LOG_SERVER_USER,
+                        folder: env.LOG_SERVER_FOLDER,
+                        rootDir: env.LOG_ROOT_DIR
+                    ]
+                    def testReportsUrl = getLogsURL(logServer, env.ZUUL_UUID)
+
+                    unstash "Monitoring"
+                    shellCommand('python3', [
+                        'monitoring/collect_and_push_build_stats.py',
+                        '--job-name', env.JOB_NAME,
+                        '--job-status', currentBuild.currentResult,
+                        '--build-url', env.BUILD_URL,
+                        '--mysql-host', env.MYSQL_HOST,
+                        '--mysql-database', env.MYSQL_DATABASE,
+                        '--mysql-username', env.MYSQL_USR,
+                        '--mysql-password', env.MYSQL_PSW,
+                    ] + getReportsLocationParam(testReportsUrl))
+                }
+            }
         }
     }
 }
