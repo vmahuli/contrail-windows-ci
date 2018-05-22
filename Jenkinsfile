@@ -249,18 +249,19 @@ pipeline {
                     } finally {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
                             -XmlsDir testReportsRaw/WindowsCompute `
-                            -OutputDir processedTestReports/WindowsCompute'''
+                            -OutputDir TestReports/WindowsCompute'''
 
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
                             -XmlsDir testReportsRaw/CISelfcheck `
-                            -OutputDir processedTestReports/CISelfcheck'''
+                            -OutputDir TestReports/CISelfcheck'''
 
-                        powershell script: "New-Item -Type Directory -Path processedTestReports/_detailedLogs"
+                        // powershell script: "New-Item -Type Directory -Path TestReports/_detailedLogs"
 
                         // Using robocopy to workaround 260 chars path length limitation.
-                        powershell script: "robocopy ${pwd()}/processedTestReports/ ${pwd()}/processedTestReports/_detailedLogs *.log /S"
+                        powershell script: "robocopy ${pwd()}/testReportsRaw/WindowsCompute/detailed/ ${pwd()}/TestReports/WindowsCompute/detailedLogs *.log /S"
+                        powershell script: "robocopy ${pwd()}/testReportsRaw/CISelfcheck/detailed/ ${pwd()}/TestReports/CISelfcheck/detailedLogs *.log /S"
 
-                        stash name: 'processedTestReports', includes: 'processedTestReports/**', allowEmpty: true
+                        stash name: 'processedTestReports', includes: 'TestReports/**', allowEmpty: true
                     }
                 }
             }
