@@ -4,5 +4,7 @@ def call(String srcDir, String destDir, String filter) {
         // robocopy makes extensive use of exit codes. We're interested in checking
         // exit code 1: One of more files were copied successfully.
         return 1
+    } else {
+        return status
     }
 }
