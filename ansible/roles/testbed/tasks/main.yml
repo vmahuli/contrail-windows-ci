@@ -45,7 +45,7 @@
   with_items:
     - microsoft/nanoserver
     - microsoft/windowsservercore:ltsc2016
-    - python:3.6.5-windowsservercore-ltsc2016
+    - python:3.6.5
 
 - name: Install MS Visual C++ Redist 14
   win_chocolatey:
