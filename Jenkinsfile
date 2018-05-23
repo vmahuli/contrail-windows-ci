@@ -264,22 +264,9 @@ pipeline {
                     }
 
                     def testReportsUrl = getLogsURL(logServer, env.ZUUL_UUID)
-
                     if (isGithub()) {
                         sendGithubComment("Full logs URL: ${testReportsUrl}")
                     }
-
-                    unstash "Monitoring"
-                    shellCommand('python3', [
-                        'monitoring/collect_and_push_build_stats.py',
-                        '--job-name', env.JOB_NAME,
-                        '--job-status', currentBuild.currentResult,
-                        '--build-url', env.BUILD_URL,
-                        '--mysql-host', env.MYSQL_HOST,
-                        '--mysql-database', env.MYSQL_DATABASE,
-                        '--mysql-username', env.MYSQL_USR,
-                        '--mysql-password', env.MYSQL_PSW,
-                    ] + getReportsLocationParam(testReportsUrl))
                 }
             }
 
