@@ -40,7 +40,6 @@
 - name: Install Docker-EE
   win_shell: "Install-Package Docker -ProviderName DockerProvider -Force"
 
-# we use hardcoded iis tag because of this issue: https://github.com/Microsoft/iis-docker/issues/47
 - name: Pull docker images
   win_shell: "docker pull {{ item }}"
   with_items:
@@ -48,7 +47,7 @@
     - microsoft/windowsservercore:ltsc2016
     - python:3.6.5-windowsservercore-ltsc2016
 
-- name: Install MS Visuall C++ Redist 14
+- name: Install MS Visual C++ Redist 14
   win_chocolatey:
     name: vcredist140
     state: present
