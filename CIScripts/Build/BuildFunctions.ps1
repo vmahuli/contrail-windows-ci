@@ -82,13 +82,10 @@ function Invoke-DockerDriverBuild {
     })
 
     $Job.Step("Precompiling tests", {
-        $modules = @("agent", "driver", "controller", "hns", "hnsManager")
-        $modules.ForEach({
-            Invoke-NativeCommand -ScriptBlock {
-                ginkgo build $srcPath/$_
-            }
-            Move-Item $srcPath/$_/$_.test ./
-        })
+        Invoke-NativeCommand -ScriptBlock {
+            ginkgo build -r $srcPath
+        }
+        Get-ChildItem -Recurse -Path $srcPath -Filter "*.test" | ForEach-Object { Move-Item $_.FullName ("./" + $_.Name + ".exe") }
     })
 
     $Job.Step("Building MSI", {
