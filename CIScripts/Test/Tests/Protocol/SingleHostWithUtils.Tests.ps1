@@ -104,7 +104,7 @@ Describe "Single compute node protocol tests with utils" {
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
         Write-Log "Creating container 1"
-        New-Container -Session $Session -NetworkName $NetworkName -Name $Container1ID -Image iis-tcptest | Out-Null
+        New-Container -Session $Session -NetworkName $NetworkName -Name $Container1ID -Image python-http | Out-Null
 
         Write-Log "Creating container 2"
         New-Container -Session $Session -NetworkName $NetworkName -Name $Container2ID | Out-Null

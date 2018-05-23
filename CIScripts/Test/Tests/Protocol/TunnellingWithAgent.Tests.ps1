@@ -17,7 +17,7 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
-$IisTcpTestDockerImage = "iis-tcptest"
+$TCPServerDockerImage = "python-http"
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
 $NetworkName = "testnet12"
@@ -445,7 +445,7 @@ Describe "Tunnelling with Agent tests" {
             -Session $Sessions[0] `
             -NetworkName $NetworkName `
             -Name $Container1ID `
-            -Image $IisTcpTestDockerImage
+            -Image $TCPServerDockerImage
         Write-Log "Creating container: $Container2ID"
         New-Container `
             -Session $Sessions[1] `
