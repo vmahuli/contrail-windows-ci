@@ -294,6 +294,10 @@ projects:
     template:
       - name: ci-contrail-windows-other-projects-template
 
+  - name: Juniper/openshift-ansible
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
   - name: Juniper/openstack-helm
     template:
       - name: ci-contrail-windows-other-projects-template
