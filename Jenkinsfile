@@ -255,7 +255,7 @@ pipeline {
                         def logFilename = 'log.txt.gz'
                         createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
 
-                        def dstLogFileDir = logsDirInFilesystem(env.LOGS_ROOT_DIR, logs.LOGS_SERVER_FOLDER, relLogsDstDir)
+                        def dstLogFileDir = logsDirInFilesystem(env.LOGS_ROOT_DIR, env.LOGS_SERVER_FOLDER, relLogsDstDir)
                         def auth = sshAuthority(env.LOG_USER, env.LOG_SERVER)
                         publishToLogServer(auth, ".", dstLogFileDir)
                     }
