@@ -242,6 +242,10 @@ projects:
     template:
       - name: ci-contrail-windows-other-projects-template
 
+  - name: Juniper/contrail-third-party-packages
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
   - name: Juniper/contrail-vcenter-plugin
     template:
       - name: ci-contrail-windows-other-projects-template

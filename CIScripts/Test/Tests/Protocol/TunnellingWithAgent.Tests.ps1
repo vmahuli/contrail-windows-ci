@@ -53,12 +53,14 @@ function Test-Ping {
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
         [Parameter(Mandatory=$true)] [String] $SrcContainerName,
         [Parameter(Mandatory=$true)] [String] $DstContainerName,
-        [Parameter(Mandatory=$true)] [String] $DstContainerIP
+        [Parameter(Mandatory=$true)] [String] $DstContainerIP,
+        [Parameter(Mandatory=$false)] [Int] $BufferSize = 32
     )
 
     Write-Log "Container $SrcContainerName is pinging $DstContainerName..."
     $Res = Invoke-Command -Session $Session -ScriptBlock {
-        docker exec $Using:SrcContainerName powershell "ping $Using:DstContainerIP; `$LASTEXITCODE;"
+        docker exec $Using:SrcContainerName powershell `
+            "ping -l $Using:BufferSize $Using:DstContainerIP; `$LASTEXITCODE;"
     }
     $Output = $Res[0..($Res.length - 2)]
     Write-Log "Ping output: $Output"
@@ -363,6 +365,43 @@ Describe "Tunnelling with Agent tests" {
 
             Test-MPLSoUDP -Session $Sessions[0] | Should Be $true
             Test-MPLSoUDP -Session $Sessions[1] | Should Be $true
+        }
+    }
+
+    Context "IP fragmentation" {
+        # TODO: Enable this test once fragmentation is properly implemented in vRouter
+        It "ICMP - Ping with big buffer succeeds" -Pending {
+            Test-Ping `
+                -Session $Sessions[0] `
+                -SrcContainerName $Container1ID `
+                -DstContainerName $Container2ID `
+                -DstContainerIP $Container2NetInfo.IPAddress `
+                -BufferSize 1473 | Should Be 0
+
+            Test-Ping `
+                -Session $Sessions[1] `
+                -SrcContainerName $Container2ID `
+                -DstContainerName $Container1ID `
+                -DstContainerIP $Container1NetInfo.IPAddress `
+                -BufferSize 1473 | Should Be 0
+        }
+
+        # TODO: Enable this test once fragmentation is properly implemented in vRouter
+        It "UDP - sending big buffer succeeds" -Pending {
+            $MyMessage = "buffer" * 300
+            $UDPServerPort = 1111
+            $UDPClientPort = 2222
+
+            Test-UDP `
+                -Session1 $Sessions[0] `
+                -Session2 $Sessions[1] `
+                -Container1Name $Container1ID `
+                -Container2Name $Container2ID `
+                -Container1IP $Container1NetInfo.IPAddress `
+                -Container2IP $Container2NetInfo.IPAddress `
+                -Message $MyMessage `
+                -UDPServerPort $UDPServerPort `
+                -UDPClientPort $UDPClientPort | Should Be $true
         }
     }
 

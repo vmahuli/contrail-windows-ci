@@ -12,14 +12,26 @@ Param (
 
 $TestsPath = "C:\Artifacts\"
 
+function Find-DockerDriverTests {
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
+        [Parameter(Mandatory=$true)] [string] $RootTestModulePath
+    )
+    $TestModules = Invoke-Command -Session $Session {
+        Get-ChildItem -Recurse -Filter "*.test.exe" -Path $Using:RootTestModulePath `
+            | Select-Object BaseName, FullName
+    }
+    Write-Log "Discovered test modules: $($TestModules.BaseName)"
+    return $TestModules
+}
+
 function Invoke-DockerDriverUnitTest {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [string] $Component
+        [Parameter(Mandatory=$true)] [string] $TestModulePath
     )
 
-    $TestFilePath = ".\" + $Component + ".test.exe"
-    $Command = @($TestFilePath, "--ginkgo.noisyPendings", "--ginkgo.failFast", "--ginkgo.progress", "--ginkgo.v", "--ginkgo.trace")
+    $Command = @($TestModulePath, "--ginkgo.succinct", "--ginkgo.failFast")
     $Command = $Command -join " "
 
     $Res = Invoke-NativeCommand -CaptureOutput -AllowNonZero -Session $Session {
@@ -39,25 +51,26 @@ function Invoke-DockerDriverUnitTest {
 function Save-DockerDriverUnitTestReport {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [string] $Component
+        [Parameter(Mandatory=$true)] [string] $TestModulePath
     )
 
     # TODO Where are these files copied to?
-    Copy-Item -FromSession $Session -Path ($TestsPath + $Component + "_junit.xml") -ErrorAction SilentlyContinue
+    # TODO2: Fix JUnit reporters first....
+    # Copy-Item -FromSession $Session -Path ($TestsPath + $TestModulePath + "_junit.xml") -ErrorAction SilentlyContinue
 }
-
-# TODO: these modules should also be tested: controller, hns, hnsManager, driver
-$Modules = @("agent")
 
 Describe "Docker Driver" {
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "Session", Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
         $Session = $Sessions[0]
 
         Initialize-PesterLogger -OutDir $LogDir
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments", "",
+            Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $FoundTestModules = Find-DockerDriverTests -RootTestModulePath "C:\Artifacts\" -Session $Session
     }
 
     AfterAll {
@@ -65,15 +78,15 @@ Describe "Docker Driver" {
         Remove-PSSession $Sessions
     }
 
-    foreach ($Module in $Modules) {
-        Context "Tests for module $Module" {
-            It "Tests are invoked" {
-                $TestResult = Invoke-DockerDriverUnitTest -Session $Session -Component $Module
+    foreach ($TestModule in $FoundTestModules) {
+        Context "Tests for module in $($TestModule.BaseName)" {
+            It "passes tests" {
+                $TestResult = Invoke-DockerDriverUnitTest -Session $Session -TestModulePath $TestModule.FullName
                 $TestResult | Should Be 0
             }
 
             AfterEach {
-                Save-DockerDriverUnitTestReport -Session $Session -Component $Module
+                Save-DockerDriverUnitTestReport -Session $Session -TestModulePath $TestModule.FullName
             }
         }
     }
