@@ -112,6 +112,10 @@ projects:
     template:
       - name: ci-contrail-windows-template
 
+  - name: Juniper/contrail-windows-docker-driver
+    template:
+      - name: ci-contrail-windows-template
+
 # AUTOMATICALLY GENERATED NOOPs BELOW - DO NOT MODIFY THESE LINES MANUALLY
 
   - name: Juniper/contrail
