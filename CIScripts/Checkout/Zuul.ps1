@@ -26,7 +26,8 @@ function Get-ZuulRepos {
         "Juniper/contrail-vrouter",
         "Juniper/contrail-third-party",
         "Juniper/contrail-sandesh",
-        "Juniper/contrail-common"
+        "Juniper/contrail-common",
+        "Juniper/contrail-windows-docker-driver"
     )
 
     $Job.Step("Cloning zuul repositories", {
