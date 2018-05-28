@@ -253,16 +253,12 @@ pipeline {
                         }
 
                         def logFilename = 'log.txt.gz'
-                        echo "a"                        
                         createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
-                        echo "a"
-                        def dstLogFileDir = logsDirInFilesystem(env.LOGS_ROOT_DIR, env.LOGS_SERVER_FOLDER, relLogsDstDir)
-                        echo "a"
+
                         def auth = sshAuthority(env.LOG_USER, env.LOG_SERVER)
-                        echo "a"
-                        publishToLogServer(auth, ".", dstLogFileDir)
-                        echo "a"
-                        
+                        def src = "."
+                        def dst = logsDirInFilesystem(env.LOGS_ROOT_DIR, env.LOGS_SERVER_FOLDER, relLogsDstDir)
+                        publishToLogServer(auth, src, dst)
                     }
 
 
