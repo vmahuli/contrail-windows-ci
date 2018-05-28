@@ -104,11 +104,11 @@ projects:
     template:
       - name: ci-contrail-windows-template
 
-  - name: Juniper/contrail-sandesh
+  - name: Juniper/contrail-common
     template:
       - name: ci-contrail-windows-template
 
-  - name: Juniper/contrail-common
+  - name: Juniper/contrail-windows-docker-driver
     template:
       - name: ci-contrail-windows-template
 
@@ -219,6 +219,10 @@ projects:
       - name: ci-contrail-windows-other-projects-template
 
   - name: Juniper/contrail-puppet
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
+  - name: Juniper/contrail-sandesh
     template:
       - name: ci-contrail-windows-other-projects-template
 
