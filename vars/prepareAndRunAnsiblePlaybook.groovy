@@ -21,9 +21,12 @@ def call(Map params) {
         steps {
           dir('ansible') {
             sh 'cp inventory.sample inventory'
+
             script {
-              vmWareConfig = getVMwareConfig(vm_role)
-              prepareHardwareConfig(params)
+              sh "git rev-parse --short HEAD > .git/commit-id"
+              def commit_id = readFile('.git/commit-id').trim()
+              // vmWareConfig = getVMwareConfig(vm_role)
+              // prepareHardwareConfig(params)
             }
           }
         }
@@ -31,13 +34,13 @@ def call(Map params) {
       stage('Run ansible') {
         agent { label 'ansible' }
         steps {
-          dir('ansible') {
-            ansiblePlaybook extras: '-e @vm.vars', \
-                            inventory: 'inventory', \
-                            playbook: playbook, \
-                            sudoUser: 'ubuntu', \
-                            extraVars: vmWareConfig
-          }
+          // dir('ansible') {
+          //   ansiblePlaybook extras: '-e @vm.vars', \
+          //                   inventory: 'inventory', \
+          //                   playbook: playbook, \
+          //                   sudoUser: 'ubuntu', \
+          //                   extraVars: vmWareConfig
+          // }
         }
       }
     }
