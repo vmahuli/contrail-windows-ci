@@ -20,6 +20,7 @@ pipeline {
                 checkout scm
 
                 stash name: "CIScripts", includes: "CIScripts/**"
+                stash name: "CISelfcheck", includes: "Invoke-Selfcheck.ps1"
                 stash name: "StaticAnalysis", includes: "StaticAnalysis/**"
                 stash name: "Ansible", includes: "ansible/**"
                 stash name: "Monitoring", includes: "monitoring/**"
@@ -41,7 +42,44 @@ pipeline {
 
         stage('Build, testenv provisioning and sanity checks') {
             parallel {
-                stage('Static analysis on Windows') {
+
+                stage('CI selfcheck - Windows') {
+                    agent { label 'tester' }
+                    steps {
+                        deleteDir()
+                        unstash "CIScripts"
+                        unstash "CISelfcheck"
+                        script {
+                            try {
+                                powershell script: """./Invoke-Selfcheck.ps1 `
+                                    -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck"""
+                            } finally {
+                                stash name: 'testReportsCISelfcheck', includes: 'testReportsRaw/**', allowEmpty: true
+                            }
+                        }
+                    }
+                }
+
+                stage('CI selfcheck - Linux') {
+                    when { expression { env.ghprbPullId } }
+                    agent { label 'linux' }
+                    options {
+                        timeout time: 5, unit: 'MINUTES'
+                    }
+                    steps {
+                        deleteDir()
+                        unstash "CIScripts"
+
+                        unstash "Monitoring"
+                        dir("monitoring") {
+                            sh "python3 -m tests.monitoring_tests"
+                        }
+
+                        runHelpersTests()
+                    }
+                }
+
+                stage('Static analysis - Windows') {
                     agent { label 'builder' }
                     steps {
                         deleteDir()
@@ -52,17 +90,7 @@ pipeline {
                     }
                 }
 
-                stage('Static analysis on Linux') {
-                    agent { label 'linux' }
-                    steps {
-                        deleteDir()
-                        unstash "StaticAnalysis"
-                        unstash "Ansible"
-                        sh "StaticAnalysis/ansible_linter.py"
-                    }
-                }
-
-                stage('CI test') {
+                stage('Static analysis - Linux') {
                     when { expression { env.ghprbPullId } }
                     agent { label 'linux' }
                     options {
@@ -70,11 +98,10 @@ pipeline {
                     }
                     steps {
                         deleteDir()
-                        unstash "Monitoring"
-                        dir("monitoring") {
-                            sh "python3 -m tests.monitoring_tests"
-                        }
-                        runHelpersTests()
+
+                        unstash "StaticAnalysis"
+                        unstash "Ansible"
+                        sh "StaticAnalysis/ansible_linter.py"
                     }
                 }
 
@@ -192,12 +219,9 @@ pipeline {
                     try {
                         powershell script: """./CIScripts/Test.ps1 `
                             -TestenvConfFile testenv-conf.yaml `
-                            -TestReportDir ${env.WORKSPACE}/test_report/"""
+                            -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute"""
                     } finally {
-                        stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
-                        dir('test_report/detailed') {
-                            stash name: 'detailedLogs', allowEmpty: true
-                        }
+                        stash name: 'testReportsWindowsCompute', includes: 'testReportsRaw/**', allowEmpty: true
                     }
                 }
             }
@@ -221,17 +245,24 @@ pipeline {
                 unstash 'CIScripts'
                 script {
                     try {
-                        unstash 'testReport'
+                        unstash 'testReportsWindowsCompute'
+                        unstash 'testReportsCISelfcheck'
                     } catch (Exception err) {
                         echo "No test report to parse"
                     } finally {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir test_report `
-                            -OutputDir processed_reports'''
+                            -XmlsDir testReportsRaw/WindowsCompute `
+                            -OutputDir TestReports/WindowsCompute'''
 
-                        dir("processed_reports") {
-                            stash name: 'processedTestReport', allowEmpty: true
-                        }
+                        powershell script: '''./CIScripts/GenerateTestReport.ps1 `
+                            -XmlsDir testReportsRaw/CISelfcheck `
+                            -OutputDir TestReports/CISelfcheck'''
+
+                        // Using robocopy to workaround 260 chars path length limitation.
+                        // TODO: Similar method may be used when CISelfcheck generates detailed logs.
+                        robocopy("${pwd()}/testReportsRaw/WindowsCompute/detailed/", "${pwd()}/TestReports/WindowsCompute/detailedLogs", "*.log")
+
+                        stash name: 'processedTestReports', includes: 'TestReports/**', allowEmpty: true
                     }
                 }
             }
@@ -243,15 +274,7 @@ pipeline {
                         env.BUILD_NUMBER, env.ZUUL_UUID)
 
                     dir('to_publish') {
-                        unstash 'processedTestReport'
-
-                        dir('detailed_logs') {
-                            try {
-                                unstash 'detailedLogs'
-                            } catch (Exception err) {
-                            }
-                        }
-
+                        unstash 'processedTestReports'
                         def logFilename = 'log.txt.gz'
                         createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
 

@@ -17,7 +17,7 @@ function Test-TCPoMPLSoGRE {
 
         Write-Host "Running containers"
         $NetworkName = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
-        $ServerID = Invoke-Command -Session $Session1 -ScriptBlock { docker run --network $Using:NetworkName -d iis-tcptest }
+        $ServerID = Invoke-Command -Session $Session1 -ScriptBlock { docker run --network $Using:NetworkName -d python-http }
         $ClientID = Invoke-Command -Session $Session2 -ScriptBlock { docker run --network $Using:NetworkName -id microsoft/nanoserver powershell }
 
         $ServerIP, $ClientIP = Initialize-MPLSoGRE -Session1 $Session1 -Session2 $Session2 `
