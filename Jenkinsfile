@@ -142,8 +142,9 @@ pipeline {
 
                     environment {
                         TESTBED = credentials('win-testbed')
-                        TESTBED_TEMPLATE = "Template-testbed-201804050628"
-                        CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin"
+                        // TODO: change after creation of proper templates
+                        TESTBED_TEMPLATE = "Template-testbed-201805280222"
+                        CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin-LinkedClones"
                         TESTENV_MGMT_NETWORK = "VLAN_501_Management"
                         TESTENV_FOLDER = "WINCI/testenvs"
                         VCENTER_DATASTORE_CLUSTER = "WinCI-Datastores-SSD"
