@@ -30,7 +30,7 @@ actually_used_projects = [
 
 projects = []
 lines_to_preserve = []
-relevant_project_name_re = re.compile("Juniper/.*")
+relevant_project_name_re = re.compile("(Juniper|tungstenfabric)/.*")
 
 print("> Reading original layout file...")
 
