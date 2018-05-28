@@ -74,8 +74,6 @@ project-templates:
   - name: ci-contrail-windows-template
     check:
       - ci-contrail-windows-production
-    check-development:
-      - ci-contrail-windows-development
     check-windows-contrail-phase-in:
       - ci-contrail-windows-wc-phase-in
 
@@ -91,6 +89,8 @@ projects:
   - name: Juniper/contrail-controller
     template:
       - name: ci-contrail-windows-template
+    check-development:
+      - ci-contrail-windows-development
 
   - name: Juniper/contrail-vrouter
     template:
