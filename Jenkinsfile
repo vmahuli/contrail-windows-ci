@@ -255,7 +255,7 @@ pipeline {
                             -XmlsDir testReportsRaw/CISelfcheck `
                             -OutputDir TestReports/CISelfcheck'''
 
-                        // Using robocopy to workaround 260 chars path length limitation.
+                        // Using robocopy to workaround 260 chars path length limitation for destination path.
                         // TODO: Similar method may be used when CISelfcheck generates detailed logs.
                         robocopy("${pwd()}/testReportsRaw/WindowsCompute/detailed/", "${pwd()}/TestReports/WindowsCompute/detailedLogs", "*.log")
 
