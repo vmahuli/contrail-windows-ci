@@ -3,6 +3,7 @@ library "contrailWindows@$BRANCH_NAME"
 prepareAndRunAnsiblePlaybook(config: createTemplateConfig,
                              playbook: 'vmware-create-template.yml',
                              vm_role: 'testbed',
+                             vc_datastore_name: 'NFS-Datastore',
                              vmware_folder: 'Templates/CI',
                              vm_hardware_memory_mb: '8192',
                              vm_hardware_num_cpus: '2',

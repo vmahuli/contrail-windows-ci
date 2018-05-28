@@ -23,6 +23,10 @@ def call(Map params) {
             sh 'cp inventory.sample inventory'
             script {
               vmWareConfig = getVMwareConfig(vm_role)
+              if (params.vc_datastore_name) {
+                vmWareConfig.vcenter_datastore_name = params.vc_datastore_name
+              }
+
               prepareHardwareConfig(params)
             }
           }

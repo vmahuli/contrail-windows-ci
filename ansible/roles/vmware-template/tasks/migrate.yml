@@ -1,0 +1,14 @@
+---
+
+- name: Shutdown VM
+  include_tasks: "shutdown.yml"
+
+- name: Migrate VM
+  delegate_to: localhost
+  script: >
+    migrate_vm.py
+    --host '{{ vcenter_hostname }}'
+    --user '{{ vcenter_user }}'
+    --password '{{ vcenter_password }}'
+    --uuid '{{ template_vm_uuid }}'
+    --datastore '{{ vcenter_datastore_name }}'

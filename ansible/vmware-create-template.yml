@@ -27,6 +27,13 @@
         stage: snapshot
       when: vm_role == "testbed"
 
+    - name: Migrate VM
+      include_role:
+        name: vmware-template
+      vars:
+        stage: migrate
+      when: vm_role == "testbed"
+
 - hosts: localhost
   connection: local
   roles:
