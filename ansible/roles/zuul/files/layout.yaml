@@ -250,6 +250,10 @@ projects:
     template:
       - name: ci-contrail-windows-other-projects-template
 
+  - name: Juniper/contrail-vcenter-manager
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
   - name: Juniper/contrail-vcenter-plugin
     template:
       - name: ci-contrail-windows-other-projects-template
