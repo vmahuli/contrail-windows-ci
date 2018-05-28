@@ -280,7 +280,7 @@ pipeline {
 
                         def auth = sshAuthority(env.LOG_SERVER_USER, env.LOG_SERVER)
                         def src = "."
-                        def dst = logsDirInFilesystem(env.LOGS_ROOT_DIR, env.LOGS_SERVER_FOLDER, relLogsDstDir)
+                        def dst = logsDirInFilesystem(env.LOG_ROOT_DIR, env.LOG_SERVER_FOLDER, relLogsDstDir)
                         publishToLogServer(auth, src, dst)
                     }
 
