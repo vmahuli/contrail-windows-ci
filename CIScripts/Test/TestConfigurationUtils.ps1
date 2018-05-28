@@ -27,7 +27,7 @@ function Test-IsProcessRunning {
         return $(Get-Process $Using:ProcessName -ErrorAction SilentlyContinue)
     }
 
-    return $(if ($Proc) { $true } else { $false })
+    return [bool] $Proc
 }
 
 function Enable-VRouterExtension {
@@ -311,8 +311,9 @@ function Initialize-DriverAndExtension {
 
     $NRetries = 3;
     foreach ($i in 1..$NRetries) {
-        # DockerDriver automatically enables Extension, so there is no need to enable it manually
+        Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 
+        # DockerDriver automatically enables Extension
         Start-DockerDriver -Session $Session `
             -AdapterName $SystemConfig.AdapterName `
             -OpenStackConfig $OpenStackConfig `
@@ -350,6 +351,9 @@ function Clear-TestConfiguration {
            [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig)
 
     Write-Log "Cleaning up test configuration"
+
+    Write-Log "Agent service status: $( Get-AgentServiceStatus -Session $Session )"
+    Write-Log "Docker Driver status: $( Test-IsDockerDriverProcessRunning -Session $Session )"
 
     Remove-AllUnusedDockerNetworks -Session $Session
     Disable-AgentService -Session $Session
