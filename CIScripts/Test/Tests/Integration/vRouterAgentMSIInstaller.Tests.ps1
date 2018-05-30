@@ -48,13 +48,13 @@ Describe "vRouter Agent MSI installer" {
     }
 
     Context "when vRouter Forwarding Extension is not running" {
-        It "registers/unregisters Agent service and never enables" {
+        It "registers and unregisters Agent service and never enables" {
             Test-AgentMSIBehaviourCorrect
         }
     }
 
     Context "when vRouter Forwarding Extension is running" {
-        It "registers/unregisters Agent service and never enables" {
+        It "registers and unregisters Agent service and never enables" {
             Test-AgentMSIBehaviourCorrect
         }
 

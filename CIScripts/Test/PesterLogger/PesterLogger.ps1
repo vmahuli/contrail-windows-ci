@@ -24,11 +24,10 @@ function Initialize-PesterLogger {
         Param([Parameter(Mandatory = $true)] [object] $Message)
         $Scope = & $DeducerFunc
         $Filename = ($Scope -join ".") + ".log"
-        $Outpath = Join-Path $Script:ConstOutdir $Filename
-        if ($Outpath -Like "*:*:*") {
-            # We check for more than one ":" character. (There is always one, after drive letter)
-            throw [UnsupportedPesterTestNameException] "Invalid test name; it cannot contain some special characters, like ':'"
+        if (($Filename.IndexOfAny([System.IO.Path]::GetInvalidFileNameChars())) -ne -1) {
+            throw [UnsupportedPesterTestNameException] "Invalid test name; it cannot contain some special characters, like ':', '/', etc."
         }
+        $Outpath = Join-Path $Script:ConstOutdir $Filename
         & $WriterFunc -Path $Outpath -Value $Message
     }.GetNewClosure()
 

@@ -63,6 +63,11 @@ Describe "PesterLogger" -Tags CI, Unit {
             Initialize-PesterLogger -OutDir "TestDrive:\"
             { Write-Log "msg1" } | Should -Throw
         }
+
+        It "errors if test name contains / " {
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+            { Write-Log "msg1" } | Should -Throw
+        }
     }
 
     Context "Initializing in BeforeEach" {
