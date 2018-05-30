@@ -279,11 +279,9 @@ pipeline {
                         createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
 
                         def auth = sshAuthority(env.LOG_SERVER_USER, env.LOG_SERVER)
-                        def src = "."
                         def dst = logsDirInFilesystem(env.LOG_ROOT_DIR, env.LOG_SERVER_FOLDER, relLogsDstDir)
-                        publishToLogServer(auth, src, dst)
+                        publishCurrentDirToLogServer(auth, dst)
                     }
-
 
                     def fullLogsURL = logsURL(env.LOG_SERVER, env.LOG_SERVER_FOLDER, relLogsDstDir)
                     def logDestMsg = "Full logs URL: ${fullLogsURL}"
