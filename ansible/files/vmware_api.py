@@ -14,6 +14,10 @@ class IncorrectArgument(Exception):
     pass
 
 
+class WaitForResourceDeletionTimeout(Exception):
+    pass
+
+
 class VmwareArgumentParser(object):
     def __init__(self, description='Arguments for talking to vCenter'):
         self.parser = argparse.ArgumentParser(description=description)
