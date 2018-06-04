@@ -258,7 +258,10 @@ pipeline {
 
                         // Using robocopy to workaround 260 chars path length limitation in Copy-Item.
                         // TODO: Similar method may be used when CISelfcheck generates detailed logs.
-                        robocopy("${pwd()}/testReportsRaw/WindowsCompute/detailed/", "${pwd()}/TestReports/WindowsCompute/detailedLogs", "*.log")
+                        def src = "${pwd()}/testReportsRaw/WindowsCompute/detailed/"
+                        if (fileExists(src)) {
+                            robocopy(src, "${pwd()}/TestReports/WindowsCompute/detailedLogs", "*.log")
+                        }
 
                         stash name: 'processedTestReports', includes: 'TestReports/**', allowEmpty: true
                     }
