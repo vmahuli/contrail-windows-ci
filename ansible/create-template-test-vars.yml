@@ -1,0 +1,29 @@
+vm_role: testbed
+
+vcenter_hostname: ci-vc.englab.juniper.net
+vcenter_user: administrator@vsphere.local
+vcenter_password: Contrail123!
+datacenter_name: CI-DC
+cluster_name: WinCI
+
+vm_hardware:
+  memory_mb: 8192
+  num_cpus: 2
+vm_networks:
+  - name: VM-Network
+    type: dhcp
+  - name: Templates
+    type: static
+    ip: '1.2.3.4'
+    netmask: '255.255.255.255'
+vm_hdd:
+  - type: thin
+    size: 100
+
+vm_template: Template-Windows2016-Core-PassReqFix #Template-Windows2016-Core-Updates-20180405
+vmware_folder: 'Dev'
+
+new_vm:
+  instance:
+    hw_name: Template-testbed-201804201721
+    hw_product_uuid: 42135a46-f359-5864-5577-a84ebd944c5d

@@ -1,5 +1,9 @@
 ---
 
+- name: Include windows-common role
+  include_role:
+    name: windows-common
+
 - name: Include jenkins-partition role
   include_role:
     name: jenkins-partition

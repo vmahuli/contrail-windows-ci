@@ -37,6 +37,7 @@
     - Domain: `WORKGROUP`
     - Computer name: `tmpl-winsrv2016`
     - Windows Update settings: `Manual`
+    - Remote Desktop: `Enable` > `All clients (Less secure)`
     - Network settings:
         - 1 NIC, DHCP Enabled
     - Date and time: nothing, will do later
