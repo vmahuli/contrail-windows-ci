@@ -460,7 +460,7 @@ function New-Container {
            [Parameter(Mandatory = $true)] [string] $NetworkName,
            [Parameter(Mandatory = $false)] [string] $Name,
            [Parameter(Mandatory = $false)] [string] $Image = "microsoft/nanoserver")
-           
+
     if (Test-Dockerfile $Image) {
         Initialize-DockerImage -Session $Session -DockerImageName $Image | Out-Null
     }

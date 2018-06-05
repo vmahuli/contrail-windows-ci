@@ -68,11 +68,15 @@ function Get-RemoteContainerNetAdapterInformation {
             $GetIPAddress = { ($_ | Get-NetIPAddress -AddressFamily IPv4).IPAddress }
             $Fields = 'ifIndex', 'ifName', 'Name', 'MacAddress', @{L='IPAddress'; E=$GetIPAddress}
             $Adapter = (Get-NetAdapter -Name 'vEthernet (Container NIC *)')[0]
-            $Adapter | Select-Object $Fields | ConvertTo-Json
-        }.toString()
+            $Adapter | Select-Object $Fields | ConvertTo-Json -Depth 5
+        }.ToString()
 
         docker exec $Using:ContainerID powershell $RemoteCommand
     } | ConvertFrom-Json
+
+    if ($Adapter.IPAddress -is [array]) {
+        throw "Multiple IP addresses returned from container for single NetAdapter: $($Adapter.IPAddress)"
+    }
 
     $Ret = @{
         ifIndex = $Adapter.ifIndex
