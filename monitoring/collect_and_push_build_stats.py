@@ -37,8 +37,8 @@ def main():
                               password=args.mysql_password, database=args.mysql_database)
     publisher = DatabasePublisherAdapter(database_session=db_session)
 
-    stats_publisher = FinishedBuildStatsPublisher(collector, publisher)
-    stats_publisher.collect_and_publish()
+    stats = collector.collect()
+    publisher.publish(stats)
 
 
 if __name__ == '__main__':

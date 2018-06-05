@@ -32,11 +32,7 @@ class JenkinsCollectorAdapter(object):
         stages_stats = []
 
         if 'stages' in raw_stats.keys():
-            stages_stats = [StageStats(
-                name = x['name'],
-                status = x['status'],
-                duration_millis = x['durationMillis']
-            ) for x in raw_stats['stages']]
+            stages_stats = [self._get_stage_stats(x) for x in raw_stats['stages']]
 
         build_stats = BuildStats(
             job_name = self.job_name,
@@ -50,6 +46,37 @@ class JenkinsCollectorAdapter(object):
         )
 
         return build_stats
+
+
+    def _get_stage_stats(self, raw_stage_stats):
+        stage_name = raw_stage_stats['name']
+        stage_status = raw_stage_stats['status']
+        stage_duration = raw_stage_stats['durationMillis']
+
+        stage_status = self._apply_in_progress_post_actions_override(stage_name, stage_status)
+
+        return StageStats(
+            name = stage_name,
+            status = stage_status,
+            duration_millis = stage_duration
+        ) 
+
+
+    def _apply_in_progress_post_actions_override(self, name, status):
+        # Jenkins Collector should be invoked as the last thing in the last stage of a Jenkinsfile
+        # in the 'post actions' stage. However, Jenkins will report that at the time of the
+        # invocation, the 'post action' stage has status 'IN PROGRESS'.
+        # We assume that:
+        # 1) If we reached this point, current 'post action' stage is pretty much successful.
+        # 2) If Jenkins Collector fails, then nothing will be pushed to the monitoring database
+        #    anyways. No incorrect stage results are pushed (e.g. no 'SUCCESS' will be pushed).
+        # For this reason, we overwrite the 'IN PROGRESS' status of current stage to 'SUCCESS', so
+        # that anyone analyzing monitoring database entries won't get confused by a bunch of
+        # 'IN PROGRESS'-es in post stage.
+        if name == "Declarative: Post Actions" and status == 'IN PROGRESS':
+            return 'SUCCESS'
+        else: 
+            return status
 
 
     @classmethod

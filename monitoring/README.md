@@ -48,9 +48,6 @@ Tests are written using `unittest` module from Python's standard library.
     $ python3 -m tests.monitoring_tests
     ```
 
-Note: part of the test suite will fail on Windows. However, it's possible to develop
-platform independent parts of the script and run most of the unit tests.
-
 ### Grafana dashboards
 
 Grafana dashboards are described in YAML files.

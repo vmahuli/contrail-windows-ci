@@ -117,6 +117,36 @@ class TestJenkinsCollector(unittest.TestCase):
             self.assert_stage_stats_is_valid(build_stats.stages[0], self.default_stages_stats_response[0])
             self.assert_stage_stats_is_valid(build_stats.stages[1], self.default_stages_stats_response[1])
 
+    def test_overwrites_only_in_progress_status_of_post_actions_to_success(self):
+        post_stages = [
+            {
+                'name': 'Declarative: Post Actions',
+                'status': 'IN PROGRESS',
+                'durationMillis': 1234,
+            },
+            {
+                'name': 'Declarative: Post Actions',
+                'status': 'FAILED',
+                'durationMillis': 1234,
+            },
+            {
+                'name': 'Declarative: Post Actions',
+                'status': 'WHATEVER',
+                'durationMillis': 1234,
+            }
+        ]
+        response = {
+            **self.default_build_stats_response,
+            **{ 'stages': post_stages }
+        }
+        with requests_mock.mock() as m:
+            m.get(self.default_api_url, json=response)
+
+            build_stats = self.default_collector.collect()
+            self.assertEqual(build_stats.stages[0].status, 'SUCCESS')
+            self.assertEqual(build_stats.stages[1].status, 'FAILED')
+            self.assertEqual(build_stats.stages[2].status, 'WHATEVER')
+
 
 class TestXmlReportCollector(unittest.TestCase):
     def setUp(self):

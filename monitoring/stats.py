@@ -13,9 +13,6 @@ class BuildStats(object):
         self.stages = stages
         self.test_stats = test_stats
 
-    def is_build_finished(self):
-        return self.status != 'IN_PROGRESS'
-
 
 StageStats = namedtuple('StageStats', [
     'name',
