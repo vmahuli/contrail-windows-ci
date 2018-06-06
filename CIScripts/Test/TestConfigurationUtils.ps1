@@ -1,4 +1,5 @@
 . $PSScriptRoot\..\Testenv\Testenv.ps1
+. $PSScriptRoot\..\Testenv\Testbed.ps1
 . $PSScriptRoot\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
 . $PSScriptRoot\Utils\DockerImageBuild.ps1
@@ -107,6 +108,13 @@ function Start-DockerDriver {
 
     Write-Log "Starting Docker Driver"
 
+    # We have to specify some file, because docker driver doesn't
+    # currently support stderr-only logging.
+    # TODO: Remove this when after "no log file" option is supported.
+    $OldLogPath = "NUL"
+
+    $LogDir = Get-ComputeLogsDir
+
     $Arguments = @(
         "-forceAsInteractive",
         "-controllerIP", $ControllerConfig.Address,
@@ -116,34 +124,26 @@ function Start-DockerDriver {
         "-os_tenant_name", $OpenStackConfig.Project,
         "-adapter", $AdapterName,
         "-vswitchName", "Layered <adapter>",
+        "-logPath", $OldLogPath,
         "-logLevel", "Debug"
     )
 
     Invoke-Command -Session $Session -ScriptBlock {
 
-        $LogDir = "$Env:ProgramData/ContrailDockerDriver"
-
-        if (Test-Path $LogDir) {
-            Push-Location $LogDir
-
-            if (Test-Path log.txt) {
-                Move-Item -Force log.txt log.old.txt
-            }
-
-            Pop-Location
-        }
-
         # Nested ScriptBlock variable passing workaround
         $Arguments = $Using:Arguments
+        $LogDir = $Using:LogDir
 
         Start-Job -ScriptBlock {
-            Param($Arguments)
-            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" $Arguments
+            Param($Arguments, $LogDir)
 
-            # The `, $null` below is used to force passing $Arguments as an arguments'
-            # list element instead of an arguments list itself.
-            # @($Arguments) looks like it should work, but does not.
-        } -ArgumentList $Arguments, $null
+            New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+            $LogPath = Join-Path $LogDir "contrail-windows-docker-driver.log"
+            $ErrorActionPreference = "Continue"
+
+            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" $Arguments 2>&1 |
+                Add-Content -NoNewline $LogPath
+        } -ArgumentList $Arguments, $LogDir
     }
 
     Start-Sleep -s $WaitTime
