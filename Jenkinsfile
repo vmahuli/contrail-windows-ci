@@ -52,9 +52,9 @@ pipeline {
                         script {
                             try {
                                 powershell script: """./Invoke-Selfcheck.ps1 `
-                                    -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck"""
+                                    -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck/raw_NUnit"""
                             } finally {
-                                stash name: 'testReportsCISelfcheck', includes: 'testReportsRaw/**', allowEmpty: true
+                                stash name: 'CISelfcheckNUnitLogs', includes: 'testReportsRaw/CISelfcheck/raw_NUnit/**', allowEmpty: true
                             }
                         }
                     }
@@ -222,12 +222,20 @@ pipeline {
                             -TestenvConfFile testenv-conf.yaml `
                             -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute"""
                     } finally {
-                        stash name: 'testReportsWindowsCompute', includes: 'testReportsRaw/**', allowEmpty: true
+                        stash name: 'windowsComputeNUnitLogs', includes: 'testReportsRaw/WindowsCompute/raw_NUnit/**', allowEmpty: true
+
+                        dir('testReportsRaw') {
+                            stash name: 'ddriverJUnitLogs', includes:
+                            'WindowsCompute/ddriver_junit_test_logs/**', allowEmpty: true
+
+                            stash name: 'detailedLogs', includes:
+                            'WindowsCompute/detailed_logs/**', allowEmpty: true
+                            }
+                        }
                     }
                 }
             }
         }
-    }
 
     environment {
         LOG_SERVER = "logs.opencontrail.org"
@@ -243,25 +251,18 @@ pipeline {
                 unstash 'CIScripts'
                 script {
                     try {
-                        unstash 'testReportsWindowsCompute'
-                        unstash 'testReportsCISelfcheck'
+                        unstash 'windowsComputeNUnitLogs'
+                        unstash 'CISelfcheckNUnitLogs'
                     } catch (Exception err) {
                         echo "No test report to parse"
                     } finally {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir testReportsRaw/WindowsCompute `
+                            -XmlsDir testReportsRaw/WindowsCompute/raw_NUnit `
                             -OutputDir TestReports/WindowsCompute'''
 
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir testReportsRaw/CISelfcheck `
+                            -XmlsDir testReportsRaw/CISelfcheck/raw_NUnit `
                             -OutputDir TestReports/CISelfcheck'''
-
-                        // Using robocopy to workaround 260 chars path length limitation in Copy-Item.
-                        // TODO: Similar method may be used when CISelfcheck generates detailed logs.
-                        def detailedLogsDir = "${pwd()}/testReportsRaw/WindowsCompute/detailed/"
-                        if (fileExists(detailedLogsDir)) {
-                            robocopy(detailedLogsDir, "${pwd()}/TestReports/WindowsCompute/detailedLogs", "*.log")
-                        }
 
                         stash name: 'processedTestReports', includes: 'TestReports/**', allowEmpty: true
                     }
@@ -281,6 +282,11 @@ pipeline {
 
                     dir('to_publish') {
                         unstash 'processedTestReports'
+                        dir('TestReports') {
+                            unstash 'ddriverJUnitLogs'
+                            unstash 'detailedLogs'
+                        }
+
                         def logFilename = 'log.txt.gz'
                         obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
                         publishToLogServer(logServer, ".", destDir)

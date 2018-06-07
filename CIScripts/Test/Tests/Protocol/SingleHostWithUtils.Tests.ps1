@@ -1,6 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
+    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
+    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
@@ -170,6 +171,7 @@ Describe "Single compute node protocol tests with utils" {
             Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
         $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
+        $ContrailNM.EnsureProject($null)
     }
 
     AfterAll {

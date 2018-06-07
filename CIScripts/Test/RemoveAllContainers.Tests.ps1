@@ -1,6 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
+    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
+    [Parameter(ValueFromRemainingArguments=$true)] $AdditionalParams
 )
 
 . $PSScriptRoot\TestConfigurationUtils.ps1
