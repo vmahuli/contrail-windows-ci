@@ -1,0 +1,9 @@
+---
+- name: Set PowerShell as a default shell
+  win_regedit:
+    path: HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon
+    name: Shell
+    data: powershell.exe
+
+- name: Enable Remote Desktop
+  win_shell: cscript C:\Windows\System32\Scregedit.wsf /ar 0

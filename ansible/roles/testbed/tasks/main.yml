@@ -1,5 +1,9 @@
 ---
 
+- name: Include windows-common role
+  include_role:
+    name: windows-common
+
 - name: Install python 2.7.13
   win_chocolatey:
     name: python2
