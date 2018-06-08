@@ -82,6 +82,10 @@ function Get-RemoteContainerNetAdapterInformation {
         throw "Multiple IP addresses returned from container for single NetAdapter: $($Adapter.IPAddress)"
     }
 
+    #if (!$Adapter.IPAddress) {
+    #    throw "Empty IPAddress returned from container"
+    #}
+
     $Ret = @{
         ifIndex = $Adapter.ifIndex
         ifName = $Adapter.ifName
@@ -92,6 +96,8 @@ function Get-RemoteContainerNetAdapterInformation {
     }
 
     $Ret.MacAddress = $Ret.MacAddressWindows.Replace('-', ':')
+
+    Write-Log $Ret
 
     return [ContainerNetAdapterInformation] $Ret
 }
