@@ -76,6 +76,7 @@ function Get-RemoteContainerNetAdapterInformation {
 
     Write-Log "TEST: Get-RemoteContainerNetAdapterInformation"
     Write-Log $Adapter
+    Write-Log $Adapter.IPAddress
 
     if ($Adapter.IPAddress -is [array]) {
         Write-Log "TEST: Inside if"
