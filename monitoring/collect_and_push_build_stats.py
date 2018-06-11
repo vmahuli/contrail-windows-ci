@@ -6,7 +6,6 @@ from collectors.xml_report_collector import XmlReportCollector
 from collectors.jenkins_collector_adapter import JenkinsCollectorAdapter
 from publishers.database_publisher_adapter import DatabasePublisherAdapter
 from publishers.mysql_session import MySQLSession
-from finished_build_stats_publisher import FinishedBuildStatsPublisher
 
 
 def parse_args():
