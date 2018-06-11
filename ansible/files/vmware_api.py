@@ -76,6 +76,10 @@ class VmwareApi(object):
 
     def select_destination_host_and_datastore(self, datastore_cluster_name):
         datastores = self._get_datastores_from_cluster(datastore_cluster_name)
+
+        # TODO: Broken ESXi workaround. Remove this after real fix.
+        datastores = [d for d in datastores if str(d.host[0].key.name) != 'ci-esx01.englab.juniper.net']
+
         if len(datastores) == 0:
             return None, None
         random.shuffle(datastores)
