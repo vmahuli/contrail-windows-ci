@@ -5,6 +5,7 @@ Param (
     [switch] $SkipStaticAnalysis
 )
 
+. $PSScriptRoot\CIScripts\Common\Init.ps1
 . $PSScriptRoot/CIScripts/TestRunner/Invoke-PesterTests.ps1
 
 # NOTE TO DEVELOPERS

@@ -1,3 +1,5 @@
+. $PSScriptRoot\..\..\..\Common\Init.ps1
+
 Describe "Flows" {
     It "injects flows on ICMP traffic" -Pending {
         # Test-FlowsAreInjectedOnIcmpTraffic

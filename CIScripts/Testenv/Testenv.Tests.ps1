@@ -1,3 +1,4 @@
+. $PSScriptRoot\..\Common\Init.ps1
 . $PSScriptRoot\Testenv.ps1
 
 Describe "Testenv" {

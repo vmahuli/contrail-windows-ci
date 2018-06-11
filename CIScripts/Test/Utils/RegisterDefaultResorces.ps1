@@ -1,3 +1,4 @@
+. $PSScriptRoot\..\..\Common\Init.ps1
 . $PSScriptRoot/ContrailUtils.ps1
 
 function Register-DefaultResourcesInContrail {

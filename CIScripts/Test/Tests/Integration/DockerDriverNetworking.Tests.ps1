@@ -1,3 +1,5 @@
+. $PSScriptRoot\..\..\..\Common\Init.ps1
+
 Describe "Docker driver networking" {
     Context "conflicting local IPs" {
         It "can create containers for different tenants with same IP" -Pending {

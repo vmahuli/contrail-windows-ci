@@ -1,3 +1,4 @@
+. $PSScriptRoot\Common\Init.ps1
 . $PSScriptRoot\Common\Job.ps1
 . $PSScriptRoot\Checkout\Zuul.ps1
 . $PSScriptRoot\Checkout\NonZuul.ps1

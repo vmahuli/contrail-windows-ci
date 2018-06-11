@@ -1,3 +1,5 @@
+. $PSScriptRoot\..\..\..\Common\Init.ps1
+
 Describe "Tunnelling with utils tests" {
     Context "MPLSoGRE" {
         It "ICMP" -Pending {

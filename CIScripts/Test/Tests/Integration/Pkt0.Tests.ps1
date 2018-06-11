@@ -1,3 +1,5 @@
+. $PSScriptRoot\..\..\..\Common\Init.ps1
+
 Describe "pkt0 interface" {
     It "pkt0 appears in vRouter when agent is started" -Pending {
         # Test-InitialPkt0Injection
