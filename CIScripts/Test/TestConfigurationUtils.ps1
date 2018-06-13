@@ -2,6 +2,7 @@
 . $PSScriptRoot\..\Testenv\Testbed.ps1
 . $PSScriptRoot\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
+. $PSScriptRoot\..\Common\Invoke-NativeCommand.ps1
 . $PSScriptRoot\Utils\DockerImageBuild.ps1
 . $PSScriptRoot\PesterLogger\PesterLogger.ps1
 
@@ -473,7 +474,24 @@ function New-Container {
     if ($Name) { $Arguments += "--name", $Name }
     $Arguments += "--network", $NetworkName, $Image
 
-    $ContainerID = Invoke-Command -Session $Session { docker @Using:Arguments }
+    $Result = Invoke-NativeCommand -Session $Session -CaptureOutput -AllowNonZero { docker @Using:Arguments }
+    $ContainerID = $Result.Output[0]
+    $OutputMessages = $Result.Output
+
+    # Workaround for occasional failures of container creation in Docker for Windows.
+    # In such a case Docker reports: "CreateContainer: failure in a Windows system call",
+    # container is created (enters CREATED state), but is not started and can not be
+    # started manually. It's possible to delete a faulty container and start it again.
+    # We want to capture just this specific issue here not to miss any new problem.
+    if ($Result.Output -match "CreateContainer: failure in a Windows system call") {
+        Write-Log "Container creation failed with the following output: $OutputMessages"
+        Write-Log "Removing incorrectly created container (if exists)..."
+        Invoke-NativeCommand -Session $Session -AllowNonZero { docker rm -f $Using:ContainerID } | Out-Null
+        Write-Log "Retrying container creation..."
+        $ContainerID = Invoke-Command -Session $Session { docker @Using:Arguments }
+    } elseif ($Result.ExitCode -ne 0) {
+        throw "New-Container failed with the following output: $OutputMessages"
+    }
 
     return $ContainerID
 }
