@@ -65,15 +65,15 @@ class JenkinsCollectorAdapter(object):
     def _apply_in_progress_post_actions_override(self, name, status):
         # Jenkins Collector should be invoked as the last thing in the last stage of a Jenkinsfile
         # in the 'post actions' stage. However, Jenkins will report that at the time of the
-        # invocation, the 'post action' stage has status 'IN PROGRESS'.
+        # invocation, the 'post action' stage has status 'IN_PROGRESS'.
         # We assume that:
         # 1) If we reached this point, current 'post action' stage is pretty much successful.
         # 2) If Jenkins Collector fails, then nothing will be pushed to the monitoring database
         #    anyways. No incorrect stage results are pushed (e.g. no 'SUCCESS' will be pushed).
-        # For this reason, we overwrite the 'IN PROGRESS' status of current stage to 'SUCCESS', so
+        # For this reason, we overwrite the 'IN_PROGRESS' status of current stage to 'SUCCESS', so
         # that anyone analyzing monitoring database entries won't get confused by a bunch of
-        # 'IN PROGRESS'-es in post stage.
-        if name == "Declarative: Post Actions" and status == 'IN PROGRESS':
+        # 'IN_PROGRESS'-es in post stage.
+        if name == "Declarative: Post Actions" and status == 'IN_PROGRESS':
             return 'SUCCESS'
         else: 
             return status

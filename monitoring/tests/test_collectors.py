@@ -23,7 +23,7 @@ class TestJenkinsCollector(unittest.TestCase):
 
         self.default_build_stats_response = {
             'id': 1,
-            'status': 'IN PROGRESS',
+            'status': 'IN_PROGRESS',
             'durationMillis': 1000,
             'endTimeMillis': self.finished_at_millis,
         }
@@ -121,7 +121,7 @@ class TestJenkinsCollector(unittest.TestCase):
         post_stages = [
             {
                 'name': 'Declarative: Post Actions',
-                'status': 'IN PROGRESS',
+                'status': 'IN_PROGRESS',
                 'durationMillis': 1234,
             },
             {
