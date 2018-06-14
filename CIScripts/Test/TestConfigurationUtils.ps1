@@ -509,12 +509,30 @@ function Remove-AllContainers {
     Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
 
     foreach ($Session in $Sessions) {
-        Invoke-Command -Session $Session -ScriptBlock {
+        $Result = Invoke-NativeCommand -Session $Session -CaptureOutput -AllowNonZero {
             $Containers = docker ps -aq
+            $MaxAttempts = 3
+            $TimesToGo = $MaxAttempts
+            while ( $Containers -and $TimesToGo -gt 0 ) {
                 if($Containers) {
-                    docker rm -f $Containers | Out-Null
+                    $Command = "docker rm -f $Containers"
+                    Invoke-Expression -Command $Command
                 }
+                $Containers = docker ps -aq
+                $TimesToGo = $TimesToGo - 1
+                if ( $Containers -and $TimesToGo -eq 0 ) {
+                    $LASTEXITCODE = 1
+                }
+            }
             Remove-Variable "Containers"
+            return $MaxAttempts - $TimesToGo - 1
+        }
+
+        $OutputMessages = $Result.Output
+        if ($Result.ExitCode -ne 0) {
+            throw "Remove-AllContainers - removing containers failed with the following messages: $OutputMessages"
+        } elseif ($Result.Output[-1] -gt 0) {
+            Write-Host "Remove-AllContainers - removing containers was successful, but required more than one attempt: $OutputMessages"
         }
     }
 }
