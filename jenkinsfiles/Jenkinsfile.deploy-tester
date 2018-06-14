@@ -3,9 +3,8 @@ library "contrailWindows@$BRANCH_NAME"
 prepareAndRunAnsiblePlaybook(config: deployTemplateConfig,
                              playbook: 'vmware-deploy-template.yml',
                              vm_role: 'tester',
-                             vmware_folder: 'WINCI',
+                             vmware_folder: 'WINCI/Testers',
                              vm_hardware_memory_mb: '8192',
                              vm_hardware_num_cpus: '2',
                              vm_networks: [['name': 'VM-Network', 'type': 'dhcp'],
                                           ['name': 'VLAN_501_Management', 'type': 'dhcp']])
-
