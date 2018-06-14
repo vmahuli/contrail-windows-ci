@@ -240,7 +240,10 @@ pipeline {
         LOG_SERVER = "logs.opencontrail.org"
         LOG_SERVER_USER = "zuul-win"
         LOG_SERVER_FOLDER = "winci"
-        LOG_ROOT_DIR = "/var/www/logs/winci"
+        LOG_ROOT_DIR = "/var/www/logs"
+        MYSQL = credentials('monitoring-mysql')
+        MYSQL_HOST = "10.84.12.52"
+        MYSQL_DATABASE = "monitoring_test"
     }
 
     post {
@@ -271,13 +274,8 @@ pipeline {
             node('master') {
                 script {
                     deleteDir()
-                    def logServer = [
-                        addr: env.LOG_SERVER,
-                        user: env.LOG_SERVER_USER,
-                        folder: env.LOG_SERVER_FOLDER,
-                        rootDir: env.LOG_ROOT_DIR
-                    ]
-                    def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
+                    def relLogsDstDir = logsRelPathBasedOnTriggerSource(env.JOB_NAME,
+                        env.BUILD_NUMBER, env.ZUUL_UUID)
 
                     dir('to_publish') {
                         unstash 'processedTestReports'
@@ -287,22 +285,39 @@ pipeline {
                         }
 
                         def logFilename = 'log.txt.gz'
-                        obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
-                        publishToLogServer(logServer, ".", destDir)
+                        createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
+
+                        def auth = sshAuthority(env.LOG_SERVER_USER, env.LOG_SERVER)
+                        def dst = logsDirInFilesystem(env.LOG_ROOT_DIR, env.LOG_SERVER_FOLDER, relLogsDstDir)
+                        publishCurrentDirToLogServer(auth, dst)
                     }
 
-                    def logsURL = getLogsURL(logServer, env.ZUUL_UUID)
-
+                    def fullLogsURL = logsURL(env.LOG_SERVER, env.LOG_SERVER_FOLDER, relLogsDstDir)
+                    def logDestMsg = "Full logs URL: ${fullLogsURL}"
+                    echo(logDestMsg)
                     if (isGithub()) {
-                        sendGithubComment("Full logs URL: ${logsURL}")
+                        sendGithubComment(logDestMsg)
                     }
+                }
+            }
 
-                    def reportLocationsFile = "${logsURL}/TestReports/WindowsCompute/reports-locations.json"
-                    build job: 'WinContrail/gather-build-stats', wait: false,
-                        parameters: [string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
-                                     string(name: 'MONITORED_JOB_NAME', value: env.JOB_NAME),
-                                     string(name: 'MONITORED_BUILD_URL', value: env.BUILD_URL),
-                                     string(name: 'TEST_REPORTS_JSON_URL', value: reportLocationsFile)]
+            node('ansible') {
+                script {
+                    deleteDir()
+                    def relLogsDstDir = logsRelPathBasedOnTriggerSource(env.JOB_NAME, env.BUILD_NUMBER, env.ZUUL_UUID)
+                    def fullLogsURL = logsURL(env.LOG_SERVER, env.LOG_SERVER_FOLDER, relLogsDstDir)
+
+                    unstash "Monitoring"
+                    shellCommand('python3', [
+                        'monitoring/collect_and_push_build_stats.py',
+                        '--job-name', env.JOB_NAME,
+                        '--job-status', currentBuild.currentResult,
+                        '--build-url', env.BUILD_URL,
+                        '--mysql-host', env.MYSQL_HOST,
+                        '--mysql-database', env.MYSQL_DATABASE,
+                        '--mysql-username', env.MYSQL_USR,
+                        '--mysql-password', env.MYSQL_PSW,
+                    ] + getReportsLocationParam(fullLogsURL))
                 }
             }
         }

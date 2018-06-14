@@ -27,21 +27,17 @@ EXAMPLE_TESTS_STATS = TestStats(
 )
 
 
-def get_test_build_stats_with_status(status, stages_stats=[], test_stats=None):
-    return BuildStats(
+def get_test_build_stats(stages_stats=[], test_stats=None):
+        return BuildStats(
         job_name = 'MyJob',
         build_id = 7,
         build_url = 'http://1.2.3.4:5678/job/MyJob/1',
         finished_at_secs = 2,
-        status = status,
+        status = 'SUCCESS',
         duration_millis = 3,
         stages = stages_stats,
         test_stats = test_stats,
     )
-
-
-def get_test_build_stats(stages_stats=[], test_stats=None):
-    return get_test_build_stats_with_status('SUCCESS', stages_stats, test_stats)
 
 
 def assert_stage_matches_stage_stats(test_case, stage, stage_stats):

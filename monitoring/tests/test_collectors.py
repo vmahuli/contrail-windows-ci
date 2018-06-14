@@ -18,11 +18,12 @@ class TestJenkinsCollector(unittest.TestCase):
         self.finished_at_millis = int(self.finished_at.timestamp() * 1000)
         self.default_build_url = 'http://1.2.3.4:5678/job/MyJob/1'
         self.default_api_url = 'http://1.2.3.4:5678/job/MyJob/1/wfapi/describe'
-        self.default_collector = JenkinsCollectorAdapter('MyJob', self.default_build_url)
+        self.default_job_status = "SUCCESS"
+        self.default_collector = JenkinsCollectorAdapter('MyJob', self.default_job_status, self.default_build_url)
 
         self.default_build_stats_response = {
             'id': 1,
-            'status': 'SUCCESS',
+            'status': 'IN_PROGRESS',
             'durationMillis': 1000,
             'endTimeMillis': self.finished_at_millis,
         }
@@ -47,7 +48,7 @@ class TestJenkinsCollector(unittest.TestCase):
         self.assertEqual(build_stats.build_id, json['id'])
         self.assertEqual(build_stats.build_url, self.default_build_url)
         self.assertEqual(build_stats.finished_at_secs, int(self.finished_at.timestamp()))
-        self.assertEqual(build_stats.status, json['status'])
+        self.assertEqual(build_stats.status, self.default_job_status)
         self.assertEqual(build_stats.duration_millis, json['durationMillis'])
 
     def assert_stage_stats_is_valid(self, stage_stats, json):
@@ -56,6 +57,15 @@ class TestJenkinsCollector(unittest.TestCase):
         self.assertEqual(stage_stats.name, json['name'])
         self.assertEqual(stage_stats.status, json['status'])
         self.assertEqual(stage_stats.duration_millis, json['durationMillis'])
+
+    def test_overall_build_status_doesnt_depend_on_status_in_json(self):
+       with requests_mock.mock() as m:
+            m.get('http://1.2.3.4:5678/job/MyJob/1/wfapi/describe', json=self.default_build_stats_response)
+
+            collector = JenkinsCollectorAdapter('MyJob', "SOME_STATUS", 'http://1.2.3.4:5678/job/MyJob/1')
+
+            build_stats = collector.collect()
+            self.assertEqual(build_stats.status, "SOME_STATUS")
 
     def test_build_stats(self):
         with requests_mock.mock() as m:
@@ -69,7 +79,7 @@ class TestJenkinsCollector(unittest.TestCase):
         with requests_mock.mock() as m:
             m.get('http://1.2.3.4:5678/job/MyJob/-1/wfapi/describe', status_code=404)
 
-            collector = JenkinsCollectorAdapter('MyJob', 'http://1.2.3.4:5678/job/MyJob/-1')
+            collector = JenkinsCollectorAdapter('MyJob', self.default_job_status, 'http://1.2.3.4:5678/job/MyJob/-1')
 
             with self.assertRaises(InvalidResponseCodeError):
                 collector.collect()
@@ -106,6 +116,36 @@ class TestJenkinsCollector(unittest.TestCase):
 
             self.assert_stage_stats_is_valid(build_stats.stages[0], self.default_stages_stats_response[0])
             self.assert_stage_stats_is_valid(build_stats.stages[1], self.default_stages_stats_response[1])
+
+    def test_overwrites_only_in_progress_status_of_post_actions_to_success(self):
+        post_stages = [
+            {
+                'name': 'Declarative: Post Actions',
+                'status': 'IN_PROGRESS',
+                'durationMillis': 1234,
+            },
+            {
+                'name': 'Declarative: Post Actions',
+                'status': 'FAILED',
+                'durationMillis': 1234,
+            },
+            {
+                'name': 'Declarative: Post Actions',
+                'status': 'WHATEVER',
+                'durationMillis': 1234,
+            }
+        ]
+        response = {
+            **self.default_build_stats_response,
+            **{ 'stages': post_stages }
+        }
+        with requests_mock.mock() as m:
+            m.get(self.default_api_url, json=response)
+
+            build_stats = self.default_collector.collect()
+            self.assertEqual(build_stats.stages[0].status, 'SUCCESS')
+            self.assertEqual(build_stats.stages[1].status, 'FAILED')
+            self.assertEqual(build_stats.stages[2].status, 'WHATEVER')
 
 
 class TestXmlReportCollector(unittest.TestCase):
