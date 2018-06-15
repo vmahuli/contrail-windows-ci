@@ -99,6 +99,7 @@ function Get-RemoteContainerNetAdapterInformation {
     $Ret.MacAddress = $Ret.MacAddressWindows.Replace('-', ':')
 
     Write-Log $Ret
+    Write-Log $Ret.IPAddress
 
     return [ContainerNetAdapterInformation] $Ret
 }

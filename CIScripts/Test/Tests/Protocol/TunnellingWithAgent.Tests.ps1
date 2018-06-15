@@ -1,5 +1,5 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
@@ -297,7 +297,7 @@ function Test-UDP {
 
 Describe "Tunnelling with Agent tests" {
     Context "Tunneling" {
-        It "ICMP - Ping between containers on separate compute nodes succeeds" {
+        It "ICMP - Ping between containers on separate compute nodes succeeds" -Pending {
             Test-Ping `
                 -Session $Sessions[0] `
                 -SrcContainerName $Container1ID `
@@ -327,7 +327,7 @@ Describe "Tunnelling with Agent tests" {
             # Test-MPLSoGRE -Session $Sessions[1] | Should Be $true
         }
 
-        It "UDP" {
+        It "UDP" -Pending {
             $MyMessage = "We are Tungsten Fabric. We come in peace."
             $UDPServerPort = 1905
             $UDPClientPort = 1983
