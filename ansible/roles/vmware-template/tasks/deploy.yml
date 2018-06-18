@@ -1,6 +1,10 @@
 ---
 
-- name: Get highest VM number
+- name: Create template of VM name
+  set_fact:
+    vm_name_template: "ci-{{ vm_role }}-"
+
+- name: Get highest VM number for {{ vm_name_template }}
   delegate_to: localhost
   register: get_vm_id
   script: >
@@ -8,13 +12,13 @@
     --host '{{ vcenter_hostname }}'
     --user '{{ vcenter_username }}'
     --password '{{ vcenter_password }}'
-    --vm-name "winci-{{ vm_role }}-"
+    --vm-name "{{ vm_name_template }}"
 
 - name: Define slave VM variables
   set_fact:
     slave_vm_annotation: "Template for {{ vm_role }} created on {{ '%Y-%m-%d %H:%M:%S' | strftime(ansible_date_time.epoch) }}"
     slave_vm_folder: "{{ vcenter_datacenter }}/vm/{{ vmware_folder }}"
-    slave_vm_name: "winci-{{ vm_role }}-{{ get_vm_id.stdout.strip() }}"
+    slave_vm_name: "{{ vm_name_template }}{{ get_vm_id.stdout.strip() }}"
 
 - name: "Deploy VM from Template: {{ slave_vm_name }}"
   vmware_guest:
@@ -31,7 +35,7 @@
     hardware: "{{ vm_hardware }}"
     state: poweredon
     customization:
-      hostname: "winci-{{ vm_role }}-{{ get_vm_id.stdout.strip() }}"
+      hostname: "{{ slave_vm_name }}"
       password: "Contrail123!"
 
     networks: "{{ vm_networks }}"
