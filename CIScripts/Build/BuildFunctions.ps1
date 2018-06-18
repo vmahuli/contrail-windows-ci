@@ -58,7 +58,7 @@ function Invoke-DockerDriverBuild {
             & dep prune -v
         }
     })
-    Pop-Location
+    Pop-Location # $srcPath
 
     $Job.Step("Contrail-go-api source code generation", {
         Invoke-NativeCommand -ScriptBlock {
@@ -72,14 +72,14 @@ function Invoke-DockerDriverBuild {
         }
     })
 
-    Push-Location bin
-
-    $Job.Step("Building driver", {
+    $Job.Step("Building driver and precompiling tests", {
         # TODO: Handle new name properly
         Invoke-NativeCommand -ScriptBlock {
-            go build -o contrail-windows-docker.exe -v $DriverSrcPath
+            & $srcPath\Invoke-Build.ps1 -Out contrail-windows-docker.exe -OutDir bin -SrcPath $srcPath -BuildTests
         }
     })
+
+    Push-Location bin
 
     $Job.Step("Precompiling tests", {
         Invoke-NativeCommand -ScriptBlock {
@@ -104,7 +104,7 @@ function Invoke-DockerDriverBuild {
                      -CertPasswordFilePath $CertPasswordFilePath `
                      -MSIPath "docker-driver.msi"
 
-    Pop-Location
+    Pop-Location # bin
 
     $Job.Step("Copying artifacts to $OutputPath", {
         Copy-Item bin/* $OutputPath
