@@ -74,18 +74,18 @@ class VmwareApi(object):
         return self.content.searchIndex.FindByInventoryPath(inventory_path)
 
 
-    def select_destination_host_and_datastore(self, datastore_cluster_name):
+    def iter_destination_hosts_and_datastores(self, datastore_cluster_name):
         datastores = self._get_datastores_from_cluster(datastore_cluster_name)
 
-        # TODO: Broken ESXi workaround. Remove this after real fix.
-        datastores = [d for d in datastores if str(d.host[0].key.name) != 'ci-esx01.englab.juniper.net']
-
         if len(datastores) == 0:
-            return None, None
+            raise ResourceNotFound("Couldn't find any datastore and host in cluster"
+                                   "'{}'".format(datastore_cluster_name))
+
         random.shuffle(datastores)
-        chosen_datastore = datastores[0]
-        chosen_host = chosen_datastore.host[0].key
-        return chosen_host, chosen_datastore
+
+        for datastore in datastores:
+            host = datastore.host[0].key
+            yield host, datastore
 
 
     def _get_datastores_from_cluster(self, datastore_cluster_name):
