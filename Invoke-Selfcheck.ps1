@@ -1,8 +1,9 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $ReportDir,
+    [Parameter(Mandatory=$false)] [string] $ReportPath,
     [switch] $SkipUnit,
-    [switch] $SkipStaticAnalysis
+    [switch] $SkipStaticAnalysis,
+    [switch] $CodeCoverage
 )
 
 . $PSScriptRoot\CIScripts\Common\Init.ps1
@@ -38,10 +39,17 @@ if (-not $TestenvConfFile) {
     $ExcludeTags += "Systest"
 }
 
+$FilesUnderTest = @()
+if ($CodeCoverage) {
+    $Dirs = Get-ChildItem -Directory -Exclude "_Old_Tests"
+    $FilesUnderTest = Get-ChildItem $Dirs -File -Recurse -Include "*.ps1" -Exclude "*.Tests.ps1"
+}
+
 Write-VisibleMessage "Including tags: $IncludeTags; Excluding tags: $ExcludeTags"
-$Results = Invoke-PesterTests -TestRootDir $pwd -ReportDir $ReportDir `
+$Results = Invoke-PesterTests -TestRootDir $pwd -ReportPath $ReportPath `
     -IncludeTags $IncludeTags -ExcludeTags $ExcludeTags `
-    -AdditionalParams @{TestenvConfFile=$TestenvConfFile}
+    -AdditionalParams @{TestenvConfFile=$TestenvConfFile} `
+    -CodeCovFiles $FilesUnderTest
 
 if ($SkipStaticAnalysis) {
     Write-VisibleMessage "-SkipStaticAnalysis switch set, skipping static analysis"
@@ -53,6 +61,11 @@ if ($SkipStaticAnalysis) {
     .\StaticAnalysis\Invoke-StaticAnalysisTools.ps1 -RootDir . -ConfigDir $pwd/StaticAnalysis
 }
 
+if ($CodeCoverage) {
+    $PercentCov = 100.0 * $Results.CodeCoverage.NumberOfCommandsExecuted / `
+        $Results.CodeCoverage.NumberOfCommandsAnalyzed
+    Write-VisibleMessage "Code coverage: $PercentCov%"
+}
 Write-VisibleMessage "done"
 
 if ($Results.FailedCount -gt 0) {

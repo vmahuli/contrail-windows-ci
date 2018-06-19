@@ -4,20 +4,16 @@
 
 function Convert-TestReportsToHtml {
     param (
-        [Parameter(Mandatory = $true)] [String] $XmlReportsDir,
+        [Parameter(Mandatory = $true)] [String] $RawNUnitPath,
         [Parameter(Mandatory = $true)] [string] $OutputDir,
         [Parameter(Mandatory = $false)] $GeneratorFunc = (Get-Item function:Invoke-RealReportunit)
     )
-
-    if (-not (Get-ChildItem $XmlReportsDir -Filter *.xml)) {
-        throw "No xml files in reports dir, aborting"
-    }
 
     $FixedReportsDir = "$OutputDir/raw_NUnit"
     $PrettyDir = "$OutputDir/pretty_test_report"
 
     New-Item -Type Directory -Force $FixedReportsDir | Out-Null
-    New-FixedTestReports -OriginalReportsDir $XmlReportsDir -FixedReportsDir $FixedReportsDir
+    New-FixedTestReports -OriginalReportPath $RawNUnitPath -FixedReportsDir $FixedReportsDir
 
     & $GeneratorFunc -NUnitDir $FixedReportsDir
     New-Item -Type Directory -Force $PrettyDir | Out-Null
@@ -41,14 +37,15 @@ function Invoke-RealReportunit {
 
 function New-FixedTestReports {
     param(
-        [Parameter(Mandatory = $true)] [string] $OriginalReportsDir,
+        [Parameter(Mandatory = $true)] [string] $OriginalReportPath,
         [Parameter(Mandatory = $true)] [string] $FixedReportsDir
     )
 
-    foreach ($ReportFile in Get-ChildItem $OriginalReportsDir -Filter *.xml) {
-        [string] $Content = Get-Content $ReportFile.FullName
-        $FixedContent = Repair-NUnitReport -InputData $Content
-        $FixedContent | Out-File "$FixedReportsDir/$($ReportFile.Name)" -Encoding "utf8"
+    $CombinedReportContents = [string](Get-Content $OriginalReportPath)
+    $SplitTestSuiteXMLs = Split-NUnitReport -InputData $CombinedReportContents
+    foreach ($SingleTestSuiteXML in $SplitTestSuiteXMLs) {
+        $FixedContent = Repair-NUnitReport -InputData $SingleTestSuiteXML.Content
+        $FixedContent | Out-File "$FixedReportsDir/$($SingleTestSuiteXML.SuiteName).xml" -Encoding "utf8"
     }
 }
 

@@ -308,4 +308,99 @@ Describe "Repair-NUnitReport" -Tags CI, Unit {
             NormalizeXmlString $ActualOutput | Should BeExactly $ExpectedOutput
         }
     }
+
+    Context "Split-NUnitReport" {
+        It "works" {
+            $TestData = NormalizeXmlString -InputData @"
+<?xml version="1.0"?>
+<test-results>
+<environment />
+<culture-info current-culture="en-US" current-uiculture="en-US" />
+<test-suite name="Pester" description="Pester">
+<results>
+    <test-suite name="C:\SomePath\SomeSuite.Tests.ps1" description="C:\SomePath\SomeSuite.Tests.ps1">
+    <results>
+        <test-suite name="A">
+        <results>
+            <test-suite name="1">
+            <results>
+                <test-case description="MyTestCase" name="MyTestCase" />
+            </results>
+            </test-suite>
+        </results>
+        </test-suite>
+    </results>
+    </test-suite>
+    <test-suite name="C:\SomePath\OtherSuite.Tests.ps1" description="C:\SomePath\OtherSuite.Tests.ps1">
+    <results>
+        <test-suite name="B">
+        <results>
+            <test-suite name="2">
+            <results>
+                <test-case description="MyTestCase" name="MyTestCase" />
+            </results>
+            </test-suite>
+        </results>
+        </test-suite>
+    </results>
+    </test-suite>
+</results>
+</test-suite>
+</test-results>
+"@
+            $Expected1 = NormalizeXmlString -InputData @"
+<?xml version="1.0"?>
+<test-results>
+<environment />
+<culture-info current-culture="en-US" current-uiculture="en-US" />
+<test-suite name="Pester" description="Pester">
+<results>
+    <test-suite name="C:\SomePath\SomeSuite.Tests.ps1" description="C:\SomePath\SomeSuite.Tests.ps1">
+    <results>
+        <test-suite name="A">
+        <results>
+            <test-suite name="1">
+            <results>
+                <test-case description="MyTestCase" name="MyTestCase" />
+            </results>
+            </test-suite>
+        </results>
+        </test-suite>
+    </results>
+    </test-suite>
+</results>
+</test-suite>
+</test-results>
+"@    
+            $Expected2 = NormalizeXmlString -InputData @"
+<?xml version="1.0"?>
+<test-results>
+<environment />
+<culture-info current-culture="en-US" current-uiculture="en-US" />
+<test-suite name="Pester" description="Pester">
+<results>
+    <test-suite name="C:\SomePath\OtherSuite.Tests.ps1" description="C:\SomePath\OtherSuite.Tests.ps1">
+    <results>
+        <test-suite name="B">
+        <results>
+            <test-suite name="2">
+            <results>
+                <test-case description="MyTestCase" name="MyTestCase" />
+            </results>
+            </test-suite>
+        </results>
+        </test-suite>
+    </results>
+    </test-suite>
+</results>
+</test-suite>
+</test-results>
+"@
+            $OutputList = Split-NUnitReport -InputData $TestData
+            $OutputList[0].Content | Should BeExactly $Expected1
+            $OutputList[0].SuiteName | Should BeExactly "SomeSuite"
+            $OutputList[1].Content | Should BeExactly $Expected2
+            $OutputList[1].SuiteName | Should BeExactly "OtherSuite"
+        }
+    }
 }

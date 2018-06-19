@@ -1,39 +1,26 @@
 function Invoke-PesterTests {
     Param (
         [Parameter(Mandatory = $true)] [String] $TestRootDir,
-        [Parameter(Mandatory = $false)] [String] $ReportDir,
+        [Parameter(Mandatory = $false)] [String] $ReportPath,
         [Parameter(Mandatory = $false)] [String[]] $IncludeTags,
         [Parameter(Mandatory = $false)] [String[]] $ExcludeTags,
-        [Parameter(Mandatory = $false)] [System.Collections.Hashtable] $AdditionalParams
+        [Parameter(Mandatory = $false)] [System.Collections.Hashtable] $AdditionalParams,
+        [Parameter(Mandatory = $false)] [String[]] $CodeCovFiles = @()
     )
-    if ($ReportDir) {
-        if (-not (Test-Path $ReportDir)) {
-            New-Item -ItemType Directory -Path $ReportDir | Out-Null
-        }
+
+    $PesterScript = @{
+        Path=$TestRootDir;
+        Parameters=$AdditionalParams;
+        Arguments=@();
+    }
+    if ($ReportPath) {
+        $Results = Invoke-Pester -PassThru -Script $PesterScript -Tags $IncludeTags `
+            -ExcludeTag $ExcludeTags -CodeCoverage $CodeCovFiles `
+            -OutputFormat NUnitXml -OutputFile $ReportPath
+    } else {
+        $Results = Invoke-Pester -PassThru -Script $PesterScript -Tags $IncludeTags `
+            -ExcludeTag $ExcludeTags -CodeCoverage $CodeCovFiles
     }
 
-    $TestPaths = Get-ChildItem -Path $TestRootDir -Recurse -Filter "*.Tests.ps1"
-    $TotalResults = @{
-        PassedCount = 0;
-        FailedCount = 0;
-    }
-    foreach ($TestPath in $TestPaths) {
-        $PesterScript = @{
-            Path=$TestPath.FullName;
-            Parameters=$AdditionalParams;
-            Arguments=@();
-        }
-        $Basename = $TestPath.Basename
-        if ($ReportDir) {
-            $TestReportOutputPath = "$ReportDir\$Basename.xml"
-            $Results = Invoke-Pester -PassThru -Script $PesterScript -Tags $IncludeTags -ExcludeTag $ExcludeTags `
-                -OutputFormat NUnitXml -OutputFile $TestReportOutputPath
-        } else {
-            $Results = Invoke-Pester -PassThru -Script $PesterScript -Tags $IncludeTags -ExcludeTag $ExcludeTags
-        }
-
-        $TotalResults.PassedCount += $Results.PassedCount
-        $TotalResults.FailedCount += $Results.FailedCount
-    }
-    return $TotalResults
+    return $Results
 }
