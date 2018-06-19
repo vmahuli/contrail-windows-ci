@@ -74,18 +74,9 @@ function Get-RemoteContainerNetAdapterInformation {
         docker exec $Using:ContainerID powershell $RemoteCommand
     } | ConvertFrom-Json
 
-    Write-Log "TEST: Get-RemoteContainerNetAdapterInformation"
-    Write-Log $Adapter
-    Write-Log $Adapter.IPAddress
-
-    if ($Adapter.IPAddress -is [array]) {
-        Write-Log "TEST: Inside if"
-        throw "Multiple IP addresses returned from container for single NetAdapter: $($Adapter.IPAddress)"
+    if ($Adapter.IPAddress -isnot [string]) {
+        throw "Invalid IPAddress returned from container: $($Adapter.IPAddress | ConvertTo-Json)"
     }
-
-    #if (!$Adapter.IPAddress) {
-    #    throw "Empty IPAddress returned from container"
-    #}
 
     $Ret = @{
         ifIndex = $Adapter.ifIndex
@@ -97,9 +88,6 @@ function Get-RemoteContainerNetAdapterInformation {
     }
 
     $Ret.MacAddress = $Ret.MacAddressWindows.Replace('-', ':')
-
-    Write-Log $Ret
-    Write-Log $Ret.IPAddress
 
     return [ContainerNetAdapterInformation] $Ret
 }
