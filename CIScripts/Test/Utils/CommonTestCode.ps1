@@ -74,8 +74,8 @@ function Get-RemoteContainerNetAdapterInformation {
         docker exec $Using:ContainerID powershell $RemoteCommand
     } | ConvertFrom-Json
 
-    if ($Adapter.IPAddress -is [array]) {
-        throw "Multiple IP addresses returned from container for single NetAdapter: $($Adapter.IPAddress)"
+    if (!$Adapter.IPAddress -or ($Adapter.IPAddress -isnot [string])) {
+        throw "Invalid IPAddress returned from container: $($Adapter.IPAddress | ConvertTo-Json)"
     }
 
     $Ret = @{
