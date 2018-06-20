@@ -43,11 +43,15 @@ Note: to make sure that system tests pass, some requirements must be met.
 .\Invoke-Selfcheck.ps1 -ReportDir .\some_dir\
 ```
 
+## To manually run tests from local machine
+
+Please see [this document](CIScripts/Test/Tests/README.md).
+
 ------------------
 
 ## Note to developers
 
-The idea behind this tool is that anyone can run the basic set of tests without ANY preparation 
+The idea behind this tool is that anyone can run the basic set of tests without ANY preparation
 (except Pester).
 A new developer should be able to run `.\Invoke-Selfcheck.ps1` and it should pass 100% of the time,
 without any special requirements, like libraries, testbed machines etc.
