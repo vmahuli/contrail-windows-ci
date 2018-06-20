@@ -52,7 +52,7 @@ pipeline {
                         script {
                             try {
                                 powershell script: """./Invoke-Selfcheck.ps1 `
-                                    -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck/raw_NUnit"""
+                                    -ReportPath ${env.WORKSPACE}/testReportsRaw/CISelfcheck/raw_NUnit/out.xml"""
                             } finally {
                                 stash name: 'CISelfcheckNUnitLogs', includes: 'testReportsRaw/CISelfcheck/raw_NUnit/**', allowEmpty: true
                             }
