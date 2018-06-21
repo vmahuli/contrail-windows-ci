@@ -14,6 +14,7 @@ function Invoke-PesterTests {
         Arguments=@();
     }
     if ($ReportPath) {
+        New-DirIfNoExists -Path $ReportPath
         $Results = Invoke-Pester -PassThru -Script $PesterScript -Tags $IncludeTags `
             -ExcludeTag $ExcludeTags -CodeCoverage $CodeCovFiles `
             -OutputFormat NUnitXml -OutputFile $ReportPath
@@ -23,4 +24,12 @@ function Invoke-PesterTests {
     }
 
     return $Results
+}
+
+function New-DirIfNoExists {
+    Param([Parameter(Mandatory = $true)] [String] $Path)
+    $Dir = Split-Path -Parent $Path
+    if (-not Test-Path $Dir) {
+        New-Item -Type Directory $Dir
+    }
 }
