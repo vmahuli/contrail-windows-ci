@@ -123,7 +123,7 @@ function Get-NameOfPesterTestSuite {
 function Copy-NodeOfSpecificTestSuite {
     Param([Parameter(Mandatory = $true)] [System.Xml.XmlElement] $FromNode,
           [Parameter(Mandatory = $true)] [int] $IndexOfNodeTokeep)
-    $PesterFilesNodes = $RootOfClonedXML.Node.FirstChild.ChildNodes
-    $FromNode = $PesterFilesNodes[$IndexOfNodeTokeep].Clone()
-    return $FromNode
+    $PesterFilesNodes = $FromNode.FirstChild.ChildNodes
+    $ClonedNode = $PesterFilesNodes[$IndexOfNodeTokeep].Clone()
+    return $ClonedNode
 }
