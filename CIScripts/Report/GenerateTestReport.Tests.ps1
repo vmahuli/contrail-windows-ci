@@ -143,7 +143,6 @@ function Invoke-ReportGenTests {
         }
 
         It "json file for monitoring contains valid path to raw nunit reports" {
-            Param($Filename)
             $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
             "./raw_NUnit/SomeSuite.xml" | Should BeIn $Json.'xml_reports'
             "./raw_NUnit/OtherSuite.xml" | Should BeIn $Json.'xml_reports'
@@ -151,7 +150,6 @@ function Invoke-ReportGenTests {
         }
 
         It "json file for monitoring contains valid path to html report" {
-            Param($Filename)
             $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
             $Json.'html_report' | Should BeExactly './pretty_test_report/Index.html'
         }

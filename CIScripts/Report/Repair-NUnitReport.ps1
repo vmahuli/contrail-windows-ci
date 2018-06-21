@@ -30,7 +30,8 @@ function Split-NUnitReport {
     $NodeToKeepIdx = 0
     $XMLs = $XMLClones | ForEach-Object {
         $RootOfClonedXML = Find-RootPesterSuiteNode -XML $_
-        $KeptNode = Copy-NodeOfSpecificTestSuite -FromNode $RootOfClonedXML
+        $KeptNode = Copy-NodeOfSpecificTestSuite -FromNode $RootOfClonedXML.Node `
+            -IndexOfNodeTokeep $NodeToKeepIdx
 
         $AllNodesOfSpecificTestSuites = $RootOfClonedXML.Node.FirstChild.ChildNodes
         Remove-Nodes -Nodes $AllNodesOfSpecificTestSuites
@@ -111,7 +112,7 @@ function Remove-Nodes {
 
 function Get-NameOfPesterTestSuite {
     Param([Parameter(Mandatory = $true)] [System.Xml.XmlElement] $FromNode)
-    $PesterFilepath = $KeptNode."name"
+    $PesterFilepath = $FromNode."name"
     # Example:
     # From "C:/SomePath/TestSuiteName.Tests.ps1"
     # we get "TestSuiteName"
@@ -120,8 +121,9 @@ function Get-NameOfPesterTestSuite {
 }
 
 function Copy-NodeOfSpecificTestSuite {
-    Param([Parameter(Mandatory = $true)] [XML] $FromNode)
+    Param([Parameter(Mandatory = $true)] [System.Xml.XmlElement] $FromNode,
+          [Parameter(Mandatory = $true)] [int] $IndexOfNodeTokeep)
     $PesterFilesNodes = $RootOfClonedXML.Node.FirstChild.ChildNodes
-    $KeptNode = $PesterFilesNodes[$NodeToKeepIdx].Clone()
-    return $KeptNode
+    $FromNode = $PesterFilesNodes[$IndexOfNodeTokeep].Clone()
+    return $FromNode
 }
