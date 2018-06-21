@@ -81,13 +81,6 @@ function Invoke-DockerDriverBuild {
 
     Push-Location bin
 
-    $Job.Step("Precompiling tests", {
-        Invoke-NativeCommand -ScriptBlock {
-            ginkgo build -r $srcPath
-        }
-        Get-ChildItem -Recurse -Path $srcPath -Filter "*.test" | ForEach-Object { Move-Item $_.FullName ("./" + $_.Name + ".exe") }
-    })
-
     $Job.Step("Building MSI", {
         Push-Location $srcPath
         Invoke-NativeCommand -ScriptBlock {
