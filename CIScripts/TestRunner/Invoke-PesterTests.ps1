@@ -29,7 +29,7 @@ function Invoke-PesterTests {
 function New-DirIfNoExists {
     Param([Parameter(Mandatory = $true)] [String] $Path)
     $Dir = Split-Path -Parent $Path
-    if (-not Test-Path $Dir) {
+    if (-not (Test-Path $Dir)) {
         New-Item -Type Directory $Dir
     }
 }
