@@ -83,9 +83,13 @@ function Invoke-DockerDriverBuild {
 
     $Job.Step("Building MSI", {
         Invoke-NativeCommand -ScriptBlock {
-            & go-msi make --msi "./docker-driver.msi" --arch x64 --version 0.1 `
-                          --src "$srcPath/template" --out $pwd/gomsi `
-                          --license "$srcPath/LICENSE_MSI.txt"
+            & go-msi make --arch x64 --version 0.1 `
+                          --msi "./docker-driver.msi"  `
+                          --path "$srcPath/wix.json" `
+                          --src "$srcPath/template" `
+                          --license "$srcPath/LICENSE_MSI.txt" `
+                          --out $pwd/gomsi # <- temporary file. It's build in here (in Jenkins 
+                                           # workspace) to avoid conflicts with parallel jobs
         }
 
         Move-Item $srcPath/docker-driver.msi ./
