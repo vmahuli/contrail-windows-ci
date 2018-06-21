@@ -81,18 +81,16 @@ function Invoke-DockerDriverBuild {
 
     
     $Job.Step("Building MSI", {
-        Push-Location $srcPath # TODO: get rid of this push/pop. Requires changes in wix.json.
         Invoke-NativeCommand -ScriptBlock {
             & go-msi make --arch x64 --version 0.1 `
                           --msi "./docker-driver.msi"  `
                           --path "$srcPath/wix.json" `
                           --src "$srcPath/template" `
                           --license "$srcPath/LICENSE_MSI.txt" `
-                          --out $pwd/gomsi # <- temporary file. It's build in here (in Jenkins 
-                                           # workspace) to avoid conflicts with parallel jobs
+                          --out "$Env:GOPATH/tmp" # <- temporary work directory for WiX.
+                                                  # The way WiX calculates paths is really weird,
+                                                  # so beware when changing these paths!
         }
-        Pop-Location # $srcPath
-        
     })
 
     $Job.Step("Signing MSI", {
