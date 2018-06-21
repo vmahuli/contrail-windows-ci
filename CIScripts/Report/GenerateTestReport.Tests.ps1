@@ -78,14 +78,6 @@ function Invoke-ReportGenTests {
         }
     }
 
-    function Test-JsonFileForMonitoring {
-        Param([Parameter(Mandatory = $true)] [String[]] $Xmls)
-
-        $TestCases = $Xmls | Foreach-Object { @{ Filename = $_ } }
-
-
-    }
-
     Context "single xml file" {
         BeforeAll {
             $InputDir, $OutputDir = New-TemporaryDirs
