@@ -82,12 +82,11 @@ function Invoke-DockerDriverBuild {
     Push-Location bin
 
     $Job.Step("Building MSI", {
-        Push-Location $srcPath
         Invoke-NativeCommand -ScriptBlock {
-            & go-msi make --msi docker-driver.msi --arch x64 --version 0.1 `
-                          --src template --out $pwd/gomsi
+            & go-msi make --msi "./docker-driver.msi" --arch x64 --version 0.1 `
+                          --src "$srcPath/template" --out $pwd/gomsi `
+                          --license "$srcPath/LICENSE_MSI.txt"
         }
-        Pop-Location
 
         Move-Item $srcPath/docker-driver.msi ./
     })
