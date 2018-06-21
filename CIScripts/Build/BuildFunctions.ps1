@@ -79,9 +79,9 @@ function Invoke-DockerDriverBuild {
         }
     })
 
-    Push-Location bin
-
+    
     $Job.Step("Building MSI", {
+        Push-Location $srcPath # TODO: get rid of this push/pop. Requires changes in wix.json.
         Invoke-NativeCommand -ScriptBlock {
             & go-msi make --arch x64 --version 0.1 `
                           --msi "./docker-driver.msi"  `
@@ -91,16 +91,19 @@ function Invoke-DockerDriverBuild {
                           --out $pwd/gomsi # <- temporary file. It's build in here (in Jenkins 
                                            # workspace) to avoid conflicts with parallel jobs
         }
-
-        Move-Item $srcPath/docker-driver.msi ./
+        Pop-Location # $srcPath
+        
     })
 
-    Set-MSISignature -SigntoolPath $SigntoolPath `
-                     -CertPath $CertPath `
-                     -CertPasswordFilePath $CertPasswordFilePath `
-                     -MSIPath "docker-driver.msi"
-
-    Pop-Location # bin
+    $Job.Step("Signing MSI", {
+        Push-Location bin
+        Move-Item $srcPath/docker-driver.msi ./
+        Set-MSISignature -SigntoolPath $SigntoolPath `
+                        -CertPath $CertPath `
+                        -CertPasswordFilePath $CertPasswordFilePath `
+                        -MSIPath "docker-driver.msi"
+        Pop-Location # bin
+    })
 
     $Job.Step("Copying artifacts to $OutputPath", {
         Copy-Item bin/* $OutputPath
