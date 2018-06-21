@@ -252,22 +252,19 @@ pipeline {
                 deleteDir()
                 unstash 'CIScripts'
                 script {
-                    try {
-                        unstash 'windowsComputeNUnitLogs'
-                        unstash 'CISelfcheckNUnitLogs'
-                    } catch (Exception err) {
-                        echo "No test report to parse"
-                    } finally {
+                    if (tryUnstash('windowsComputeNUnitLogs')) {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
                             -XmlsDir testReportsRaw/WindowsCompute/raw_NUnit `
                             -OutputDir TestReports/WindowsCompute'''
+                    }
 
+                    if (tryUnstash('CISelfcheckNUnitLogs')) {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
                             -XmlsDir testReportsRaw/CISelfcheck/raw_NUnit `
                             -OutputDir TestReports/CISelfcheck'''
-
-                        stash name: 'processedTestReports', includes: 'TestReports/**', allowEmpty: true
                     }
+
+                    stash name: 'processedTestReports', includes: 'TestReports/**', allowEmpty: true
                 }
             }
 
@@ -280,8 +277,8 @@ pipeline {
                     dir('to_publish') {
                         unstash 'processedTestReports'
                         dir('TestReports') {
-                            unstash 'ddriverJUnitLogs'
-                            unstash 'detailedLogs'
+                            tryUnstash('ddriverJUnitLogs')
+                            tryUnstash('detailedLogs')
                         }
 
                         def logFilename = 'log.txt.gz'
