@@ -1,4 +1,4 @@
-docker_registry: "ci-repo.englab.juniper.net:5000"
+docker_registry: "10.84.12.27:5000"
 contrail_version: "ocata-master-91"
 kolla_version: "ocata"
 contrail_ansible_deployer_version: "6b86bcd7056e20c6d36d3808d2750b1395528b11"
