@@ -5,7 +5,7 @@ pipeline {
     agent { label "ansible" }
 
     environment {
-        DEMOENV_FOLDER = "WINCI"
+        DEMOENV_FOLDER = "WINCI/Devenvs"
     }
 
     stages {
