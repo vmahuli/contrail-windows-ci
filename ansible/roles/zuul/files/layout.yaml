@@ -65,15 +65,6 @@ pipelines:
         - event: comment-added
           comment: (?i)recheck windows(?:-| )(dev|devel|development)\s*$
 
-  - name: check-windows-contrail-phase-in
-    description: Pipeline used for Windows CI development (phase in of Juniper/windows-contrail repository). It should always work in silent mode.
-    manager: IndependentPipelineManager
-    precedence: low
-    trigger:
-      gerrit:
-        - event: comment-added
-          comment: (?i)recheck windows-contrail(?:-| )(dev|devel|development)\s*$
-
 jobs:
   - name: ^ci-contrail-windows.*$
     success-pattern: &logs_url http://logs.opencontrail.org/winci/{build.uuid}/
@@ -83,8 +74,8 @@ project-templates:
   - name: ci-contrail-windows-template
     check:
       - ci-contrail-windows-production
-    check-windows-contrail-phase-in:
-      - ci-contrail-windows-wc-phase-in
+    check-development:
+      - ci-contrail-windows-development
 
   - name: ci-contrail-windows-other-projects-template
     check:
@@ -98,8 +89,6 @@ projects:
   - name: Juniper/contrail-controller
     template:
       - name: ci-contrail-windows-template
-    check-development:
-      - ci-contrail-windows-development
 
   - name: Juniper/contrail-vrouter
     template:
@@ -118,6 +107,10 @@ projects:
       - name: ci-contrail-windows-template
 
   - name: Juniper/contrail-windows-docker-driver
+    template:
+      - name: ci-contrail-windows-template
+
+  - name: Juniper/contrail-windows
     template:
       - name: ci-contrail-windows-template
 
@@ -296,10 +289,6 @@ projects:
       - name: ci-contrail-windows-other-projects-template
 
   - name: Juniper/contrail-webui-third-party
-    template:
-      - name: ci-contrail-windows-other-projects-template
-
-  - name: Juniper/contrail-windows
     template:
       - name: ci-contrail-windows-other-projects-template
 
