@@ -74,9 +74,11 @@ function Invoke-DockerDriverBuild {
 
     $Job.Step("Building driver and precompiling tests", {
         # TODO: Handle new name properly
+        Push-Location $srcPath
         Invoke-NativeCommand -ScriptBlock {
             & $srcPath\Invoke-Build.ps1
         }
+        Pop-Location # $srcPath
     })
 
     
