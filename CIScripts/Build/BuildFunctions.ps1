@@ -75,36 +75,22 @@ function Invoke-DockerDriverBuild {
     $Job.Step("Building driver and precompiling tests", {
         # TODO: Handle new name properly
         Invoke-NativeCommand -ScriptBlock {
-            & $srcPath\Invoke-Build.ps1 -Out contrail-windows-docker.exe -OutDir bin -SrcPath $srcPath -BuildTests
+            & $srcPath\Invoke-Build.ps1
         }
     })
 
     
-    $Job.Step("Building MSI", {
-        Invoke-NativeCommand -ScriptBlock {
-            & go-msi make --arch x64 --version 0.1 `
-                          --msi "./docker-driver.msi"  `
-                          --path "$srcPath/wix.json" `
-                          --src "$srcPath/template" `
-                          --license "$srcPath/LICENSE_MSI.txt" `
-                          --out "$Env:GOPATH/tmp" # <- temporary work directory for WiX.
-                                                  # The way WiX calculates paths is really weird,
-                                                  # so beware when changing these paths!
-        }
+    $Job.Step("Copying artifacts to $OutputPath", {
+        Copy-Item -Path $srcPath\build\* -Include "*.msi", "*.exe" -Destination $OutputPath
     })
 
     $Job.Step("Signing MSI", {
-        Push-Location bin
-        Move-Item $srcPath/docker-driver.msi ./
+        Push-Location $OutputPath
         Set-MSISignature -SigntoolPath $SigntoolPath `
                         -CertPath $CertPath `
                         -CertPasswordFilePath $CertPasswordFilePath `
-                        -MSIPath "docker-driver.msi"
-        Pop-Location # bin
-    })
-
-    $Job.Step("Copying artifacts to $OutputPath", {
-        Copy-Item bin/* $OutputPath
+                        -MSIPath (Get-ChildItem "*.msi").FullName
+        Pop-Location # $OutputPath
     })
 
     $Job.PopStep()
