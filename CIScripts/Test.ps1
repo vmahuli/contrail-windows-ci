@@ -15,7 +15,9 @@ if (-not (Test-Path $TestReportDir)) {
 
 $DetailedLogsDir = Join-Path $TestReportDir "detailed_logs"
 $DDriverJUnitLogsOutputDir = Join-Path $TestReportDir "ddriver_junit_test_logs"
-$PesterOutReportPath = Join-Path $TestReportDir "raw_NUnit" "report.xml"
+
+$PesterOutReportDir = Join-Path $TestReportDir "raw_NUnit" 
+$PesterOutReportPath = Join-Path $PesterOutReportDir "report.xml"
 
 Invoke-IntegrationAndFunctionalTests -TestenvConfFile $TestenvConfFile `
     -PesterOutReportPath $PesterOutReportPath `
