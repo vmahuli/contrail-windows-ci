@@ -26,6 +26,7 @@ actually_used_projects = [
     "Juniper/contrail-third-party",
     "Juniper/contrail-common",
     "Juniper/contrail-windows-docker-driver",
+    "Juniper/contrail-windows",
 ]
 
 projects = []
