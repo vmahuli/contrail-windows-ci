@@ -1,0 +1,2 @@
+2018-06-11 08:44:33.581000 |       PSRemotingTransportException: Processing data for a remote command failed with the following error message: Access is denied. For more information, see the about_Remote_Troubleshooting Help topic.
+2018-06-08 18:07:52.139000 |         PSRemotingTransportException: Starting a command on the remote server failed with the following error message : Access is denied. For more information, see the about_Remote_Troubleshooting Help topic.

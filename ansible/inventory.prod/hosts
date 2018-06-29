@@ -1,0 +1,5 @@
+[gerrit]
+review.opencontrail.org ansible_user=codilime-ci ansible_port=29418 gerrit_keyname=review
+
+[zuul]
+10.84.12.75

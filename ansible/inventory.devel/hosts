@@ -1,0 +1,2 @@
+[gerrit]
+review2.opencontrail.org ansible_user=ji ansible_port=29418 gerrit_keyname=review2

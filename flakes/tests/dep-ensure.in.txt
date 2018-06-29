@@ -1,0 +1,40 @@
+2018-06-28 02:27:17.125000 | [Build] grouped write of manifest, lock and vendor: error while writing out vendor tree: failed to write dep tree: failed to export github.com/pborman/uuid: https://github.com/pborman/uuid does not exist in the local cache and fetching failed: unable to get repository: Cloning into 'J:\Jenkins\workspace\WinContrail\winci-server2016-prod\pkg\dep\sources\https---github.com-pborman-uuid'...
+2018-06-28 02:27:17.125000 | [Build] fatal: unable to access 'https://github.com/pborman/uuid/': OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443 
+2018-06-28 02:27:17.125000 | [Build] : command failed: [git clone --recursive -v --progress https://github.com/pborman/uuid J:\Jenkins\workspace\WinContrail\winci-server2016-prod\pkg\dep\sources\https---github.com-pborman-uuid]: exit status 128
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+2018-06-27 03:03:28.682000 | [Build] grouped write of manifest, lock and vendor: error while writing out vendor tree: failed to write dep tree: failed to export golang.org/x/text: remote repository at https://go.googlesource.com/text does not exist, or is inaccessible: fatal: unable to access 'https://go.googlesource.com/text/': Failed to connect to go.googlesource.com port 443: Timed out
+2018-06-27 03:03:28.682000 | [Build] : exit status 128
+2018-06-27 03:03:28.682000 | [Build] 
+2018-06-27 03:03:28.940000 | [Build] powershell.exe : Command `
+2018-06-27 03:03:28.940000 | [Build] At J:\Jenkins\workspace\WinContrail\contrail-win-ci-gh@2@tmp\durable-01a2c592\powershellWrapper.ps1:3 char:1
+2018-06-27 03:03:28.940000 | [Build] + & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ...
+2018-06-27 03:03:28.940000 | [Build] + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2018-06-27 03:03:28.940000 | [Build]     + CategoryInfo          : NotSpecified: (Command `:String) [], RemoteExcep    tion
+2018-06-27 03:03:28.940000 | [Build]     + FullyQualifiedErrorId : NativeCommandError
+2018-06-27 03:03:28.940000 | [Build]  
+2018-06-27 03:03:28.940000 | [Build]             & dep ensure -v
+2018-06-27 03:03:28.940000 | [Build]         ` failed with exitcode: 1
+2018-06-27 03:03:28.940000 | [Build] At J:\Jenkins\workspace\WinContrail\contrail-win-ci-gh@2\CIScripts\Common\Invok
+2018-06-27 03:03:28.941000 | [Build] 
+2018-06-27 03:03:28.941000 | [Build] e-NativeCommand.ps1:95 char:9
+2018-06-27 03:03:28.941000 | [Build] 
+2018-06-27 03:03:28.941000 | [Build] +         throw "Command ``$ScriptBlock`` failed with exitcode: $ExitCo ...
+2018-06-27 03:03:28.941000 | [Build] 
+2018-06-27 03:03:28.941000 | [Build] +         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2018-06-27 03:03:28.941000 | [Build] 
+2018-06-27 03:03:28.941000 | [Build]     + CategoryInfo          : OperationStopped: (Command `
+2018-06-27 03:03:28.941000 | [Build] 
+2018-06-27 03:03:28.941000 | [Build]      ...ith exitcode: 1:String) [], RuntimeException
+2018-06-27 03:03:28.941000 | [Build] 
+2018-06-27 03:03:28.941000 | [Build]     + FullyQualifiedErrorId : Command `
+2018-06-27 03:03:28.941000 | [Build] 
+2018-06-27 03:03:28.941000 | [Build]             & dep ensure -v
+2018-06-27 03:03:28.941000 | [Build] 
+2018-06-27 03:03:28.941000 | [Build]         ` failed with exitcode: 1
+2018-06-27 03:03:28.941000 | [Build] 
+2018-06-27 03:03:28.941000 | [Build]  
+2018-06-27 03:03:28.941000 | [Build] 
+                           | [Pipeline] [Build] deleteDir

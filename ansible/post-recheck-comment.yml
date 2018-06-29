@@ -1,0 +1,48 @@
+---
+
+- hosts: gerrit
+  gather_facts: no
+  connection: local
+  vars_prompt:
+    - name: ansible_ssh_private_key_file
+      prompt: Ssh identity file for gerrit (if doesn't exist, will be crated using `gerrit_keyname` key from vault)
+      private: no
+    - name: change_id
+      prompt: change_id (the one from URL, eg. 39226)
+      private: no
+    - name: patchset
+      private: no
+  tasks:
+    - name: Preserve some facts
+      set_fact:
+        ansible_ssh_private_key_file: "{{ ansible_ssh_private_key_file }}"
+        patchset: "{{ patchset }}"
+        change_id: "{{ change_id }}"
+
+    - name: Add gerrit servers to known hosts
+      delegate_to: localhost
+      known_hosts:
+        name: '{{ gerrit_known_hosts[item].name }}'
+        key: '{{ gerrit_known_hosts[item].key }}'
+      with_items:
+        - review
+        - review2
+
+    - name: Check if identity file exists
+      delegate_to: localhost
+      register: identity_exists
+      stat:
+        path: "{{ ansible_ssh_private_key_file }}"
+
+    - name: Crate identity file (if not present) using key from vault
+      delegate_to: localhost
+      when: identity_exists.stat.exists == False
+      copy:
+        content: "{{ gerrit_keys[gerrit_keyname] }}"
+        mode: 0600
+        dest: "{{ ansible_ssh_private_key_file }}"
+
+- hosts: gerrit
+  gather_facts: no
+  roles:
+    - post-recheck-comment

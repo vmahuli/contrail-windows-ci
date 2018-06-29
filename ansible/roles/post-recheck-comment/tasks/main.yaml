@@ -1,0 +1,64 @@
+---
+
+- name: Store Verified-1 regex pattern
+  set_fact:
+    failure_pattern: '^Patch Set {{ patchset }}: Verified-1'
+
+- name: Wait for Verified-1 comment from {{ ci_user }}
+  register: comments
+  raw: gerrit query change:{{ change_id }} --comments --format JSON
+  retries: 6
+  delay: 10
+  # Note: select_reviewer_messages is a custom filter defined for this role.
+  until: >
+    comments.rc == 0 and
+    comments
+    | select_reviewer_messages(username=ci_user)
+    | last
+    | regex_search(failure_pattern)
+  tags:
+    # This would fire [ANSIBLE0012] Commands should not change things if nothing needs doing,
+    # but it's ok as this command is side-effect free.
+    - skip_ansible_lint
+
+- name: Count failures
+  set_fact:
+    n_failures: >
+      {{
+      comments
+      | select_reviewer_messages(username=ci_user)
+      | map('regex_search', failure_pattern)
+      | select
+      | list
+      | count
+      }}
+
+- name: Show failure count
+  debug:
+    var: n_failures
+
+- name: Prepare the recheck message
+  register: do_recheck
+  when: n_failures | int <= max_rechecks | int
+  set_fact:
+    comment_message: >
+      We've detected that Windows CI failed due to a known flakiness,
+      so we're going to recheck windows
+
+- name: Prepare the recheck limit exceeded message
+  when: do_recheck is skipped
+  set_fact:
+    comment_message: >
+      Automatic recheck limit ({{ max_rechecks }}) exceeded.
+
+- name: Show the message
+  debug:
+    var: comment_message
+
+- name: Post the comment
+  raw: gerrit review -m {{ comment_message | quote }} {{ change_id }},{{ patchset }}
+  tags:
+    - action
+    # This would fire [ANSIBLE0012] Commands should not change things if nothing needs doing,
+    # but it's ok as the purpose of this role is to post a comment.
+    - skip_ansible_lint

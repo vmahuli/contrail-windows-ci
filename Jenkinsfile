@@ -24,6 +24,7 @@ pipeline {
                 stash name: "StaticAnalysis", includes: "StaticAnalysis/**"
                 stash name: "Ansible", includes: "ansible/**"
                 stash name: "Monitoring", includes: "monitoring/**"
+                stash name: "Flakes", includes: "flakes/**"
             }
         }
 
@@ -74,6 +75,9 @@ pipeline {
                         dir("monitoring") {
                             sh "python3 -m tests.monitoring_tests"
                         }
+
+                        unstash "Flakes"
+                        sh "flakes/run-tests.sh"
 
                         runHelpersTests()
                     }
@@ -274,6 +278,8 @@ pipeline {
                     def relLogsDstDir = logsRelPathBasedOnTriggerSource(env.JOB_NAME,
                         env.BUILD_NUMBER, env.ZUUL_UUID)
 
+                    def logFilename = 'log.txt.gz'
+
                     dir('to_publish') {
                         unstash 'processedTestReports'
                         dir('TestReports') {
@@ -281,7 +287,6 @@ pipeline {
                             tryUnstash('detailedLogs')
                         }
 
-                        def logFilename = 'log.txt.gz'
                         createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
 
                         def auth = sshAuthority(env.LOG_SERVER_USER, env.LOG_SERVER)
@@ -294,6 +299,23 @@ pipeline {
                     echo(logDestMsg)
                     if (isGithub()) {
                         sendGithubComment(logDestMsg)
+                    }
+
+                    unstash "Flakes"
+
+                    if (containsFlakiness("to_publish/$logFilename")) {
+                        echo "Flakiness detected"
+                        if (isGithub()) {
+                            sendGithubComment("recheck no bug")
+                        } else {
+                            build job: "post-recheck-comment",
+                                wait: false,
+                                parameters: [
+                                    string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
+                                    string(name: 'ZUUL_CHANGE', value: env.ZUUL_CHANGE),
+                                    string(name: 'ZUUL_PATCHSET', value: env.ZUUL_PATCHSET),
+                                ]
+                        }
                     }
                 }
             }
