@@ -13,6 +13,7 @@ pipelines:
           branch:
             - ^master$
             - ^contrail/ocata$
+            - ^contrail/queens$
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
             - ^R5\..*$
@@ -22,6 +23,7 @@ pipelines:
           branch:
             - ^master$
             - ^contrail/ocata$
+            - ^contrail/queens$
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
             - ^R5\..*$
@@ -31,6 +33,7 @@ pipelines:
           branch:
             - ^master$
             - ^contrail/ocata$
+            - ^contrail/queens$
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
             - ^R5\..*$
