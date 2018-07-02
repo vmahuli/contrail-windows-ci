@@ -1,0 +1,6 @@
+---
+
+- hosts: zuul
+  become: yes
+  roles:
+    - zuul
