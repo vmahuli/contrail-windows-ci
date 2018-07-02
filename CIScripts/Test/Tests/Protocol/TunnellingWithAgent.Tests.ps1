@@ -30,6 +30,24 @@ $Subnet = [SubnetConfiguration]::new(
     "10.0.5.83"
 )
 
+function Get-MaxIPv4DataSizeForMTU {
+    Param ([Parameter(Mandatory=$true)] [Int] $MTU)
+    $MinimalIPHeaderSize = 20
+    return $MTU - $MinimalIPHeaderSize
+}
+
+function Get-MaxICMPDataSizeForMTU {
+    Param ([Parameter(Mandatory=$true)] [Int] $MTU)
+    $ICMPHeaderSize = 8
+    return $(Get-MaxIPv4DataSizeForMTU -MTU $MTU) - $ICMPHeaderSize
+}
+
+function Get-MaxUDPDataSizeForMTU {
+    Param ([Parameter(Mandatory=$true)] [Int] $MTU)
+    $UDPHeaderSize = 8
+    return $(Get-MaxIPv4DataSizeForMTU -MTU $MTU) - $UDPHeaderSize
+}
+
 function Initialize-ComputeNode {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
@@ -146,8 +164,10 @@ function Start-UDPEchoServerInContainer {
     '$SendPort = {0};' + `
     '$RcvPort = {1};' + `
     '$IPEndpoint = New-Object System.Net.IPEndPoint([IPAddress]::Any, $RcvPort);' + `
-    '$UDPSocket = New-Object System.Net.Sockets.UdpClient($IPEndpoint);' + `
     '$RemoteIPEndpoint = New-Object System.Net.IPEndPoint([IPAddress]::Any, 0);' + `
+    '$UDPSocket = New-Object System.Net.Sockets.UdpClient;' + `
+    '$UDPSocket.Client.SetSocketOption([System.Net.Sockets.SocketOptionLevel]::Socket, [System.Net.Sockets.SocketOptionName]::ReuseAddress, $true);' + `
+    '$UDPSocket.Client.Bind($IPEndpoint);' + `
     'while($true) {{' + `
     '    $Payload = $UDPSocket.Receive([ref]$RemoteIPEndpoint);' + `
     '    $RemoteIPEndpoint.Port = $SendPort;' + `
@@ -255,8 +275,8 @@ function Test-UDP {
         [Parameter(Mandatory=$true)] [String] $Container1IP,
         [Parameter(Mandatory=$true)] [String] $Container2IP,
         [Parameter(Mandatory=$true)] [String] $Message,
-        [Parameter(Mandatory=$true)] [Int16] $UDPServerPort,
-        [Parameter(Mandatory=$true)] [Int16] $UDPClientPort
+        [Parameter(Mandatory=$false)] [Int16] $UDPServerPort = 1111,
+        [Parameter(Mandatory=$false)] [Int16] $UDPClientPort = 2222
     )
 
     Write-Log "Starting UDP Echo server on container $Container1Name ..."
@@ -329,8 +349,6 @@ Describe "Tunnelling with Agent tests" {
 
         It "UDP" {
             $MyMessage = "We are Tungsten Fabric. We come in peace."
-            $UDPServerPort = 1905
-            $UDPClientPort = 1983
 
             Test-UDP `
                 -Session1 $Sessions[0] `
@@ -339,9 +357,7 @@ Describe "Tunnelling with Agent tests" {
                 -Container2Name $Container2ID `
                 -Container1IP $Container1NetInfo.IPAddress `
                 -Container2IP $Container2NetInfo.IPAddress `
-                -Message $MyMessage `
-                -UDPServerPort $UDPServerPort `
-                -UDPClientPort $UDPClientPort | Should Be $true
+                -Message $MyMessage | Should Be $true
 
             # TODO: Uncomment these checks once we can actually control tunneling type.
             # Test-MPLSoGRE -Session $Sessions[0] | Should Be $true
@@ -372,37 +388,44 @@ Describe "Tunnelling with Agent tests" {
     Context "IP fragmentation" {
         # TODO: Enable this test once fragmentation is properly implemented in vRouter
         It "ICMP - Ping with big buffer succeeds" -Pending {
-            Test-Ping `
-                -Session $Sessions[0] `
-                -SrcContainerName $Container1ID `
-                -DstContainerName $Container2ID `
-                -DstContainerIP $Container2NetInfo.IPAddress `
-                -BufferSize 1473 | Should Be 0
+            $Container1MsgFragmentationThreshold = Get-MaxICMPDataSizeForMTU -MTU $Container1NetInfo.MtuSize
+            $Container2MsgFragmentationThreshold = Get-MaxICMPDataSizeForMTU -MTU $Container2NetInfo.MtuSize
 
-            Test-Ping `
-                -Session $Sessions[1] `
-                -SrcContainerName $Container2ID `
-                -DstContainerName $Container1ID `
-                -DstContainerIP $Container1NetInfo.IPAddress `
-                -BufferSize 1473 | Should Be 0
+            $SrcContainers = @($Container1ID, $Container2ID)
+            $DstContainers = @($Container2ID, $Container1ID)
+            $DstIPs = @($Container2NetInfo.IPAddress, $Container1NetInfo.IPAddress)
+            $BufferSizes = @($Container1MsgFragmentationThreshold, $Container2MsgFragmentationThreshold)
+
+            foreach ($ContainerIdx in @(0, 1)) {
+                $BufferSizeLargerBeforeTunnelling = $BufferSizes[$ContainerIdx] + 1
+                $BufferSizeLargerAfterTunnelling = $BufferSizes[$ContainerIdx] - 1
+                foreach ($BufferSize in @($BufferSizeLargerBeforeTunnelling, $BufferSizeLargerAfterTunnelling)) {
+                    Test-Ping `
+                        -Session $Sessions[$ContainerIdx] `
+                        -SrcContainerName $SrcContainers[$ContainerIdx] `
+                        -DstContainerName $DstContainers[$ContainerIdx] `
+                        -DstContainerIP $DstIPs[$ContainerIdx] `
+                        -BufferSize $BufferSize | Should Be 0
+                }
+            }
         }
 
         # TODO: Enable this test once fragmentation is properly implemented in vRouter
         It "UDP - sending big buffer succeeds" -Pending {
-            $MyMessage = "buffer" * 300
-            $UDPServerPort = 1111
-            $UDPClientPort = 2222
+            $MsgFragmentationThreshold = Get-MaxUDPDataSizeForMTU -MTU $Container1NetInfo.MtuSize
 
-            Test-UDP `
-                -Session1 $Sessions[0] `
-                -Session2 $Sessions[1] `
-                -Container1Name $Container1ID `
-                -Container2Name $Container2ID `
-                -Container1IP $Container1NetInfo.IPAddress `
-                -Container2IP $Container2NetInfo.IPAddress `
-                -Message $MyMessage `
-                -UDPServerPort $UDPServerPort `
-                -UDPClientPort $UDPClientPort | Should Be $true
+            $MessageLargerBeforeTunnelling = "a" * $($MsgFragmentationThreshold + 1)
+            $MessageLargerAfterTunnelling = "a" * $($MsgFragmentationThreshold - 1)
+            foreach ($Message in @($MessageLargerBeforeTunnelling, $MessageLargerAfterTunnelling)) {
+                Test-UDP `
+                    -Session1 $Sessions[0] `
+                    -Session2 $Sessions[1] `
+                    -Container1Name $Container1ID `
+                    -Container2Name $Container2ID `
+                    -Container1IP $Container1NetInfo.IPAddress `
+                    -Container2IP $Container2NetInfo.IPAddress `
+                    -Message $Message | Should Be $true
+            }
         }
     }
 

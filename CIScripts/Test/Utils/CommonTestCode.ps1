@@ -14,6 +14,7 @@ class ContainerNetAdapterInformation : NetAdapterInformation {
     [string] $AdapterShortName;
     [string] $AdapterFullName;
     [string] $IPAddress;
+    [int] $MtuSize;
 }
 
 class VMNetAdapterInformation : NetAdapterMacAddresses {
@@ -68,7 +69,7 @@ function Read-RawRemoteContainerNetAdapterInformation {
 
         $RemoteCommand = {
             $GetIPAddress = { ($_ | Get-NetIPAddress -AddressFamily IPv4).IPAddress }
-            $Fields = 'ifIndex', 'ifName', 'Name', 'MacAddress', @{L='IPAddress'; E=$GetIPAddress}
+            $Fields = 'ifIndex', 'ifName', 'Name', 'MacAddress', 'MtuSize', @{L='IPAddress'; E=$GetIPAddress}
             $Adapter = (Get-NetAdapter -Name 'vEthernet (Container NIC *)')[0]
             return $Adapter | Select-Object $Fields | ConvertTo-Json -Depth 5
         }.ToString()
@@ -101,6 +102,7 @@ function ConvertFrom-RawNetAdapterInformation {
         AdapterShortName = [regex]::new('vEthernet \((.*)\)').Replace($RawAdapterInfo.Name, '$1')
         MacAddressWindows = $RawAdapterInfo.MacAddress.ToLower()
         IPAddress = $RawAdapterInfo.IPAddress
+        MtuSize = $RawAdapterInfo.MtuSize
     }
 
     $AdapterInfo.MacAddress = $AdapterInfo.MacAddressWindows.Replace('-', ':')

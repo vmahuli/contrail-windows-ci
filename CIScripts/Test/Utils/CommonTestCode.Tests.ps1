@@ -18,6 +18,7 @@ Describe "Get-RemoteContainerNetAdapterInformation - Unit tests" -Tags CI, Unit 
                 Name = 'vEthernet (testnet123)'
                 MacAddress = 'A1-B2-C3-D4-E5-F6'
                 IPAddress = '1.2.3.4'
+                MtuSize = '1500'
             }
         }
 
@@ -37,6 +38,7 @@ Describe "Get-RemoteContainerNetAdapterInformation - Unit tests" -Tags CI, Unit 
             $AdapterInfo.IfName | Should -BeExactly 'testifname'
             $AdapterInfo.MACAddress | Should -BeExactly 'a1:b2:c3:d4:e5:f6'
             $AdapterInfo.MACAddressWindows | Should -BeExactly 'a1-b2-c3-d4-e5-f6'
+            $AdapterInfo.MtuSize | Should -BeExactly '1500'
         }
     }
 
