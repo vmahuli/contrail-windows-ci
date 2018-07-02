@@ -188,6 +188,10 @@ projects:
     template:
       - name: ci-contrail-windows-other-projects-template
 
+  - name: Juniper/contrail-infra-doc
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
   - name: Juniper/contrail-java-api
     template:
       - name: ci-contrail-windows-other-projects-template
