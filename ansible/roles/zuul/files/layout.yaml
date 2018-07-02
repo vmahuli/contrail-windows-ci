@@ -327,3 +327,7 @@ projects:
   - name: tungstenfabric/contrail-ci-test
     template:
       - name: ci-contrail-windows-other-projects-template
+
+  - name: tungstenfabric/tungsten-test-runner
+    template:
+      - name: ci-contrail-windows-other-projects-template
