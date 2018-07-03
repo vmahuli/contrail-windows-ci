@@ -16,6 +16,12 @@ cd "$DIR"/tests
 for test_input in *.in.txt
 do
     test_output=$(basename "$test_input" .in.txt).out.txt
-    ../grep.sh "$test_input" | diff - "$test_output"
-    >&2 echo "$test_input" PASS
+    if
+        ../grep.sh "$test_input" | diff - "$test_output"
+    then
+        >&2 echo PASS "$test_input"
+    else
+        >&2 echo FAIL "$test_input"
+        exit 1
+    fi
 done

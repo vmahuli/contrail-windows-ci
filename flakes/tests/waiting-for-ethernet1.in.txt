@@ -1,0 +1,9 @@
+2018-06-25 02:18:26.104000 |       [-] TCP - HTTP connection between containers on separate compute nodes succeeds 146.71s
+2018-06-25 02:18:26.104000 |         CITimeoutException: Did not evaluate to True.Last return value encountered was: .
+2018-06-25 02:18:26.104000 |         CITimeoutException: Waiting for IP on interface Ethernet1 failed.
+2018-06-25 02:18:26.104000 |         at Invoke-UntilSucceeds, J:\Jenkins\workspace\WinContrail\winci-server2016-prod\CIScripts\Common\Invoke-UntilSucceeds.ps1: line 62
+2018-06-25 02:18:26.104000 |         at Wait-RemoteInterfaceIP, J:\Jenkins\workspace\WinContrail\winci-server2016-prod\CIScripts\Test\TestConfigurationUtils.ps1: line 317
+2018-06-25 02:18:26.104000 |         at Clear-TestConfiguration, J:\Jenkins\workspace\WinContrail\winci-server2016-prod\CIScripts\Test\TestConfigurationUtils.ps1: line 389
+2018-06-25 02:18:26.104000 |         at <ScriptBlock>, J:\Jenkins\workspace\WinContrail\winci-server2016-prod\CIScripts\Test\Tests\Protocol\TunnellingWithAgent.Tests.ps1: line 527
+2018-06-25 02:18:26.104000 |         at Invoke-Blocks, C:\Program Files\WindowsPowerShell\Modules\Pester\4.2.0\Functions\SetupTeardown.ps1: line 140
+2018-06-25 02:18:26.104000 |         at Invoke-TestCaseTeardownBlocks, C:\Program Files\WindowsPowerShell\Modules\Pester\4.2.0\Functions\SetupTeardown.ps1: line 120

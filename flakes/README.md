@@ -1,7 +1,7 @@
 # Adding new flakiness patterns
 
 1. Add an regular expression to `patterns.txt`
-2. Add a test in `testcases` directory:
+2. Add a test in `tests` directory:
    The test comprises two files: 
    * `xxx.in.txt` that contains some lines that should match a pattern.
      It's recommended to use a piece from real-world logs.

@@ -1,0 +1,1 @@
+2018-06-25 02:18:26.104000 |         CITimeoutException: Waiting for IP on interface Ethernet1 failed.

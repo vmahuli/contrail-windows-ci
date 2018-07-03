@@ -1,3 +1,4 @@
 $ Patterns of flakiness to grep, using extended regex syntax. (grep -E), one per line
 PSRemotingTransportException: (Processing data for a remote command|Starting a command on the remote server) failed with the following error message ?: Access is denied
 grouped write of manifest, lock and vendor: error while writing out vendor tree: failed to write dep tree: failed to export.*(does not exist, or is inaccessible: fatal: unable to access|does not exist in the local cache and fetching failed: unable to get repository)
+CITimeoutException: Waiting for IP on interface Ethernet1 failed.
