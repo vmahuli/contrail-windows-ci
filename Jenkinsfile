@@ -53,7 +53,7 @@ pipeline {
                         script {
                             try {
                                 powershell script: """./Invoke-Selfcheck.ps1 `
-                                    -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck/raw_NUnit"""
+                                    -ReportPath ${env.WORKSPACE}/testReportsRaw/CISelfcheck/raw_NUnit/out.xml"""
                             } finally {
                                 stash name: 'CISelfcheckNUnitLogs', includes: 'testReportsRaw/CISelfcheck/raw_NUnit/**', allowEmpty: true
                             }
@@ -258,13 +258,13 @@ pipeline {
                 script {
                     if (tryUnstash('windowsComputeNUnitLogs')) {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir testReportsRaw/WindowsCompute/raw_NUnit `
+                            -RawNUnitPath testReportsRaw/WindowsCompute/raw_NUnit/report.xml `
                             -OutputDir TestReports/WindowsCompute'''
                     }
 
                     if (tryUnstash('CISelfcheckNUnitLogs')) {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir testReportsRaw/CISelfcheck/raw_NUnit `
+                            -RawNUnitPath testReportsRaw/CISelfcheck/raw_NUnit/out.xml `
                             -OutputDir TestReports/CISelfcheck'''
                     }
 

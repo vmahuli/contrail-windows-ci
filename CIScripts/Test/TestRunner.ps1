@@ -6,7 +6,7 @@
 function Invoke-IntegrationAndFunctionalTests {
     Param (
         [Parameter(Mandatory = $true)] [String] $TestenvConfFile,
-        [Parameter(Mandatory = $true)] [String] $PesterLogsOutputDir,
+        [Parameter(Mandatory = $true)] [String] $PesterOutReportPath,
         [Parameter(Mandatory = $true)] [String] $DetailedLogsOutputDir,
         [Parameter(Mandatory = $true)] [String] $AdditionalJUnitsDir
     )
@@ -18,7 +18,7 @@ function Invoke-IntegrationAndFunctionalTests {
         LogDir=$DetailedLogsOutputDir;
         AdditionalJUnitsDir=$AdditionalJUnitsDir;
     }
-    $Results = Invoke-PesterTests -TestRootDir $pwd -ReportDir $PesterLogsOutputDir `
+    $Results = Invoke-PesterTests -TestRootDir $pwd -ReportPath $PesterOutReportPath `
         -ExcludeTags CI -AdditionalParams $AdditionalParams
     if ($Results.FailedCount -gt 0) {
         throw "Some tests failed"

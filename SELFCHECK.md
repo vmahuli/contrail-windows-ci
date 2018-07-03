@@ -40,7 +40,13 @@ Note: to make sure that system tests pass, some requirements must be met.
 ## Generate NUnit reports
 
 ```
-.\Invoke-Selfcheck.ps1 -ReportDir .\some_dir\
+.\Invoke-Selfcheck.ps1 -ReportPath out.xml
+```
+
+## Collect code coverage stats
+
+```
+.\Invoke-Selfcheck.ps1 -CodeCoverage
 ```
 
 ## To manually run tests from local machine
