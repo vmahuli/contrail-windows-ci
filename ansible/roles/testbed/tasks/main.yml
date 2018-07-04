@@ -68,6 +68,16 @@
     name: docker
     state: stopped
 
+# Workaround for Docker/Windows behavior.
+# When WinNAT is enabled and NetNat object associated with default bridge
+# network created by Docker exists, ICMP/UDP packets bigger than MTU do
+# not reach containers and the host itself.
+- name: Stop and disable WinNAT
+  win_service:
+    name: winnat
+    start_mode: disabled
+    state: stopped
+
 - name: Remove container networks
   win_shell: |
     Get-NetNat | Remove-NetNat -Confirm:$false
