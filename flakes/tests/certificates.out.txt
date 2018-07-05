@@ -1,0 +1,1 @@
+4133-2018-07-02 03:52:43.404000 | [Build] SIGNTASK : SignTool error : No certificates were found that met all the given criteria. [J:\Jenkins\workspace\WinContrail\winci-server2016-prod@2\vrouter\windows\vRouter.vcxproj]

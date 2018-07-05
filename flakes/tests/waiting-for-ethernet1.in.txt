@@ -1,3 +1,17 @@
+This error is a symptom of incorrect removal of vEthernet (HNSTransparent)
+network adapter. Correct behavior:
+1. Ethernet1 has no IP address (it was "moved" to vEthernet)
+2. After removing all container networks, vEthernet automatically disappears.
+3. Ehternet1 gets its IP address back.
+Behavior when this error occurs:
+1. Ethernet1 has no IP address (it was "moved" to vEthernet)
+2. After removing all container networks, vEthernet doesn't properly disappear.
+3. Ethernet1 appears as "disconnected" and never gets its IP address back.
+4. To fix the testbed to usable state, the reboot of the machine is needed.
+
+Why we recheck it: The bug is not our fault, and the testbed is in unrecoverable
+state, so we can't retry a test.
+
 2018-06-25 02:18:26.104000 |       [-] TCP - HTTP connection between containers on separate compute nodes succeeds 146.71s
 2018-06-25 02:18:26.104000 |         CITimeoutException: Did not evaluate to True.Last return value encountered was: .
 2018-06-25 02:18:26.104000 |         CITimeoutException: Waiting for IP on interface Ethernet1 failed.

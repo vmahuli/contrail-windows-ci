@@ -1,3 +1,6 @@
+This error is caused by flakiness of the network in CI.
+Why we recheck it: We can't fix the flakiness of the network.
+
 2018-06-28 02:27:17.125000 | [Build] grouped write of manifest, lock and vendor: error while writing out vendor tree: failed to write dep tree: failed to export github.com/pborman/uuid: https://github.com/pborman/uuid does not exist in the local cache and fetching failed: unable to get repository: Cloning into 'J:\Jenkins\workspace\WinContrail\winci-server2016-prod\pkg\dep\sources\https---github.com-pborman-uuid'...
 2018-06-28 02:27:17.125000 | [Build] fatal: unable to access 'https://github.com/pborman/uuid/': OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443 
 2018-06-28 02:27:17.125000 | [Build] : command failed: [git clone --recursive -v --progress https://github.com/pborman/uuid J:\Jenkins\workspace\WinContrail\winci-server2016-prod\pkg\dep\sources\https---github.com-pborman-uuid]: exit status 128

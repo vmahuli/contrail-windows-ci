@@ -1,4 +1,13 @@
+This error may happen randomly when using Invoke-Command with Session parameter
+in our Powershell scripts. This error may occur in various places.
+Perhaps it's the session to tester that's failing, not to testbeds?
+After this short breakage of Powershell Session, the script continues normally.
+Why we recheck it: We don't know the cause and we can't apply retrying to it,
+as it may fail in almost any place in code.
+
 2018-06-11 08:44:33.581000 |       PSRemotingTransportException: Processing data for a remote command failed with the following error message: Access is denied. For more information, see the about_Remote_Troubleshooting Help topic.
+
 2018-06-08 18:07:52.139000 |         PSRemotingTransportException: Starting a command on the remote server failed with the following error message : Access is denied. For more information, see the about_Remote_Troubleshooting Help topic.
+
 2018-06-08 18:07:52.139000 |         This line should not match
 2018-06-08 18:07:52.139000 |         This line should not match: Some other Access is denied error

@@ -1,0 +1,25 @@
+This error may happens sometimes when testsigning the vrouter extension.
+First occurrence happened on 2018-06-26.
+Why we recheck it: We don't know the root cause,
+but this flake increases the failure rate in CI quite significantly.
+
+4114-2018-07-02 03:52:43.143000 | [Build] TestSign:
+4115-2018-07-02 03:52:43.143000 | [Build]   The driver will be test-signed. Driver signing options can be changed from the project properties.
+4116-2018-07-02 03:52:43.143000 | [Build]   Sign Inputs: J:\Jenkins\workspace\WinContrail\winci-server2016-prod@2\vrouter\windows\..\..\build\debug\vrouter\extension\vRouter.sys
+4117-2018-07-02 03:52:43.143000 | [Build]   C:\Program Files (x86)\Windows Kits\10\bin\x86\signtool.exe sign /ph /debug /sha1 "A37502F3E2CC7C09FEE6301233F53D08FE94FF17"
+4118-2018-07-02 03:52:43.404000 | [Build]
+4119:2018-07-02 03:52:43.404000 | [Build]   The following certificates were considered:
+4120-2018-07-02 03:52:43.404000 | [Build]       Issued to: codilime.com
+4121-2018-07-02 03:52:43.404000 | [Build]
+4122-2018-07-02 03:52:43.404000 | [Build]       Issued by: codilime.com
+4123-2018-07-02 03:52:43.404000 | [Build]
+4124-2018-07-02 03:52:43.404000 | [Build]       Expires:   Fri May 03 10:20:00 2019
+4125-2018-07-02 03:52:43.404000 | [Build]
+4126-2018-07-02 03:52:43.404000 | [Build]       SHA1 hash: A37502F3E2CC7C09FEE6301233F53D08FE94FF17
+4127-2018-07-02 03:52:43.404000 | [Build]
+4128-2018-07-02 03:52:43.404000 | [Build]
+4129-2018-07-02 03:52:43.404000 | [Build]   After EKU filter, 1 certs were left.
+4130-2018-07-02 03:52:43.404000 | [Build]   After expiry filter, 1 certs were left.
+4131-2018-07-02 03:52:43.404000 | [Build]   After Hash filter, 1 certs were left.
+4132-2018-07-02 03:52:43.404000 | [Build]   After Private Key filter, 0 certs were left.
+4133-2018-07-02 03:52:43.404000 | [Build] SIGNTASK : SignTool error : No certificates were found that met all the given criteria. [J:\Jenkins\workspace\WinContrail\winci-server2016-prod@2\vrouter\windows\vRouter.vcxproj]
