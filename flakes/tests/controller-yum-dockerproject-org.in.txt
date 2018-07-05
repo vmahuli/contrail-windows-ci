@@ -1,0 +1,5 @@
+This error sometimes occurs when deploying a controller - it can't connect to yum.dockerproject.org.
+
+Why we recheck it: It's network flakiness.
+
+2018-07-04 10:08:23.973000 | [Testenv provisioning] fatal: [533-controller]: FAILED! => {"changed": true, "cmd": ["ansible-playbook", "-i", "inventory/", "-e", "orchestrator=openstack", "playbooks/install_contrail.yml"], "delta": "0:00:39.450887", "end": "2018-07-04 10:05:02.322164", "msg": "non-zero return code", "rc": 2, "start": "2018-07-04 10:04:22.871277", "stderr": "...", "stderr_lines": [..., "TASK [baremetal : Install docker rpm gpg key] **********************************", "fatal: [172.17.0.26]: FAILED! => {", "    \"changed\": false", "}", "", "MSG:", "", "Failed to connect to yum.dockerproject.org at port 443: [Errno -2] Name or service not known", "\tto retry, use: --limit @/tmp/contrail-ansible-deployer/playbooks/install_contrail.retry", "", "PLAY RECAP *********************************************************************", "172.17.0.26                : ok=31   changed=13   unreachable=0    failed=1   ", "localhost                  : ok=3    changed=2    unreachable=0    failed=0   "]}
