@@ -4,7 +4,7 @@ provider_config:
   bms:
     ntpserver: 192.168.1.1
     ssh_user: root
-    ssh_pwd: contrail123
+    ssh_pwd: "{{ ansible_ssh_pass }}"
     domainsuffix: novalocal
 instances:
   bms1:
@@ -48,7 +48,9 @@ kolla_config:
     enable_ironic_notifications: 'no'
     openstack_service_workers: 1
     openstack_release: "{{ kolla_version }}"
+{% if docker_registry != 'opencontrailnightly' %}
     docker_registry: "{{ docker_registry }}"
+{% endif %}
     contrail_docker_registry: "{{ docker_registry }}"
     neutron_opencontrail_init_image_full: "{{ docker_registry }}/contrail-openstack-neutron-init:{{ contrail_version }}"
     nova_compute_opencontrail_init_image_full: "{{ docker_registry }}/contrail-openstack-compute-init:{{ contrail_version }}"

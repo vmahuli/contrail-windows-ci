@@ -1,0 +1,21 @@
+---
+
+- hosts: testbed
+  tasks:
+    - name: 'Test connection'
+      win_ping:
+
+- hosts: controller
+  tasks:
+    - name: 'Test connection'
+      ping:
+
+- hosts: testbed
+  roles:
+    - testbed
+
+- hosts: controller
+  vars:
+    docker_registry: 'opencontrailnightly'
+  roles:
+    - controller

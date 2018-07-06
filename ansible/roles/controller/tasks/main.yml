@@ -10,6 +10,7 @@
     - net.ipv6.conf.default.disable_ipv6
 
 - name: Prepare yum mirror repo files
+  tags: yum-repos
   include_role:
     name: yum-repos-prepare
 

@@ -7,6 +7,9 @@ testenv
 testbed
 controller
 
+[windows:children]
+testbed
+
 [testbed]
 
 [controller]
