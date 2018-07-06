@@ -13,3 +13,5 @@ clonemap:
     dest: 'src/contrail-common'
   - name: 'Juniper/contrail-windows-docker-driver'
     dest: 'src/github.com/Juniper/contrail-windows-docker-driver'
+  - name: 'Juniper/contrail-windows'
+    dest: 'windows'
