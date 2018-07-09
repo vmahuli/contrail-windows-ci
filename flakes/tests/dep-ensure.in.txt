@@ -6,7 +6,6 @@ Why we recheck it: We can't fix the flakiness of the network.
 2018-06-28 02:27:17.125000 | [Build] : command failed: [git clone --recursive -v --progress https://github.com/pborman/uuid J:\Jenkins\workspace\WinContrail\winci-server2016-prod\pkg\dep\sources\https---github.com-pborman-uuid]: exit status 128
 
 --------------------------------------------------------------------------------
---------------------------------------------------------------------------------
 
 2018-06-27 03:03:28.682000 | [Build] grouped write of manifest, lock and vendor: error while writing out vendor tree: failed to write dep tree: failed to export golang.org/x/text: remote repository at https://go.googlesource.com/text does not exist, or is inaccessible: fatal: unable to access 'https://go.googlesource.com/text/': Failed to connect to go.googlesource.com port 443: Timed out
 2018-06-27 03:03:28.682000 | [Build] : exit status 128
@@ -41,3 +40,10 @@ Why we recheck it: We can't fix the flakiness of the network.
 2018-06-27 03:03:28.941000 | [Build]  
 2018-06-27 03:03:28.941000 | [Build] 
                            | [Pipeline] [Build] deleteDir
+
+--------------------------------------------------------------------------------
+
+2018-07-06 03:47:33.942000 | [Build] (24/24) Failed to write github.com/coreos/go-systemd@v16
+2018-07-06 03:47:33.943000 | [Build]
+2018-07-06 03:47:33.943000 | [Build] failed to write dep tree: failed to export golang.org/x/sys: remote repository at https://go.googlesource.com/sys does not exist, or is inaccessible: fatal: unable to access 'https://go.googlesource.com/sys/': Failed to connect to go.googlesource.com port 443: Timed out
+2018-07-06 03:47:33.943000 | [Build] : exit status 128
