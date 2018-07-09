@@ -68,20 +68,36 @@
     name: docker
     state: stopped
 
-# Workaround for Docker/Windows behavior.
+- name: Remove NetNat objects
+  win_shell: |
+    Get-NetNat | Remove-NetNat -Confirm:$false
+
+# Workaround for flaky HNS behavior.
+# Removing container networks sometimes ends with "Unspecified error".
+# For environment cleanup in tests it is acceptable to just ignore this error
+# (-ErrorAction SilentlyContinue). However, this is not acceptable for
+# template creation (we don't want to have unreliable template).
+- name: Remove container networks (first attempt)
+  win_shell: |
+    Get-ContainerNetwork | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
+
+- name: Remove container networks (final attempt)
+  win_shell: |
+    Get-ContainerNetwork | Remove-ContainerNetwork -Force
+
+# Workaround (#1) for Docker/Windows behavior.
 # When WinNAT is enabled and NetNat object associated with default bridge
 # network created by Docker exists, ICMP/UDP packets bigger than MTU do
 # not reach containers and the host itself.
-- name: Stop and disable WinNAT
-  win_service:
-    name: winnat
-    start_mode: disabled
-    state: stopped
+# Workaround (#2) for win_service behavior.
+# We use win_shell instead of win_service because for this particular service
+# win_service seems to fail ("An error occurred while creating the pipeline")
+# while it works fine for other services like Docker.
+- name: Stop  WinNAT
+  win_shell: Stop-Service winnat
 
-- name: Remove container networks
-  win_shell: |
-    Get-NetNat | Remove-NetNat -Confirm:$false
-    Get-ContainerNetwork | Remove-ContainerNetwork -Force
+- name: Disable WinNAT
+  win_shell: Set-Service -StartupType Disabled -Name winnat
 
 - name: Enable testsigning
   win_shell: |

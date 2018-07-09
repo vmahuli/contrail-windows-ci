@@ -20,7 +20,6 @@ def call(Map params) {
         agent { label 'ansible' }
         steps {
           dir('ansible') {
-            sh 'cp inventory.sample inventory'
             script {
               vmWareConfig = getVMwareConfig(vm_role)
               if (params.vc_datastore_name) {
@@ -37,7 +36,7 @@ def call(Map params) {
         steps {
           dir('ansible') {
             ansiblePlaybook extras: '-e @vm.vars', \
-                            inventory: 'inventory', \
+                            inventory: 'inventory.groups', \
                             playbook: playbook, \
                             sudoUser: 'ubuntu', \
                             extraVars: vmWareConfig
