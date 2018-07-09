@@ -81,7 +81,7 @@ function Invoke-DockerDriverBuild {
         Pop-Location # $srcPath
     })
 
-    
+
     $Job.Step("Copying artifacts to $OutputPath", {
         Copy-Item -Path $srcPath\build\* -Include "*.msi", "*.exe" -Destination $OutputPath
     })
@@ -105,7 +105,7 @@ function Invoke-ExtensionBuild {
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
            [Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $true)] [string] $LogsPath,
-           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
+           [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
     $Job.PushStep("Extension build")
 
@@ -113,7 +113,6 @@ function Invoke-ExtensionBuild {
         Copy-Item -Recurse "$ThirdPartyCache\extension\*" third_party\
     })
 
-    $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
     $BuildModeOption = "--optimization=" + $BuildMode
 
     $Job.Step("Building Extension and Utils", {
@@ -175,15 +174,13 @@ function Invoke-AgentBuild {
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
            [Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $true)] [string] $LogsPath,
-           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
+           [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
     $Job.PushStep("Agent build")
 
     $Job.Step("Copying Agent dependencies", {
         Copy-Item -Recurse "$ThirdPartyCache\agent\*" third_party/
     })
-
-    $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
 
     $Job.Step("Building contrail-vrouter-agent.exe and .msi", {
         if(Test-Path Env:AGENT_BUILD_THREADS) {
@@ -267,11 +264,10 @@ function Invoke-AgentUnitTestRunner {
 
 function Invoke-AgentTestsBuild {
     Param ([Parameter(Mandatory = $true)] [string] $LogsPath,
-           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
+           [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
     $Job.PushStep("Agent Tests build")
 
-    $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
     $BuildModeOption = "--optimization=" + $BuildMode
 
     $Job.Step("Building agent tests", {

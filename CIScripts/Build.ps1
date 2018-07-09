@@ -9,6 +9,8 @@
 $Job = [Job]::new("Build")
 
 $IsReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)
+$BuildMode = $(if ($IsReleaseMode) { "production" } else { "debug" })
+
 Initialize-BuildEnvironment -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
 
 $DockerDriverOutputDir = "output/docker_driver"
@@ -17,6 +19,7 @@ $vtestOutputDir = "output/vtest"
 $AgentOutputDir = "output/agent"
 $DllsOutputDir = "output/dlls"
 $LogsDir = "logs"
+$SconsTestsLogsDir = "SconsTestsLogs"
 
 $Directories = @(
     $DockerDriverOutputDir,
@@ -24,7 +27,8 @@ $Directories = @(
     $vtestOutputDir,
     $AgentOutputDir,
     $DllsOutputDir,
-    $LogsDir
+    $LogsDir,
+    $SconsTestsLogsDir
 )
 
 foreach ($Directory in $Directories) {
@@ -35,45 +39,49 @@ foreach ($Directory in $Directories) {
 
 $ComponentsToBuild = Get-ComponentsToBuild
 
+try {
+    if ("DockerDriver" -In $ComponentsToBuild) {
+        Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH `
+            -SigntoolPath $Env:SIGNTOOL_PATH `
+            -CertPath $Env:CERT_PATH `
+            -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
+            -OutputPath $DockerDriverOutputDir `
+            -LogsPath $LogsDir
+    }
 
-if ("DockerDriver" -In $ComponentsToBuild) {
-    Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH `
-        -SigntoolPath $Env:SIGNTOOL_PATH `
-        -CertPath $Env:CERT_PATH `
-        -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
-        -OutputPath $DockerDriverOutputDir `
-        -LogsPath $LogsDir
-}
+    if ("Extension" -In $ComponentsToBuild) {
+        Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
+            -SigntoolPath $Env:SIGNTOOL_PATH `
+            -CertPath $Env:CERT_PATH `
+            -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
+            -BuildMode $BuildMode `
+            -OutputPath $vRouterOutputDir `
+            -LogsPath $LogsDir
 
-if ("Extension" -In $ComponentsToBuild) {
-    Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
-        -SigntoolPath $Env:SIGNTOOL_PATH `
-        -CertPath $Env:CERT_PATH `
-        -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
-        -ReleaseMode $IsReleaseMode `
-        -OutputPath $vRouterOutputDir `
-        -LogsPath $LogsDir
+        Copy-VtestScenarios -OutputPath $vtestOutputDir
+    }
 
-    Copy-VtestScenarios -OutputPath $vtestOutputDir
-}
+    if ("Agent" -In $ComponentsToBuild) {
+        Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
+            -SigntoolPath $Env:SIGNTOOL_PATH `
+            -CertPath $Env:CERT_PATH `
+            -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
+            -BuildMode $BuildMode `
+            -OutputPath $AgentOutputDir `
+            -LogsPath $LogsDir
+    }
 
-if ("Agent" -In $ComponentsToBuild) {
-    Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
-        -SigntoolPath $Env:SIGNTOOL_PATH `
-        -CertPath $Env:CERT_PATH `
-        -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
-        -ReleaseMode $IsReleaseMode `
-        -OutputPath $AgentOutputDir `
-        -LogsPath $LogsDir
-}
+    if ("AgentTests" -In $ComponentsToBuild) {
+        Invoke-AgentTestsBuild -LogsPath $LogsDir `
+            -BuildMode $BuildMode
+    }
 
-if ("AgentTests" -In $ComponentsToBuild) {
-    Invoke-AgentTestsBuild -LogsPath $LogsDir `
-        -ReleaseMode $IsReleaseMode
-}
-
-if (-not $isReleaseMode) {
-    Copy-DebugDlls -OutputPath $DllsOutputDir
+    if (-not $IsReleaseMode) {
+        Copy-DebugDlls -OutputPath $DllsOutputDir
+    }
+} finally {
+    Copy-Item -Path ".\build\$BuildMode" -Destination $SconsTestsLogsDir `
+        -Recurse -Filter "*.exe.log" -Container
 }
 
 $Job.Done()
