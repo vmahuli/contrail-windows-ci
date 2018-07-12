@@ -135,7 +135,7 @@ pipeline {
                     }
                     post {
                         always {
-                            stash name: "sconsTestsLogs", allowEmpty: true, includes: "SconsTestsLogs/**"
+                            stash name: "vRouterUnitTests", allowEmpty: true, includes: "vRouterUnitTestReport/**"
                             deleteDir()
                         }
                     }
@@ -286,7 +286,7 @@ pipeline {
                         dir('TestReports') {
                             tryUnstash('ddriverJUnitLogs')
                             tryUnstash('detailedLogs')
-                            tryUnstash('sconsTestsLogs')
+                            tryUnstash('vRouterUnitTests')
                         }
 
                         createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
