@@ -1,0 +1,2 @@
+2018-07-02 02:32:32.449000 | ERROR:zuul.Repo:Unable to initialize repo for https://review.opencontrail.org/Juniper/contrail-controller
+2018-07-02 09:47:10.271000 | ERROR:zuul.Repo:Unable to initialize repo for https://review.opencontrail.org/Juniper/contrail-api-client
