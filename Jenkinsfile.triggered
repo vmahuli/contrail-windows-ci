@@ -1,0 +1,14 @@
+#!groovy
+pipeline {
+    agent { label 'ansible' }
+    triggers {
+        cron('H/5 * * * *')
+    }
+    stages {
+        stage('I got my eyes no you') {
+            steps {
+                echo 'You\'re everything that I see'
+            }
+        }
+    }
+}
