@@ -1,4 +1,5 @@
-CONTAINER_REGISTRY: "{{ docker_registry }}"
+global_configuration:
+  CONTAINER_REGISTRY: "{{ docker_registry }}"
 REGISTRY_PRIVATE_INSECURE: True
 provider_config:
   bms:
@@ -22,7 +23,6 @@ instances:
       openstack_compute:
 contrail_configuration:
   CLOUD_ORCHESTRATOR: "{{ cloud_orchestrator }}"
-  CONTAINER_REGISTRY: "{{ docker_registry }}"
   CONTRAIL_VERSION: "{{ contrail_version }}"
   CONTROLLER_NODES: "{{ ansible_default_ipv4.address }}"
   LOG_LEVEL: SYS_DEBUG

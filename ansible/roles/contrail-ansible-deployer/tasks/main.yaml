@@ -29,9 +29,24 @@
     ANSIBLE_HOST_KEY_CHECKING: 'False'
     ANSIBLE_STDOUT_CALLBACK: debug
   become: True
+  register: configure_instances_command
+  ignore_errors: true
   tags:
     - skip_ansible_lint # ANSIBLE0012: Commands should not change things if nothing needs doing
                         # Always run internal playbook: we cannot easily recognize here if it changed something.
+
+- name: Print configure_instances stdout
+  debug:
+    var: configure_instances_command.stdout_lines
+
+- name: Print configure_instances stderr
+  debug:
+    var: configure_instances_command.stderr_lines
+
+- name: Fail when configure_instances failed
+  fail:
+    msg: configure_instances.yml playbook has failed
+  when: configure_instances_command is failed
 
 - name: Provision instances with install_contrail.yml playbook
   command: ansible-playbook -i inventory/ -e orchestrator=openstack playbooks/install_contrail.yml
@@ -41,9 +56,24 @@
     ANSIBLE_HOST_KEY_CHECKING: 'False'
     ANSIBLE_STDOUT_CALLBACK: debug
   become: True
+  register: install_contrail_command
+  ignore_errors: true
   tags:
     - skip_ansible_lint # ANSIBLE0012: Commands should not change things if nothing needs doing
                         # Always run internal playbook: we cannot easily recognize here if it changed something.
+
+- name: Print install_contrail stdout
+  debug:
+    var: install_contrail_command.stdout_lines
+
+- name: Print install_contrail stderr
+  debug:
+    var: install_contrail_command.stderr_lines
+
+- name: Fail if install_contrail failed
+  fail:
+    msg: install_contrail.yml playbook has failed
+  when: install_contrail_command is failed
 
 - name: Show the list of running containers
   command: docker ps -a
