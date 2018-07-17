@@ -429,9 +429,6 @@ platform=windows
 [CONTROL-NODE]
 servers=$ControllerIP
 
-[DISCOVERY]
-servers=$ControllerIP
-
 [VIRTUAL-HOST-INTERFACE]
 name=$VHostIfName
 ip=$VHostIP/$PrefixLength
