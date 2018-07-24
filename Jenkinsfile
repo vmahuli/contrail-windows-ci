@@ -19,6 +19,7 @@ pipeline {
                 // Use the same repo and branch as was used to checkout Jenkinsfile:
                 checkout scm
 
+                stash name: "Backups", includes: "backups/**"
                 stash name: "CIScripts", includes: "CIScripts/**"
                 stash name: "CISelfcheck", includes: "Invoke-Selfcheck.ps1"
                 stash name: "StaticAnalysis", includes: "StaticAnalysis/**"
@@ -48,6 +49,7 @@ pipeline {
                     agent { label 'tester' }
                     steps {
                         deleteDir()
+                        unstash "Backups"
                         unstash "CIScripts"
                         unstash "CISelfcheck"
                         script {
