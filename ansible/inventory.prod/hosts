@@ -2,4 +2,4 @@
 review.opencontrail.org ansible_user=codilime-ci ansible_port=29418 gerrit_keyname=review
 
 [zuul]
-10.84.12.75 ansible_user=ciadmin gerrit_server=review.opencontrail.org gerrit_user=codilime-ci gerrit_keyname=review
+10.84.12.30 ansible_user=ciadmin gerrit_server=review.opencontrail.org gerrit_user=codilime-ci gerrit_keyname=review
