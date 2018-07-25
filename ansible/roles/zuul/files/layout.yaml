@@ -256,6 +256,10 @@ projects:
     template:
       - name: ci-contrail-windows-other-projects-template
 
+  - name: Juniper/contrail-tripleo-puppet
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
   - name: Juniper/contrail-vcenter-manager
     template:
       - name: ci-contrail-windows-other-projects-template
