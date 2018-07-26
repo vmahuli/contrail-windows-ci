@@ -225,6 +225,7 @@ pipeline {
                 script {
                     try {
                         powershell script: """./CIScripts/Test.ps1 `
+                            -TestRootDir Test `
                             -TestenvConfFile testenv-conf.yaml `
                             -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute"""
                     } finally {
