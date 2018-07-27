@@ -1,0 +1,14 @@
+This error is caused by flakiness of the network in CI.
+To fix this flakiness (rather rare flakiness) a change in contrail-ansible-deployer is needed.
+Namely, support for configuring custom docker registry for containers other than kolla/contrail is required. `redis` is an example of such container.
+
+2018-07-19 10:21:35.946000 | [Testenv provisioning]         "TASK [install_contrail : start redis] ******************************************",
+2018-07-19 10:21:35.946000 | [Testenv provisioning]         "fatal: [172.17.0.134]: FAILED! => {",
+2018-07-19 10:21:35.946000 | [Testenv provisioning]         "    \"changed\": false, ",
+2018-07-19 10:21:35.946000 | [Testenv provisioning]         "    \"errors\": []",
+2018-07-19 10:21:35.946000 | [Testenv provisioning]         "}",
+2018-07-19 10:21:35.946000 | [Testenv provisioning]         "",
+2018-07-19 10:21:35.946000 | [Testenv provisioning]         "MSG:",
+2018-07-19 10:21:35.946000 | [Testenv provisioning]         "",
+2018-07-19 10:21:35.946000 | [Testenv provisioning]         "Error starting project 500 Server Error: Internal Server Error (\"Get https://registry-1.docker.io/v2/: dial tcp 52.22.181.254:443: getsockopt: no route to host\")",
+2018-07-19 10:21:35.946000 | [Testenv provisioning]         "\tto retry, use: --limit @/tmp/contrail-ansible-deployer/playbooks/install_contrail.retry",

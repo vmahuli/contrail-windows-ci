@@ -4,3 +4,5 @@ failed to write dep tree: failed to export.*(does not exist, or is inaccessible:
 CITimeoutException: Waiting for IP on interface Ethernet1 failed.
 SIGNTASK : SignTool error : No certificates were found that met all the given criteria\.
 \[[[:digit:]]+-controller\]: FAILED.*Failed to connect to yum.dockerproject.org at port 443
+ERROR:zuul\.Repo:Unable to initialize repo for https://review\.opencontrail\.org/Juniper/[a-z-]+\s*$
+Get https://registry-1\.docker\.io/v2/:.*getsockopt: no route to host

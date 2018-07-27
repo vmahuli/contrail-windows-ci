@@ -1,0 +1,52 @@
+This error is a network-related problem occuring when cloning repositories with Zuul Cloner.
+
+2018-07-02 02:30:41.061000 | INFO:zuul.Cloner:Creating repo Juniper/contrail-controller from upstream https://review.opencontrail.org/Juniper/contrail-controller
+2018-07-02 02:30:41.061000 |
+2018-07-02 02:32:32.449000 | ERROR:zuul.Repo:Unable to initialize repo for https://review.opencontrail.org/Juniper/contrail-controller
+2018-07-02 02:32:32.450000 | Traceback (most recent call last):
+2018-07-02 02:32:32.450000 |   File "c:\python27\lib\site-packages\zuul\merger\merger.py", line 53, in __init__
+2018-07-02 02:32:32.450000 |     self._ensure_cloned()
+2018-07-02 02:32:32.450000 |   File "c:\python27\lib\site-packages\zuul\merger\merger.py", line 65, in _ensure_cloned
+2018-07-02 02:32:32.450000 |     git.Repo.clone_from(self.remote_url, self.local_path)
+2018-07-02 02:32:32.450000 |   File "c:\python27\lib\site-packages\git\repo\base.py", line 982, in clone_from
+2018-07-02 02:32:32.450000 |     return cls._clone(git, url, to_path, GitCmdObjectDB, progress, **kwargs)
+2018-07-02 02:32:32.450000 |   File "c:\python27\lib\site-packages\git\repo\base.py", line 933, in _clone
+2018-07-02 02:32:32.450000 |     finalize_process(proc, stderr=stderr)
+2018-07-02 02:32:32.450000 |   File "c:\python27\lib\site-packages\git\util.py", line 336, in finalize_process
+2018-07-02 02:32:32.450000 |     proc.wait(**kwargs)
+2018-07-02 02:32:32.450000 |   File "c:\python27\lib\site-packages\git\cmd.py", line 418, in wait
+2018-07-02 02:32:32.450000 |     raise GitCommandError(self.args, status, errstr)
+2018-07-02 02:32:32.450000 | GitCommandError: Cmd('git') failed due to: exit code(128)
+2018-07-02 02:32:32.450000 |   cmdline: git clone -v https://review.opencontrail.org/Juniper/contrail-controller J:\Jenkins\workspace\WinContrail\contrail-win-ci-gh\controller
+2018-07-02 02:32:32.450000 |   stderr: 'Cloning into 'J:\Jenkins\workspace\WinContrail\contrail-win-ci-gh\controller'...
+2018-07-02 02:32:32.450000 | POST git-upload-pack (gzip 1863 to 993 bytes)
+2018-07-02 02:32:32.450000 | fatal: early EOF
+2018-07-02 02:32:32.450000 | fatal: The remote end hung up unexpectedly
+2018-07-02 02:32:32.450000 | fatal: index-pack failed
+2018-07-02 02:32:32.450000 | error: RPC failed; curl 18 transfer closed with outstanding read data remaining
+2018-07-02 02:32:32.450000 | '
+2018-07-02 02:32:32.450000 |
+2018-07-02 02:32:32.450000 | Traceback (most recent call last):
+2018-07-02 02:32:32.450000 |   File "c:\python27\lib\runpy.py", line 174, in _run_module_as_main
+2018-07-02 02:32:32.451000 |     "__main__", fname, loader, pkg_name)
+2018-07-02 02:32:32.451000 |   File "c:\python27\lib\runpy.py", line 72, in _run_code
+2018-07-02 02:32:32.451000 |     exec code in run_globals
+2018-07-02 02:32:32.451000 |   File "C:\Python27\Scripts\zuul-cloner.exe\__main__.py", line 9, in <module>
+2018-07-02 02:32:32.451000 |   File "c:\python27\lib\site-packages\zuul\cmd\cloner.py", line 162, in main
+2018-07-02 02:32:32.451000 |     cloner.main()
+2018-07-02 02:32:32.451000 |   File "c:\python27\lib\site-packages\zuul\cmd\cloner.py", line 157, in main
+2018-07-02 02:32:32.451000 |     cloner.execute()
+2018-07-02 02:32:32.451000 |   File "c:\python27\lib\site-packages\zuul\lib\cloner.py", line 76, in execute
+2018-07-02 02:32:32.451000 |     self.prepareRepo(project, dest)
+2018-07-02 02:32:32.451000 |   File "c:\python27\lib\site-packages\zuul\lib\cloner.py", line 172, in prepareRepo
+2018-07-02 02:32:32.451000 |     repo = self.cloneUpstream(project, dest)
+2018-07-02 02:32:32.451000 |   File "c:\python27\lib\site-packages\zuul\lib\cloner.py", line 116, in cloneUpstream
+2018-07-02 02:32:32.451000 |     raise Exception("Error cloning %s to %s" % (git_upstream, dest))
+2018-07-02 02:32:32.451000 | Exception: Error cloning https://review.opencontrail.org/Juniper/contrail-controller to J:\Jenkins\workspace\WinContrail\contrail-win-ci-gh\controller
+
+--------------------------
+
+2018-07-02 09:46:48.338000 | INFO:zuul.Cloner:Creating repo Juniper/contrail-api-client from upstream https://review.opencontrail.org/Juniper/contrail-api-client
+2018-07-02 09:46:48.338000 |
+2018-07-02 09:47:10.271000 | ERROR:zuul.Repo:Unable to initialize repo for https://review.opencontrail.org/Juniper/contrail-api-client
+...
