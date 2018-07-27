@@ -2,6 +2,8 @@
     Param([Parameter(Mandatory = $true)] [string] $InputData)
     [xml] $XML = $InputData
 
+    Remove-SummaryCounters -XML $XML
+
     $CaseNodes = Find-CaseNodes -XML $XML
     Set-DescriptionAndNameTheSameFor -Nodes $CaseNodes
 
@@ -47,6 +49,23 @@ function Split-NUnitReport {
     }
 
     return $XMLs
+}
+
+function Remove-SummaryCounters {
+    Param([Parameter(Mandatory = $true)] [xml] $XML)
+    $RootResults = Find-RootPesterResultsNode -XML $XML
+    $AttrNamesToRemove = $RootResults.Node.Attributes | ForEach-Object {
+        $_.Name
+    }
+    $AttrNamesToRemove | ForEach-Object {
+        $RootResults.Node.RemoveAttribute($_)
+    }
+}
+
+function Find-RootPesterResultsNode {
+    Param([Parameter(Mandatory = $true)] [xml] $XML)
+    $RootResults = $XML | Select-Xml -Xpath '/test-results'
+    return ,$RootResults
 }
 
 function Find-CaseNodes {
