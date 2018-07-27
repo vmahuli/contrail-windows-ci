@@ -26,6 +26,7 @@ pipeline {
                 stash name: "Ansible", includes: "ansible/**"
                 stash name: "Monitoring", includes: "monitoring/**"
                 stash name: "Flakes", includes: "flakes/**"
+                stash name: "Test", includes: "Test/**"
             }
         }
 
@@ -222,6 +223,7 @@ pipeline {
                 deleteDir()
                 unstash 'CIScripts'
                 unstash 'TestenvConf'
+                unstash 'Test'
                 script {
                     try {
                         powershell script: """./CIScripts/Test.ps1 `
