@@ -57,12 +57,12 @@ Describe "Single compute node protocol tests with utils" {
     It "LARGE Ping between containers succeeds" {
         Invoke-Command -Session $Session -ScriptBlock {
             $Container2IP = $Using:Container2NetInfo.IPAddress
-            docker exec $Using:Container1ID powershell "ping $Container2IP /l 3500 > null 2>&1; `$LASTEXITCODE;"
+            docker exec $Using:Container1ID powershell "ping $Container2IP -l 3500 > null 2>&1; `$LASTEXITCODE;"
         } | Should Be 0
 
         Invoke-Command -Session $Session -ScriptBlock {
             $Container1IP = $Using:Container1NetInfo.IPAddress
-            docker exec $Using:Container2ID powershell "ping $Container1IP /l 3500 > null 2>&1; `$LASTEXITCODE;"
+            docker exec $Using:Container2ID powershell "ping $Container1IP -l 3500 > null 2>&1; `$LASTEXITCODE;"
         } | Should Be 0
     }
 
